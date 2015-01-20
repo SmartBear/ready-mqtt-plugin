@@ -24,6 +24,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.opensaml.xml.encryption.OriginatorKeyInfo;
+import org.xmlsoap.schemas.wsdl.soap.THeader;
 
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -96,39 +97,51 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
 
     private boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long startTime) {
         while (!token.isComplete() && token.getException() == null) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-
-            }
             if (!testRunner.isRunning() || (timeout != 0 && (System.nanoTime() - startTime) / 1000000 >= timeout)) {
                 if (testRunner.isRunning()) {
                     testStepResult.addMessage("The test step's timeout has expired");
-                }
-                try {
-                    token.getClient().disconnect();
-                } catch (MqttException e) {
                 }
                 return false;
             }
         }
         if (token.getException() != null) {
             testStepResult.setError(token.getException());
-            try {
-                token.getClient().disconnect();
-            } catch (MqttException e) {
-            }
             return false;
         }
         return true;
     }
 
+    private ClientCache getCache(TestCaseRunContext testRunContext){
+        final String CLIENT_CACHE_PROPNAME = "client_cache";
+        ClientCache cache = (ClientCache)(testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
+        if(cache == null){
+            cache = new ClientCache();
+            testRunContext.setProperty(CLIENT_CACHE_PROPNAME, cache);
+        }
+        return cache;
+    }
+
+    private MqttAsyncClient waitForMqttClient(TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long startTime) throws MqttException{
+        ClientCache cache = getCache(testRunContext);
+        MqttAsyncClient result = cache.get(serverUri, useFixedClientId ? fixedClientId : null, true);
+        while(result == null){
+            if (!testRunner.isRunning() || (timeout != 0 && (System.nanoTime() - startTime) / 1000000 >= timeout)) {
+                if (testRunner.isRunning()) {
+                    testStepResult.addMessage("The test step's timeout has expired");
+                }
+                return null;
+            }
+            result = cache.get(serverUri, useFixedClientId ? fixedClientId : null, true);
+        }
+        return result;
+    }
 
     @Override
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         boolean success = false;
+
         try {
             try {
                 if (!checkProperties(result)) {
@@ -164,7 +177,7 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
 
     @Override
     public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        ClientCache.assureFinalized();
+        getCache(testRunContext).assureFinalized();
         super.finish(testRunner, testRunContext);
     }
 
