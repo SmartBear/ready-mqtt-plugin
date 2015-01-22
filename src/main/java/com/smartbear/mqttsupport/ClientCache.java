@@ -5,6 +5,7 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttToken;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,9 +16,9 @@ import java.util.Locale;
 public class ClientCache {
     private static class CacheKey {
         private String serverUri;
-        private String clientId;
+        private ConnectionParams connectionParams;
 
-        public CacheKey(String serverUri, String clientId) {
+        public CacheKey(String serverUri, ConnectionParams connectionParams) {
             if (serverUri == null) {
                 serverUri = "";
             }
@@ -39,23 +40,23 @@ public class ClientCache {
             } catch (URISyntaxException e) {
                 this.serverUri = serverUri;
             }
-            this.clientId = clientId;
+            this.connectionParams = connectionParams;
         }
 
         public String getServerUri() {
             return serverUri;
         }
 
-        public String getClientId() {
-            return clientId;
+        public ConnectionParams getConnectionParams() {
+            return connectionParams;
         }
 
         @Override
         public int hashCode() {
-            if (clientId == null) {
+            if (connectionParams == null) {
                 return serverUri.hashCode();
             } else {
-                return (serverUri + "@" + clientId).hashCode();
+                return (serverUri + "@" + connectionParams.getKey()).hashCode();
             }
         }
 
@@ -68,10 +69,10 @@ public class ClientCache {
             if (!serverUri.equals(compared.getServerUri())) {
                 return false;
             }
-            if (clientId == null) {
-                return compared.getClientId() == null;
+            if (connectionParams == null) {
+                return compared.getConnectionParams() == null;
             }
-            return clientId.equals(compared);
+            return connectionParams.equals(compared);
         }
     }
     private static class CacheValue{
@@ -84,29 +85,52 @@ public class ClientCache {
     }
 
 
-    public MqttAsyncClient get(String serverUri, String clientId, boolean onlyConnected) throws MqttException {
-        CacheKey key = new CacheKey(serverUri, clientId);
+    private CacheValue getInfo(String serverUri, ConnectionParams connectionParams) throws MqttException {
+        CacheKey key = new CacheKey(serverUri, connectionParams);
         CacheValue info = map.get(key);
         if(info == null){
-            register(serverUri, clientId, getDefaultConnectOptions());
+            register(serverUri, connectionParams);
             info = map.get(key);
         }
-        if(onlyConnected){
-            if(!info.connectionToken.isComplete()) return null;
-            MqttException exception = info.connectionToken.getException();
-            if(exception != null) throw exception;
-        }
-        return info.client;
+        return info;
     }
 
-    public MqttAsyncClient get(String serverUri, boolean onlyConnected) throws MqttException {
-        return get(serverUri, null, onlyConnected);
+    public MqttAsyncClient get(String serverUri, ConnectionParams connectionParams) throws MqttException{
+        return getInfo(serverUri, connectionParams).client;
     }
 
-    private MqttAsyncClient register(String serverUri, String clientId, MqttConnectOptions connectOptions) throws MqttException {
-        CacheKey key = new CacheKey(serverUri, clientId);
-        if (StringUtils.isNullOrEmpty(clientId)) {
+    public MqttAsyncClient get(String serverUri) throws MqttException {
+        return get(serverUri);
+    }
+
+    public IMqttToken getConnectionStatus(String serverUri, ConnectionParams connectionParams) throws MqttException{
+        return getInfo(serverUri, connectionParams).connectionToken;
+    }
+
+    public IMqttToken getConnectionStatus(String serverUri) throws MqttException {
+        return getConnectionStatus(serverUri);
+    }
+
+    private MqttAsyncClient register(String serverUri, ConnectionParams connectionParams) throws MqttException {
+
+        CacheKey key = new CacheKey(serverUri, connectionParams);
+        String clientId;
+        if (connectionParams == null || connectionParams.hasGeneratedId()) {
             clientId = MqttAsyncClient.generateClientId();
+        }
+        else{
+            clientId = connectionParams.getFixedId();
+        }
+        MqttConnectOptions connectOptions;
+        if(connectionParams == null){
+            connectOptions = getDefaultConnectOptions();
+        }
+        else{
+            connectOptions = new MqttConnectOptions();
+            if(connectionParams.hasCredentials()) {
+                connectOptions.setUserName(connectionParams.getLogin());
+                connectOptions.setPassword(connectionParams.getPassword().toCharArray());
+            }
         }
         MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId);
         IMqttToken token = newClient.connect(connectOptions);

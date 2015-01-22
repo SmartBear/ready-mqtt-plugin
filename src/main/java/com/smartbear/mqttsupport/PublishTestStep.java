@@ -23,6 +23,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.opensaml.xml.encryption.OriginatorKeyInfo;
 import org.xmlsoap.schemas.wsdl.soap.THeader;
 
@@ -31,15 +32,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.")
-public class PublishTestStep extends WsdlTestStepWithProperties {
+public class PublishTestStep extends MqttConnectedTestStep {
 
-    private final static String SERVER_URI_PROP_NAME = "ServerURI";
 
-    private String serverUri;
-    private boolean useFixedClientId;
-    private String fixedClientId;
+
     private int timeout;
     private int qos;
+    private String topic;
 
     private static boolean actionGroupAdded = false;
 
@@ -49,49 +48,27 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
             SoapUI.getActionRegistry().addActionGroup(new PublishTestStepActionGroup());
             actionGroupAdded = true;
         }
-        if (config != null && config.getConfig() != null) {
-            readData(config);
-        }
-        addProperty(new TestStepBeanProperty(SERVER_URI_PROP_NAME, false, this, "serverUri", this));
     }
 
-    private void readData(TestStepConfig config) {
-        XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(config.getConfig());
-        serverUri = reader.readString(SERVER_URI_PROP_NAME, "");
-    }
-
-
-    private void updateData(TestStepConfig config) {
-        XmlObjectConfigurationBuilder builder = new XmlObjectConfigurationBuilder();
-        builder.add(SERVER_URI_PROP_NAME, serverUri);
-        if (config.getConfig() != null) {
-            config.setConfig(builder.finish());
-        }
-
-    }
-
-    private void updateData() {
-        updateData(getConfig());
-    }
 
     private boolean checkProperties(WsdlTestStepResult result) {
         boolean ok = true;
-        if (StringUtils.isNullOrEmpty(serverUri)) {
+        if (StringUtils.isNullOrEmpty(getServerUri())) {
             result.addMessage("The Server URI is not specified for the test step.");
             ok = false;
         } else {
             URI uri;
             try {
-                uri = new URI(serverUri);
+                uri = new URI(getServerUri());
             } catch (URISyntaxException e) {
                 result.addMessage("The string specified as Server URI is not a valid URI.");
                 ok = false;
             }
         }
-        if (useFixedClientId && StringUtils.isNullOrEmpty(fixedClientId)) {
-            result.addMessage("The Client ID is not specified in the test step properties.");
-            ok = false;
-        }
+//        if (useFixedClientId && StringUtils.isNullOrEmpty(fixedClientId)) {
+//            result.addMessage("The Client ID is not specified in the test step properties.");
+//            ok = false;
+//        }
         return ok;
     }
 
@@ -123,17 +100,12 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
 
     private MqttAsyncClient waitForMqttClient(TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long startTime) throws MqttException{
         ClientCache cache = getCache(testRunContext);
-        MqttAsyncClient result = cache.get(serverUri, useFixedClientId ? fixedClientId : null, true);
-        while(result == null){
-            if (!testRunner.isRunning() || (timeout != 0 && (System.nanoTime() - startTime) / 1000000 >= timeout)) {
-                if (testRunner.isRunning()) {
-                    testStepResult.addMessage("The test step's timeout has expired");
-                }
-                return null;
-            }
-            result = cache.get(serverUri, useFixedClientId ? fixedClientId : null, true);
+        if(waitForMqttOperation(cache.getConnectionStatus(getServerUri(), getConnectionParams()), testRunner, testStepResult, startTime)){
+            return cache.get(getServerUri(), getConnectionParams());
         }
-        return result;
+        else{
+            return null;
+        }
     }
 
     @Override
@@ -147,25 +119,15 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
                 if (!checkProperties(result)) {
                     return result;
                 }
-                String clientId;
-                if (useFixedClientId) {
-                    clientId = fixedClientId;
-                } else {
-                    clientId = MqttAsyncClient.generateClientId();
-                }
                 long starTime = System.nanoTime();
-                MqttAsyncClient client = new MqttAsyncClient(serverUri, clientId);
-                MqttConnectOptions connectionOptions = new MqttConnectOptions();
-                connectionOptions.setConnectionTimeout(timeout);
-                connectionOptions.setCleanSession(true); //???
+                MqttAsyncClient client = waitForMqttClient(testRunner, testRunContext, result, starTime);
+                if(client == null) return result;
 
-                if (!waitForMqttOperation(client.connect(connectionOptions), testRunner, result, starTime)) {
-                    return result;
-                }
-                //if(!waitForMqttOperation(client.publish(topic, ))) return result;
+                MqttMessage message = new MqttMessage();
+                if(!waitForMqttOperation(client.publish(topic, message), testRunner, result, starTime)) return result;
 
                 success = true;
-            } catch (Throwable e) {
+            } catch (MqttException e) {
                 result.setError(e);
             }
             return result;
@@ -181,43 +143,6 @@ public class PublishTestStep extends WsdlTestStepWithProperties {
         super.finish(testRunner, testRunContext);
     }
 
-    public String getServerUri() {
-        return serverUri;
-    }
-
-    public void setServerUri(String value) {
-//        String old = getServerUri();
-//        if(old == null && value == null) return;
-//        if(old.equals(value)) return;
-//        serverUri = value;
-//        updateData();
-//        notifyPropertyChanged("serverUri", old, value);
-//        firePropertyValueChanged(SERVER_URI_PROP_NAME, old, value);
-        setStringProperty("serverUri", SERVER_URI_PROP_NAME, value);
-    }
-
-    private void setStringProperty(String propName, String publishedPropName, String value) {
-        String old;
-        try {
-            Field field = getClass().getField(propName);
-            field.setAccessible(true);
-            old = (String) (field.get(this));
-
-            if (old == null && value == null) {
-                return;
-            }
-            if (old.equals(value)) {
-                return;
-            }
-            field.set(this, value);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
-        }
-        updateData();
-        notifyPropertyChanged(propName, old, value);
-        firePropertyValueChanged(publishedPropName, old, value);
-
-    }
 
 //    @Override
 //    public void onSuccess(IMqttToken asyncActionToken) {
