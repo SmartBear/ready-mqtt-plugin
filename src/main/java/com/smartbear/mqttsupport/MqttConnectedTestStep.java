@@ -13,10 +13,10 @@ import java.lang.reflect.Field;
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     private ConnectionParams connectionParams = new ConnectionParams();
     private String serverUri;
-    private final static String SERVER_URI_PROP_NAME = "ServerURI";
-    private final static String CLIENT_ID_PROP_NAME = "ClientID";
-    private final static String LOGIN_PROP_NAME = "Login";
-    private final static String PASSWORD_PROP_NAME = "Password";
+    final static String SERVER_URI_PROP_NAME = "ServerURI";
+    final static String CLIENT_ID_PROP_NAME = "ClientID";
+    final static String LOGIN_PROP_NAME = "Login";
+    final static String PASSWORD_PROP_NAME = "Password";
 private String fileName;
     public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest){
         super(testCase, config, hasEditor, forLoadTest);
