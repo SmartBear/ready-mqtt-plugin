@@ -5,6 +5,7 @@ import com.eviware.soapui.impl.wsdl.WsdlTestSuite;
 import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
+import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.PropertyComponent;
 import com.eviware.soapui.support.components.SimpleBindingForm;
@@ -114,13 +115,8 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                 XFormDialog dialog = ADialogBuilder.buildDialog(SelectSourceTestStepForm.class);
                 final XFormOptionsField caseCombo = (XFormOptionsField)dialog.getFormField(SelectSourceTestStepForm.TEST_CASE);
                 final XFormOptionsField stepCombo = (XFormOptionsField)dialog.getFormField(SelectSourceTestStepForm.TEST_STEP);
-                final XFormField serverField = dialog.getFormField(SelectSourceTestStepForm.SERVER);
-                final XFormField clientIdField = dialog.getFormField(SelectSourceTestStepForm.CLIENT_ID);
-                final XFormField loginField = dialog.getFormField(SelectSourceTestStepForm.LOGIN);
+                final XFormField infoField = dialog.getFormField(SelectSourceTestStepForm.STEP_INFO);
                 final XFormField propertyExpansionsCheckBox = dialog.getFormField(SelectSourceTestStepForm.USE_PROPERTY_EXPANSIONS);
-                serverField.setEnabled(false);
-                clientIdField.setEnabled(false);
-                loginField.setEnabled(false);
 
                 XFormFieldListener caseComboListener = new XFormFieldListener() {
                     @Override
@@ -143,23 +139,25 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                 };
                 caseCombo.addFormFieldListener(caseComboListener);
 
-                stepCombo.addFormFieldListener(new XFormFieldListener() {
+                XFormFieldListener stepComboListener = new XFormFieldListener() {
                     @Override
                     public void valueChanged(XFormField sourceField, String newValue, String oldValue) {
                         Object[] selectedSteps = stepCombo.getSelectedOptions();
                         if(selectedSteps == null || selectedSteps.length == 0){
-                            serverField.setValue(null);
-                            clientIdField.setValue(null);
-                            loginField.setValue(null);
+                            infoField.setValue(null);
                         }
                         else{
                             StepComboItem item = (StepComboItem) stepCombo.getSelectedOptions()[0];
-                            serverField.setValue(item.testStep.getServerUri());
-                            clientIdField.setValue(item.testStep.getConnectionParams().hasGeneratedId() ? "{generated}" : item.testStep.getConnectionParams().getFixedId());
-                            loginField.setValue(item.testStep.getConnectionParams().hasCredentials() ? item.testStep.getConnectionParams().getLogin() : "{Doesn\'t use authentication}");
+                            infoField.setValue(String.format(
+                                    "MQTT server URI: %s\nClient ID: %s\nLogin: %s",
+                                    StringUtils.isNullOrEmpty(item.testStep.getServerUri()) ? "{not specified yet}": item.testStep.getServerUri(),
+                                    item.testStep.getConnectionParams().hasGeneratedId() ? "{generated}" : item.testStep.getConnectionParams().getFixedId(),
+                                    item.testStep.getConnectionParams().hasCredentials() ? item.testStep.getConnectionParams().getLogin() : "{Doesn\'t use authentication}"
+                            ));
                         }
                     }
-                });
+                };
+                stepCombo.addFormFieldListener(stepComboListener);
                 stepCombo.addFormFieldValidator(new XFormFieldValidator() {
                     @Override
                     public ValidationMessage[] validateField(XFormField formField) {
@@ -177,6 +175,7 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                     if(item.testCase == getModelItem().getTestCase()) caseCombo.setSelectedOptions(new Object[]{item});
                 }
                 caseComboListener.valueChanged(caseCombo, caseCombo.getValue(), null);
+                stepComboListener.valueChanged(stepCombo, stepCombo.getValue(), null);
                 if(dialog.show()){
                     MqttConnectedTestStep selectedTestStep = ((StepComboItem) stepCombo.getSelectedOptions()[0]).testStep;
                     if(Boolean.parseBoolean(dialog.getFormField(SelectSourceTestStepForm.USE_PROPERTY_EXPANSIONS).getValue())){

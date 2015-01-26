@@ -13,15 +13,9 @@ public interface SelectSourceTestStepForm {
     @AField(name = "Test step", description = "Test step which will be used as a source of connection parameters.", type = AField.AFieldType.COMBOBOX)
     public final static String TEST_STEP = "Test step";
 
-    @AField(name = "Test step's MQTT server", description = "MQTT server of the selected test step (for information only)", type = AField.AFieldType.STRING)
-    public final static String SERVER = "Test step's MQTT server";
+    @AField(name = "Test step's connection", description = "MQTT server and connection parameters of the selected test step (for information only)", type = AField.AFieldType.INFORMATION)
+    public final static String STEP_INFO = "Test step's connection";
 
-    @AField(name = "Test step's client ID", description = "Client ID of the selected test step (for information only)", type = AField.AFieldType.STRING)
-    public final static String CLIENT_ID = "Test step's client ID";
-
-    @AField(name = "Test step's login", description = "Login used for MQTT connection of the selected test step (for information only)", type = AField.AFieldType.STRING)
-    public final static String LOGIN = "Test step's login";
-
-    @AField(name = "Use property expansions", description = "Insert property expansion expressions instead of property values", type = AField.AFieldType.BOOLEAN)
+    @AField(name = "Use property expansions", description = "Insert property expansion instead of property values", type = AField.AFieldType.BOOLEAN)
     public final static String USE_PROPERTY_EXPANSIONS = "Use property expansions";
 }
