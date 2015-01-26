@@ -46,13 +46,11 @@ private String fileName;
     protected void updateData(TestStepConfig config) {
         XmlObjectConfigurationBuilder builder = new XmlObjectConfigurationBuilder();
         writeData(builder);
-        if (config.getConfig() != null) {
-            config.setConfig(builder.finish());
-        }
-
+        config.setConfig(builder.finish());
     }
 
     protected void updateData() {
+        if(getConfig() == null) return;
         updateData(getConfig());
     }
 
@@ -94,18 +92,27 @@ private String fileName;
     protected void setStringProperty(String propName, String publishedPropName, String value) {
         String old;
         try {
-            Field field = getClass().getField(propName);
+            Field field = null;
+            Class curClass = getClass();
+            while (field == null && curClass != null){
+                try {
+                    field = curClass.getDeclaredField(propName);
+                } catch (NoSuchFieldException e) {
+                    curClass = curClass.getSuperclass();
+                }
+            }
+            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
             field.setAccessible(true);
             old = (String) (field.get(this));
 
             if (old == null && value == null) {
                 return;
             }
-            if (old.equals(value)) {
+            if (Utils.areStringsEqual(old, value)) {
                 return;
             }
             field.set(this, value);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
         }
         updateData();
@@ -117,17 +124,14 @@ private String fileName;
     protected void setStringConnectionProperty(String propName, String publishedPropName, String value) {
         String old;
         try {
-            Field field = ConnectionParams.class.getField(propName);
+            Field field = ConnectionParams.class.getDeclaredField(propName);
             field.setAccessible(true);
             old = (String) (field.get(connectionParams));
 
-            if (old == null && value == null) {
+            if (Utils.areStringsEqual(old, value)) {
                 return;
             }
-            if (old.equals(value)) {
-                return;
-            }
-            field.set(this, value);
+            field.set(connectionParams, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(String.format("Error during access to connectionParams.%s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
         }
