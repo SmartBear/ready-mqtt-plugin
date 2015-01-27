@@ -19,17 +19,37 @@ import com.eviware.x.form.XFormFieldValidator;
 import com.eviware.x.form.XFormOptionsField;
 import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
+import com.jgoodies.binding.adapter.Bindings;
 import org.junit.Test;
 
+import javax.naming.Binding;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep> {
+
+    private JTextField numberEdit;
+    private JTextArea textMemo;
+    private JTextField fileNameEdit;
+    private JButton chooseFileButton;
+
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
         buildUI();
@@ -98,7 +118,8 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
     }
 
     private void buildUI() {
-        SimpleBindingForm form = new SimpleBindingForm(new PresentationModel<PublishTestStep>(getModelItem()));
+        PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
+        SimpleBindingForm form = new SimpleBindingForm(pm);
         form.appendHeading("Connection to MQTT Server");
         form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
         form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
@@ -108,13 +129,13 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
             @Override
             public void actionPerformed(ActionEvent e) {
                 List<CaseComboItem> caseComboItems = formCaseList(getModelItem());
-                if(caseComboItems.size() == 0){
+                if (caseComboItems.size() == 0) {
                     UISupport.showErrorMessage("There are no other test steps which connect using MQTT in this project at this moment.");
                     return;
                 }
                 XFormDialog dialog = ADialogBuilder.buildDialog(SelectSourceTestStepForm.class);
-                final XFormOptionsField caseCombo = (XFormOptionsField)dialog.getFormField(SelectSourceTestStepForm.TEST_CASE);
-                final XFormOptionsField stepCombo = (XFormOptionsField)dialog.getFormField(SelectSourceTestStepForm.TEST_STEP);
+                final XFormOptionsField caseCombo = (XFormOptionsField) dialog.getFormField(SelectSourceTestStepForm.TEST_CASE);
+                final XFormOptionsField stepCombo = (XFormOptionsField) dialog.getFormField(SelectSourceTestStepForm.TEST_STEP);
                 final XFormField infoField = dialog.getFormField(SelectSourceTestStepForm.STEP_INFO);
                 final XFormField propertyExpansionsCheckBox = dialog.getFormField(SelectSourceTestStepForm.USE_PROPERTY_EXPANSIONS);
 
@@ -122,16 +143,15 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                     @Override
                     public void valueChanged(XFormField sourceField, String newValue, String oldValue) {
                         Object[] selectedCases = caseCombo.getSelectedOptions();
-                        if(selectedCases == null || selectedCases.length == 0){
+                        if (selectedCases == null || selectedCases.length == 0) {
                             stepCombo.setOptions(new Object[0]);
                             return;
                         }
                         TestCase selectedCase = ((CaseComboItem) selectedCases[0]).testCase;
                         stepCombo.setOptions(formStepList(selectedCase, getModelItem()).toArray());
-                        if(selectedCase == getModelItem().getTestCase()){
+                        if (selectedCase == getModelItem().getTestCase()) {
                             propertyExpansionsCheckBox.setEnabled(true);
-                        }
-                        else{
+                        } else {
                             propertyExpansionsCheckBox.setEnabled(false);
                             propertyExpansionsCheckBox.setValue("false");
                         }
@@ -143,14 +163,13 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                     @Override
                     public void valueChanged(XFormField sourceField, String newValue, String oldValue) {
                         Object[] selectedSteps = stepCombo.getSelectedOptions();
-                        if(selectedSteps == null || selectedSteps.length == 0){
+                        if (selectedSteps == null || selectedSteps.length == 0) {
                             infoField.setValue(null);
-                        }
-                        else{
+                        } else {
                             StepComboItem item = (StepComboItem) stepCombo.getSelectedOptions()[0];
                             infoField.setValue(String.format(
                                     "MQTT server URI: %s\nClient ID: %s\nLogin: %s",
-                                    StringUtils.isNullOrEmpty(item.testStep.getServerUri()) ? "{not specified yet}": item.testStep.getServerUri(),
+                                    StringUtils.isNullOrEmpty(item.testStep.getServerUri()) ? "{not specified yet}" : item.testStep.getServerUri(),
                                     item.testStep.getConnectionParams().hasGeneratedId() ? "{generated}" : item.testStep.getConnectionParams().getFixedId(),
                                     item.testStep.getConnectionParams().hasCredentials() ? item.testStep.getConnectionParams().getLogin() : "{Doesn\'t use authentication}"
                             ));
@@ -161,30 +180,28 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                 stepCombo.addFormFieldValidator(new XFormFieldValidator() {
                     @Override
                     public ValidationMessage[] validateField(XFormField formField) {
-                        if(stepCombo.getSelectedIndexes() == null || stepCombo.getSelectedIndexes().length == 0) {
+                        if (stepCombo.getSelectedIndexes() == null || stepCombo.getSelectedIndexes().length == 0) {
                             return new ValidationMessage[]{new ValidationMessage("Please select a test step as a connection source", stepCombo)};
-                        }
-                        else{
+                        } else {
                             return new ValidationMessage[0];
                         }
                     }
                 });
 
                 caseCombo.setOptions(caseComboItems.toArray());
-                for(CaseComboItem item: caseComboItems){
-                    if(item.testCase == getModelItem().getTestCase()) caseCombo.setSelectedOptions(new Object[]{item});
+                for (CaseComboItem item : caseComboItems) {
+                    if (item.testCase == getModelItem().getTestCase()) caseCombo.setSelectedOptions(new Object[]{item});
                 }
                 caseComboListener.valueChanged(caseCombo, caseCombo.getValue(), null);
                 stepComboListener.valueChanged(stepCombo, stepCombo.getValue(), null);
-                if(dialog.show()){
+                if (dialog.show()) {
                     MqttConnectedTestStep selectedTestStep = ((StepComboItem) stepCombo.getSelectedOptions()[0]).testStep;
-                    if(Boolean.parseBoolean(dialog.getFormField(SelectSourceTestStepForm.USE_PROPERTY_EXPANSIONS).getValue())){
+                    if (Boolean.parseBoolean(dialog.getFormField(SelectSourceTestStepForm.USE_PROPERTY_EXPANSIONS).getValue())) {
                         getModelItem().setServerUri(String.format("${%s#%s}", selectedTestStep.getName(), MqttConnectedTestStep.SERVER_URI_PROP_NAME));
                         getModelItem().setLogin(String.format("${%s#%s}", selectedTestStep.getName(), MqttConnectedTestStep.LOGIN_PROP_NAME));
                         getModelItem().setPassword(String.format("${%s#%s}", selectedTestStep.getName(), MqttConnectedTestStep.PASSWORD_PROP_NAME));
                         getModelItem().setClientId(String.format("${%s#%s}", selectedTestStep.getName(), MqttConnectedTestStep.CLIENT_ID_PROP_NAME));
-                    }
-                    else{
+                    } else {
                         getModelItem().setServerUri(selectedTestStep.getServerUri());
                         getModelItem().setLogin(selectedTestStep.getLogin());
                         getModelItem().setPassword(selectedTestStep.getPassword());
@@ -198,10 +215,74 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         form.appendHeading("Published Message");
         form.appendTextField("topic", "Topic", "Message Topic");
         form.appendComboBox("messageKind", "Message kind", PublishTestStep.MessageType.values(), "");
+        numberEdit = form.appendTextField("message", "Message", "The number which will be published.");
+        textMemo = form.appendTextArea("message", "Message", "The text which will be published.");
+        fileNameEdit = form.appendTextField("message", "File name", "The file which content will be used as payload");
+        chooseFileButton = form.addRightButton(new SelectFileAction());
+
+        form.appendSeparator();
+        form.appendHeading("Message Delivering Settings");
+        JPanel qosPanel = new JPanel();
+        qosPanel.setLayout(new BoxLayout(qosPanel, BoxLayout.X_AXIS));
+        JRadioButton qos0Radio = new JRadioButton("At most once (0)"), qos1Radio = new JRadioButton("At least once (1)"), qos2Radio = new JRadioButton("Exactly once (2)");
+        Bindings.bind(qos0Radio, pm.getModel("qos"), 0);
+        Bindings.bind(qos1Radio, pm.getModel("qos"), 1);
+        Bindings.bind(qos2Radio, pm.getModel("qos"), 2);
+        qosPanel.add(qos0Radio);
+        qosPanel.add(qos1Radio);
+        qosPanel.add(qos2Radio);
+        form.append("Quality of service", qosPanel);
+        form.appendCheckBox("retained", "Retained", "");
+        JSpinner timeoutSpinEdit = new JSpinner();
+        Bindings.bind(timeoutSpinEdit, "value", pm.getModel("timeout"));
+        form.append("Timeout", timeoutSpinEdit);
+
 
         add(new JScrollPane(form.getPanel()));
         setPreferredSize(new Dimension(500, 300));
+
+        propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));
     }
 
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        super.propertyChange(evt);
+
+        if (evt.getPropertyName().equals("messageKind")) {
+            PublishTestStep.MessageType newMessageType = (PublishTestStep.MessageType)evt.getNewValue();
+            boolean isNumber = newMessageType == PublishTestStep.MessageType.DoubleValue || newMessageType == PublishTestStep.MessageType.FloatValue || newMessageType == PublishTestStep.MessageType.IntegerValue || newMessageType == PublishTestStep.MessageType.LongValue;
+            boolean isFile = newMessageType == PublishTestStep.MessageType.BinaryFile;
+            boolean isText = newMessageType == PublishTestStep.MessageType.Utf8Text || newMessageType == PublishTestStep.MessageType.Utf16Text;
+            numberEdit.setVisible(isNumber);
+            textMemo.setVisible(isText);
+            if(textMemo.getParent() instanceof JScrollPane) {
+                textMemo.getParent().setVisible(isText);
+            }
+            else if(textMemo.getParent().getParent() instanceof JScrollPane){
+                textMemo.getParent().getParent().setVisible(isText);
+            }
+            fileNameEdit.setVisible(isFile);
+            chooseFileButton.setVisible(isFile);
+        }
+    }
+
+    public class SelectFileAction extends AbstractAction {
+        private JFileChooser fileChooser;
+
+        public SelectFileAction() {
+            super("Browse...");
+        }
+
+        public void actionPerformed(ActionEvent arg0) {
+            if (fileChooser == null) {
+                fileChooser = new JFileChooser();
+            }
+
+            int returnVal = fileChooser.showOpenDialog(UISupport.getMainFrame());
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                fileNameEdit.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            }
+        }
+    }
 
 }

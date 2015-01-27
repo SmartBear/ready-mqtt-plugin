@@ -1,12 +1,9 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
-import com.eviware.soapui.config.AccessTokenPositionConfig;
 import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStep;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepWithProperties;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
@@ -14,34 +11,28 @@ import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
-import com.smartbear.ready.core.module.support.PrivateReadyApiModule;
-import org.apache.xmlbeans.XmlObject;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.opensaml.xml.encryption.OriginatorKeyInfo;
-import org.xmlsoap.schemas.wsdl.soap.THeader;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.")
 public class PublishTestStep extends MqttConnectedTestStep {
     private final static String MESSAGE_KIND_PROP_NAME = "MessageKind";
     private final static String TOPIC_PROP_NAME = "Topic";
+    private final static String MESSAGE_PROP_NAME = "Message";
+    private final static String QOS_PROP_NAME = "QoS";
+    private final static String RETAINED_PROP_NAME = "Retained";
+    private final static String TIMEOUT_PROP_NAME = "Timeout";
 
-    enum MessageType{Text("Text"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
+    enum MessageType{
+        Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
         private String name;
         private MessageType(String name){this.name = name;}
         @Override
@@ -58,14 +49,15 @@ public class PublishTestStep extends MqttConnectedTestStep {
             return null;
 
         }
-    };
+    }
 
-    private MessageType messageKind = MessageType.Text;
-    private String messageText;
+    private MessageType messageKind = MessageType.Utf8Text;
+    private String message;
     private String topic;
 
     private int timeout;
     private int qos;
+    private boolean retained;
 
     private static boolean actionGroupAdded = false;
 
@@ -76,8 +68,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
             actionGroupAdded = true;
         }
         if (config != null && config.getConfig() != null) {
-            readData(config);
+            XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(config.getConfig());
+            readData(reader);
         }
+
         addProperty(new DefaultTestStepProperty(MESSAGE_KIND_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty property) {
@@ -91,6 +85,8 @@ public class PublishTestStep extends MqttConnectedTestStep {
             }
         }, this));
         addProperty(new TestStepBeanProperty(TOPIC_PROP_NAME, false, this, "topic", this));
+        addProperty(new TestStepBeanProperty(MESSAGE_PROP_NAME, false, this, "message", this));
+
     }
 
 
@@ -167,6 +163,8 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 if(client == null) return result;
 
                 MqttMessage message = new MqttMessage();
+                message.setRetained(retained);
+                message.setQos(qos);
                 if(!waitForMqttOperation(client.publish(topic, message), testRunner, result, starTime)) return result;
 
                 success = true;
@@ -195,6 +193,27 @@ public class PublishTestStep extends MqttConnectedTestStep {
         updateData();
         notifyPropertyChanged("messageKind", old, newValue);
         firePropertyValueChanged(MESSAGE_KIND_PROP_NAME, old.toString(), newValue.toString());
+        String oldMessage = getMessage();
+        if(oldMessage == null) oldMessage = "";
+        try {
+            switch (messageKind) {
+                case IntegerValue:
+                    Integer.parseInt(oldMessage);
+                    break;
+                case LongValue:
+                    Long.parseLong(oldMessage);
+                    break;
+                case FloatValue:
+                    Float.parseFloat(oldMessage);
+                    break;
+                case DoubleValue:
+                    Double.parseDouble(oldMessage);
+                    break;
+            }
+        }
+        catch(NumberFormatException e){
+            setMessage("0");
+        }
     }
 
     public String getTopic(){
@@ -205,10 +224,18 @@ public class PublishTestStep extends MqttConnectedTestStep {
         setStringProperty("topic", TOPIC_PROP_NAME, newValue);
     }
 
-    private void readData(TestStepConfig config) {
-        XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(config.getConfig());
-        readData(reader);
-    }
+    public String getMessage(){return message;}
+
+    public void setMessage(String value){setStringProperty("message", MESSAGE_PROP_NAME, value);}
+
+    public int getQos(){return qos;}
+    public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}
+
+    public boolean getRetained(){return retained;}
+    public void setRetained(boolean value){setBooleanProperty("retained", RETAINED_PROP_NAME, value);}
+
+    public int getTimeout(){return timeout;}
+    public void setTimeout(int value){setIntProperty("timeout", TIMEOUT_PROP_NAME, value);}
 
     @Override
     protected void readData(XmlObjectConfigurationReader reader){
@@ -216,6 +243,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
         int messageKindNo = reader.readInt(MESSAGE_KIND_PROP_NAME, messageKind.ordinal());
         if(messageKindNo >= 0 && messageKindNo < MessageType.values().length) messageKind = MessageType.values()[messageKindNo];
         topic = reader.readString(TOPIC_PROP_NAME, "");
+        message = reader.readString(MESSAGE_PROP_NAME, "");
+        qos = reader.readInt(QOS_PROP_NAME, 0);
+        retained = reader.readBoolean(RETAINED_PROP_NAME, false);
+        timeout = reader.readInt(TIMEOUT_PROP_NAME, 30000);
     }
 
 
@@ -224,6 +255,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
         super.writeData(builder);
         if(messageKind != null) builder.add(MESSAGE_KIND_PROP_NAME, messageKind.ordinal());
         builder.add(TOPIC_PROP_NAME, topic);
+        builder.add(MESSAGE_PROP_NAME, message);
+        builder.add(QOS_PROP_NAME, qos);
+        builder.add(RETAINED_PROP_NAME, retained);
+        builder.add(TIMEOUT_PROP_NAME, timeout);
     }
 
 //    @Override

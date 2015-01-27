@@ -4,6 +4,7 @@ import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepWithProperties;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
+import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import org.apache.xmlbeans.XmlObject;
@@ -17,7 +18,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     final static String CLIENT_ID_PROP_NAME = "ClientID";
     final static String LOGIN_PROP_NAME = "Login";
     final static String PASSWORD_PROP_NAME = "Password";
-private String fileName;
+
     public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest){
         super(testCase, config, hasEditor, forLoadTest);
         addProperty(new TestStepBeanProperty(SERVER_URI_PROP_NAME, false, this, "serverUri", this));
@@ -137,7 +138,66 @@ private String fileName;
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
-        firePropertyValueChanged(publishedPropName, old, value);
+        if(StringUtils.hasContent(publishedPropName)) firePropertyValueChanged(publishedPropName, old, value);
+
+    }
+
+    protected void setIntProperty(String propName, String publishedPropName, int value, int minAllowed, int maxAllowed) {
+        if(value < minAllowed || value > maxAllowed) return;
+        setIntProperty(propName, publishedPropName, value);
+    }
+
+    protected void setIntProperty(String propName, String publishedPropName, int value) {
+        int old;
+        try {
+            Field field = null;
+            Class curClass = getClass();
+            while (field == null && curClass != null){
+                try {
+                    field = curClass.getDeclaredField(propName);
+                } catch (NoSuchFieldException e) {
+                    curClass = curClass.getSuperclass();
+                }
+            }
+            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            field.setAccessible(true);
+            old = (int) (field.get(this));
+
+            if (old == value) return;
+            field.set(this, value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+        }
+        updateData();
+        notifyPropertyChanged(propName, old, value);
+        if(StringUtils.hasContent(publishedPropName)) firePropertyValueChanged(publishedPropName, Integer.toString(old), Integer.toString(value));
+
+    }
+
+    protected void setBooleanProperty(String propName, String publishedPropName, boolean value) {
+        boolean old;
+        try {
+            Field field = null;
+            Class curClass = getClass();
+            while (field == null && curClass != null){
+                try {
+                    field = curClass.getDeclaredField(propName);
+                } catch (NoSuchFieldException e) {
+                    curClass = curClass.getSuperclass();
+                }
+            }
+            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            field.setAccessible(true);
+            old = (boolean) (field.get(this));
+
+            if (old == value) return;
+            field.set(this, value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+        }
+        updateData();
+        notifyPropertyChanged(propName, old, value);
+        if(StringUtils.hasContent(publishedPropName)) firePropertyValueChanged(publishedPropName, Boolean.toString(old), Boolean.toString(value));
 
     }
 
