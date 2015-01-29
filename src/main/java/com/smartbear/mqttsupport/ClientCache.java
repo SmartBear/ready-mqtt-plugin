@@ -62,7 +62,7 @@ public class ClientCache {
 
         @Override
         public boolean equals(Object arg) {
-            if (arg == null || !(arg instanceof ClientCache)) {
+            if (arg == null || !(arg instanceof CacheKey)) {
                 return false;
             }
             CacheKey compared = (CacheKey) arg;
@@ -72,7 +72,7 @@ public class ClientCache {
             if (connectionParams == null) {
                 return compared.getConnectionParams() == null;
             }
-            return connectionParams.equals(compared);
+            return connectionParams.equals(compared.getConnectionParams());
         }
     }
     private static class CacheValue{

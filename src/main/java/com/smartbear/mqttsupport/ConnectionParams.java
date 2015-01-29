@@ -18,7 +18,7 @@ public class ConnectionParams {
 
     public String getLogin(){return login;}
     public String getPassword(){return password;}
-    public boolean hasCredentials(){return "".equals(login);}
+    public boolean hasCredentials(){return login != null && !"".equals(login);}
     public void setCredentials(String login, String password){
         if(login == null || login.length() == 0){
             this.login = login;
@@ -40,7 +40,7 @@ public class ConnectionParams {
 //    }
 
     public String getKey(){
-        return String.format("%s\n%s\n%s", fixedId, login);
+        return String.format("%s\n%s", fixedId, login);
     }
 
     @Override

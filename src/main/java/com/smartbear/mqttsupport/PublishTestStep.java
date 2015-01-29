@@ -10,15 +10,22 @@ import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
+import com.eviware.soapui.security.boundary.IntegerBoundary;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
+import com.google.common.base.Charsets;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import javax.validation.Payload;
+import javax.xml.transform.Result;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -87,6 +94,26 @@ public class PublishTestStep extends MqttConnectedTestStep {
         addProperty(new TestStepBeanProperty(TOPIC_PROP_NAME, false, this, "topic", this));
         addProperty(new TestStepBeanProperty(MESSAGE_PROP_NAME, false, this, "message", this));
 
+        addProperty(new DefaultTestStepProperty(TIMEOUT_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler(){
+            @Override
+            public String getValue(DefaultTestStepProperty property) {
+                return Integer.toString(timeout);
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty property, String value) {
+                int newTimeout;
+                try{
+                    newTimeout = Integer.parseInt(value);
+                }
+                catch (NumberFormatException e){
+                    return;
+                }
+                setTimeout(newTimeout);
+            }
+
+        }, this));
+
     }
 
 
@@ -104,10 +131,19 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 ok = false;
             }
         }
-//        if (useFixedClientId && StringUtils.isNullOrEmpty(fixedClientId)) {
-//            result.addMessage("The Client ID is not specified in the test step properties.");
-//            ok = false;
-//        }
+        if(StringUtils.isNullOrEmpty(topic)){
+            result.addMessage("The topic of message is not specified");
+            ok = false;
+        }
+        if(messageKind == null){
+            result.addMessage("The message format is not specified.");
+            ok = false;
+        }
+        if(StringUtils.isNullOrEmpty(message) && (messageKind != MessageType.Utf16Text) && (messageKind != MessageType.Utf8Text)){
+            if(messageKind == MessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
+            ok = false;
+        }
+
         return ok;
     }
 
@@ -147,6 +183,102 @@ public class PublishTestStep extends MqttConnectedTestStep {
         }
     }
 
+    private byte[] formPayload(WsdlTestStepResult errorsStorage){
+        byte[] buf;
+        switch(messageKind){
+            case Utf8Text:
+                if(message == null) return new byte[0]; else return message.getBytes(Charsets.UTF_8);
+            case Utf16Text:
+                if(message == null) return new byte[0]; else return message.getBytes(Charsets.UTF_16);
+            case IntegerValue:
+                int iv;
+                try{
+                    iv = Integer.parseInt(message);
+                }
+                catch (NumberFormatException e){
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as an integer value.", message));
+                    return null;
+                }
+                buf = new byte[4];
+                for(int i = 0; i < 4; ++i){
+                    buf[i] = (byte)((iv >> ((3 - i) * 8)) & 0xff);
+                }
+                return buf;
+            case LongValue:
+                long lv;
+                try{
+                    lv = Long.parseLong(message);
+                }
+                catch (NumberFormatException e){
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a long value.", message));
+                    return null;
+                }
+                buf = new byte[8];
+                for(int i = 0; i < 8; ++i){
+                    buf[i] = (byte)((lv >> ((7 - i) * 8)) & 0xff);
+                }
+                return buf;
+            case DoubleValue :
+                buf = new byte[8];
+                double dv;
+                try{
+                    dv = Double.parseDouble(message);
+                }
+                catch(NumberFormatException e){
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a double value.", message));
+                    return null;
+                }
+                long rawD = Double.doubleToLongBits(dv);
+                for(int i = 0; i < 8; ++i){
+                    buf[i] = (byte)((rawD >> ((7 - i) * 8)) & 0xff);
+                }
+                return buf;
+
+            case FloatValue:
+                buf = new byte[4];
+                float fv;
+                try{
+                    fv = Float.parseFloat(message);
+                }
+                catch(NumberFormatException e){
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a float value.", message));
+                    return null;
+                }
+                int rawF = Float.floatToIntBits(fv);
+                for(int i = 0; i < 4; ++i){
+                    buf[i] = (byte)((rawF >> ((3 - i) * 8)) & 0xff);
+                }
+                return buf;
+            case BinaryFile:
+                File file = null;
+                try {
+                    file = new File(message);
+                    if (!file.isAbsolute()) {
+                        file = new File(new File(getProject().getPath()).getParent(), file.getPath());
+                    }
+                    if (!file.exists()) {
+                        errorsStorage.addMessage(String.format("Unable to find \"%s\" file which contains a published message", file.getPath()));
+                        return null;
+                    }
+                    int fileLen = (int) file.length();
+                    buf = new byte[fileLen];
+                    FileInputStream stream = new FileInputStream(file);
+                    stream.read(buf);
+                    return buf;
+                }
+                catch(RuntimeException | IOException e){
+                    errorsStorage.addMessage(String.format("Attempt of access to \"%s\" file with a published message has failed.", file.getPath()));
+                    errorsStorage.setError(e);
+                    return null;
+                }
+
+        }
+        errorsStorage.addMessage("The format of the published message is not specified or unknown."); //We won't be here
+        return null;
+
+    }
+
+
     @Override
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
@@ -159,12 +291,17 @@ public class PublishTestStep extends MqttConnectedTestStep {
                     return result;
                 }
                 long starTime = System.nanoTime();
+
+                byte[] payload = formPayload(result);
+                if(payload == null) return result;
+
                 MqttAsyncClient client = waitForMqttClient(testRunner, testRunContext, result, starTime);
                 if(client == null) return result;
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
+                message.setPayload(payload);
                 if(!waitForMqttOperation(client.publish(topic, message), testRunner, result, starTime)) return result;
 
                 success = true;
@@ -226,7 +363,22 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
     public String getMessage(){return message;}
 
-    public void setMessage(String value){setStringProperty("message", MESSAGE_PROP_NAME, value);}
+    public void setMessage(String value){
+        try {
+            switch (messageKind) {
+                case IntegerValue:
+                    Integer.parseInt(value);
+                    break;
+                case LongValue:
+                    Long.parseLong(value);
+                    break;
+            }
+        }
+        catch(NumberFormatException e){
+                return;
+        }
+        setStringProperty("message", MESSAGE_PROP_NAME, value);
+    }
 
     public int getQos(){return qos;}
     public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}

@@ -20,6 +20,9 @@ import com.eviware.x.form.XFormOptionsField;
 import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
+import com.jgoodies.binding.adapter.SpinnerToValueModelConnector;
+import com.smartbear.ready.core.module.support.PrivateReadyApiModule;
 import org.junit.Test;
 
 import javax.naming.Binding;
@@ -27,18 +30,25 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +59,9 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
     private JTextArea textMemo;
     private JTextField fileNameEdit;
     private JButton chooseFileButton;
+    private JPasswordField hiddenPasswordEdit;
+    private JTextField visiblePasswordEdit;
+    private char passwordChar;
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
@@ -123,8 +136,38 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         form.appendHeading("Connection to MQTT Server");
         form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
         form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
-        form.appendTextField("login", "Login (optional)", "Login to MQTT server. Fill this if the server requires authentication.");
-        form.appendPasswordField("password", "Password (optional)", "Password to MQTT server. Fill this if the server requires authentication.");
+        JTextField loginEdit = form.appendTextField("login", "Login (optional)", "Login to MQTT server. Fill this if the server requires authentication.");
+
+        final String PASSWORD_TOOLTIP = "Password to MQTT server. Fill this if the server requires authentication.";
+
+
+        final JPanel passwordPanel = new JPanel();
+        passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.X_AXIS));
+        final JPasswordField passwordEdit = new JPasswordField(loginEdit.getColumns());
+        passwordEdit.setToolTipText(PASSWORD_TOOLTIP);
+        passwordEdit.getAccessibleContext().setAccessibleDescription(PASSWORD_TOOLTIP);
+        Bindings.bind(passwordEdit, pm.getModel("password"));
+        passwordPanel.add(passwordEdit);
+        final JCheckBox hidePasswordCheckBox = new JCheckBox("Hide");
+        hidePasswordCheckBox.setSelected(true);
+        passwordPanel.add(hidePasswordCheckBox);
+        hidePasswordCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(hidePasswordCheckBox.isSelected()){
+                    passwordEdit.setEchoChar(passwordChar);
+                }
+                else{
+                    passwordChar = passwordEdit.getEchoChar();
+                    passwordEdit.setEchoChar('\0');
+                }
+            }
+        });
+
+
+        form.append("Password (optional)", passwordPanel);
+        //form.appendPasswordField("password", "Password (optional)", "Password to MQTT server. Fill this if the server requires authentication.");
+
         form.addButtonWithoutLabelToTheRight("Use Connection of Another Test Step...", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -233,10 +276,12 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         qosPanel.add(qos2Radio);
         form.append("Quality of service", qosPanel);
         form.appendCheckBox("retained", "Retained", "");
-        JSpinner timeoutSpinEdit = new JSpinner();
-        Bindings.bind(timeoutSpinEdit, "value", pm.getModel("timeout"));
-        form.append("Timeout", timeoutSpinEdit);
 
+        JPanel timeoutPanel = new JPanel();
+        timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
+        timeoutPanel.add(Utils.createBoundSpinEdit(pm, "timeout", 0, 1000 * 1000, 1000));
+        timeoutPanel.add(new JLabel(" ms"));
+        form.append("Timeout", timeoutPanel);
 
         add(new JScrollPane(form.getPanel()));
         setPreferredSize(new Dimension(500, 300));
@@ -280,6 +325,9 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
 
             int returnVal = fileChooser.showOpenDialog(UISupport.getMainFrame());
             if (returnVal == JFileChooser.APPROVE_OPTION) {
+//                String projectDir = new File(getModelItem().getProject().getPath()).getParent();
+//                File selectedFile = new File(projectDir, fileChooser.getSelectedFile().getAbsolutePath());
+//                fileNameEdit.setText(selectedFile.getPath());
                 fileNameEdit.setText(fileChooser.getSelectedFile().getAbsolutePath());
             }
         }
