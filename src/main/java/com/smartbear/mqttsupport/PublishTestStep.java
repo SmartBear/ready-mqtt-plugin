@@ -4,6 +4,9 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
@@ -136,86 +139,51 @@ public class PublishTestStep extends MqttConnectedTestStep {
     }
 
 
-    private boolean checkProperties(WsdlTestStepResult result) {
+    private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
-        if (StringUtils.isNullOrEmpty(getServerUri())) {
+        if (StringUtils.isNullOrEmpty(serverUri)) {
             result.addMessage("The Server URI is not specified for the test step.");
             ok = false;
         } else {
             URI uri;
             try {
-                uri = new URI(getServerUri());
+                uri = new URI(serverUri);
             } catch (URISyntaxException e) {
                 result.addMessage("The string specified as Server URI is not a valid URI.");
                 ok = false;
             }
         }
-        if(StringUtils.isNullOrEmpty(topic)){
+        if(StringUtils.isNullOrEmpty(topicToCheck)){
             result.addMessage("The topic of message is not specified");
             ok = false;
         }
-        if(messageKind == null){
+        if(messageTypeToCheck == null){
             result.addMessage("The message format is not specified.");
             ok = false;
         }
-        if(StringUtils.isNullOrEmpty(message) && (messageKind != MessageType.Utf16Text) && (messageKind != MessageType.Utf8Text)){
-            if(messageKind == MessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
+        if(StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != MessageType.Utf16Text) && (messageTypeToCheck != MessageType.Utf8Text)){
+            if(messageTypeToCheck == MessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
             ok = false;
         }
 
         return ok;
     }
 
-    private boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long startTime) {
-        while (!token.isComplete() && token.getException() == null) {
-            if (!testRunner.isRunning() || (timeout != 0 && (System.nanoTime() - startTime) / 1000000 >= timeout)) {
-                if (testRunner.isRunning()) {
-                    testStepResult.addMessage("The test step's timeout has expired");
-                }
-                return false;
-            }
-        }
-        if (token.getException() != null) {
-            testStepResult.setError(token.getException());
-            return false;
-        }
-        return true;
-    }
 
-    private ClientCache getCache(TestCaseRunContext testRunContext){
-        final String CLIENT_CACHE_PROPNAME = "client_cache";
-        ClientCache cache = (ClientCache)(testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
-        if(cache == null){
-            cache = new ClientCache();
-            testRunContext.setProperty(CLIENT_CACHE_PROPNAME, cache);
-        }
-        return cache;
-    }
-
-    private MqttAsyncClient waitForMqttClient(TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long startTime) throws MqttException{
-        ClientCache cache = getCache(testRunContext);
-        if(waitForMqttOperation(cache.getConnectionStatus(getServerUri(), getConnectionParams()), testRunner, testStepResult, startTime)){
-            return cache.get(getServerUri(), getConnectionParams());
-        }
-        else{
-            return null;
-        }
-    }
-
-    private byte[] formPayload(WsdlTestStepResult errorsStorage){
+    private byte[] formPayload(WsdlTestStepResult errorsStorage, MessageType messageType, String msg){
         byte[] buf;
-        switch(messageKind){
+        switch(messageType){
             case Utf8Text:
-                if(message == null) return new byte[0]; else return message.getBytes(Charsets.UTF_8);
+                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_8);
             case Utf16Text:
-                if(message == null) return new byte[0]; else return message.getBytes(Charsets.UTF_16);
+                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_16);
             case IntegerValue:
                 int iv;
                 try{
-                    iv = Integer.parseInt(message);
+                    iv = Integer.parseInt(msg);
                 }
                 catch (NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as an integer value.", message));
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as an integer value.", msg));
                     return null;
                 }
                 buf = new byte[4];
@@ -226,10 +194,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
             case LongValue:
                 long lv;
                 try{
-                    lv = Long.parseLong(message);
+                    lv = Long.parseLong(msg);
                 }
                 catch (NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a long value.", message));
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a long value.", msg));
                     return null;
                 }
                 buf = new byte[8];
@@ -241,10 +209,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 buf = new byte[8];
                 double dv;
                 try{
-                    dv = Double.parseDouble(message);
+                    dv = Double.parseDouble(msg);
                 }
                 catch(NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a double value.", message));
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a double value.", msg));
                     return null;
                 }
                 long rawD = Double.doubleToLongBits(dv);
@@ -257,10 +225,10 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 buf = new byte[4];
                 float fv;
                 try{
-                    fv = Float.parseFloat(message);
+                    fv = Float.parseFloat(msg);
                 }
                 catch(NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a float value.", message));
+                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a float value.", msg));
                     return null;
                 }
                 int rawF = Float.floatToIntBits(fv);
@@ -271,7 +239,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
             case BinaryFile:
                 File file = null;
                 try {
-                    file = new File(message);
+                    file = new File(msg);
                     if (!file.isAbsolute()) {
                         file = new File(new File(getProject().getPath()).getParent(), file.getPath());
                     }
@@ -306,22 +274,27 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
         try {
             try {
-                if (!checkProperties(result)) {
+                String expandedUri = testRunContext.expand(getServerUri());
+                String expandedMessage = testRunContext.expand(message);
+                String expandedTopic = testRunContext.expand(topic);
+
+                if (!checkProperties(result, expandedUri, expandedTopic, messageKind, expandedMessage)) {
                     return result;
                 }
                 long starTime = System.nanoTime();
+                long maxTime = timeout == 0 ? Long.MAX_VALUE : starTime + (long)timeout * 1000 * 1000;
 
-                byte[] payload = formPayload(result);
+                byte[] payload = formPayload(result, messageKind, expandedMessage);
                 if(payload == null) return result;
 
-                MqttAsyncClient client = waitForMqttClient(testRunner, testRunContext, result, starTime);
+                MqttAsyncClient client = waitForMqttClient(testRunner, testRunContext, result, maxTime);
                 if(client == null) return result;
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
                 message.setPayload(payload);
-                if(!waitForMqttOperation(client.publish(topic, message), testRunner, result, starTime)) return result;
+                if(!waitForMqttOperation(client.publish(expandedTopic, message), testRunner, result, maxTime)) return result;
 
                 success = true;
             } catch (MqttException e) {

@@ -213,8 +213,8 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
                             infoField.setValue(String.format(
                                     "MQTT server URI: %s\nClient ID: %s\nLogin: %s",
                                     StringUtils.isNullOrEmpty(item.testStep.getServerUri()) ? "{not specified yet}" : item.testStep.getServerUri(),
-                                    item.testStep.getConnectionParams().hasGeneratedId() ? "{generated}" : item.testStep.getConnectionParams().getFixedId(),
-                                    item.testStep.getConnectionParams().hasCredentials() ? item.testStep.getConnectionParams().getLogin() : "{Doesn\'t use authentication}"
+                                    Utils.areStringsEqual(item.testStep.getClientId(), "", false, true) ? "{generated}" : item.testStep.getClientId(),
+                                    Utils.areStringsEqual(item.testStep.getLogin(), "", false, true) ? "{Doesn\'t use authentication}" : item.testStep.getLogin()
                             ));
                         }
                     }
