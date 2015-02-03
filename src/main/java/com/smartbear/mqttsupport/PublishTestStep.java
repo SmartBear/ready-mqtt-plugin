@@ -114,6 +114,25 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
         }, this));
 
+        addProperty(new DefaultTestStepProperty(QOS_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty property) {
+                return Integer.toString(qos);
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty property, String value) {
+                int newQos;
+                try{
+                    newQos = Integer.parseInt(value);
+                }
+                catch (NumberFormatException e){
+                    return;
+                }
+                setQos(newQos);
+            }
+        }, this));
+
     }
 
 
