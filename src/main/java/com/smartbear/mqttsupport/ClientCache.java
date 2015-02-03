@@ -6,6 +6,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttToken;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -132,7 +133,7 @@ public class ClientCache {
                 connectOptions.setPassword(connectionParams.getPassword().toCharArray());
             }
         }
-        MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId);
+        MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId, new MemoryPersistence());
         IMqttToken token = newClient.connect(connectOptions);
         map.put(key, new CacheValue(newClient, token));
         return newClient;
@@ -148,7 +149,7 @@ public class ClientCache {
     public void assureFinalized() {
         for (CacheValue info : map.values()) {
             try {
-                info.client.disconnect();
+                if(info.client.isConnected()) info.client.disconnect();
             } catch (MqttException e) {
             }
         }
