@@ -9,7 +9,7 @@ import com.eviware.soapui.ui.desktop.DesktopPanel;
 @PluginPanelBuilder(targetModelItem = PublishTestStep.class)
 public class PublishTestStepPanelBuilder extends EmptyPanelBuilder<PublishTestStep> {
 
-    @Override
+        @Override
     public DesktopPanel buildDesktopPanel(PublishTestStep testStep) {
         return new PublishTestStepPanel(testStep);
     }

@@ -6,11 +6,9 @@ import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.components.PropertyComponent;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.eviware.x.form.ValidationMessage;
-import com.eviware.x.form.XForm;
 import com.eviware.x.form.XFormDialog;
 import com.eviware.x.form.XFormField;
 import com.eviware.x.form.XFormFieldListener;
@@ -20,43 +18,19 @@ import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 
-import javax.naming.Binding;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep> {
-
-    private JTextField numberEdit;
-    private JTextArea textMemo;
-    private JTextField fileNameEdit;
-    private JButton chooseFileButton;
-    private JPasswordField hiddenPasswordEdit;
-    private JTextField visiblePasswordEdit;
-    private char passwordChar;
-
-    public PublishTestStepPanel(PublishTestStep modelItem) {
-        super(modelItem);
-        buildUI();
-    }
-
+public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep> {
 
     private static class CaseComboItem{
         public TestCase testCase;
@@ -82,6 +56,12 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         public String toString(){
             return testStep.getName();
         }
+    }
+
+    private char passwordChar;
+
+    public MqttConnectedTestStepPanel(MqttTestStep modelItem) {
+        super(modelItem);
     }
 
     private ArrayList<CaseComboItem> formCaseList(TestStep excludedTestStep){
@@ -119,9 +99,7 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         return result;
     }
 
-    private void buildUI() {
-        PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
-        SimpleBindingForm form = new SimpleBindingForm(pm);
+    protected void buildConnectionSection(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm) {
         form.appendHeading("Connection to MQTT Server");
         form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
         form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
@@ -243,17 +221,9 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
 
             }
         });
-        form.appendSeparator();
-        form.appendHeading("Published Message");
-        form.appendTextField("topic", "Topic", "Message Topic");
-        form.appendComboBox("messageKind", "Message kind", PublishTestStep.MessageType.values(), "");
-        numberEdit = form.appendTextField("message", "Message", "The number which will be published.");
-        textMemo = form.appendTextArea("message", "Message", "The text which will be published.");
-        fileNameEdit = form.appendTextField("message", "File name", "The file which content will be used as payload");
-        chooseFileButton = form.addRightButton(new SelectFileAction());
+    }
 
-        form.appendSeparator();
-        form.appendHeading("Message Delivering Settings");
+    protected void buildQosRadioButtons(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm){
         JPanel qosPanel = new JPanel();
         qosPanel.setLayout(new BoxLayout(qosPanel, BoxLayout.X_AXIS));
         JRadioButton qos0Radio = new JRadioButton("At most once (0)"), qos1Radio = new JRadioButton("At least once (1)"), qos2Radio = new JRadioButton("Exactly once (2)");
@@ -264,62 +234,7 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         qosPanel.add(qos1Radio);
         qosPanel.add(qos2Radio);
         form.append("Quality of service", qosPanel);
-        form.appendCheckBox("retained", "Retained", "");
 
-        JPanel timeoutPanel = new JPanel();
-        timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
-        timeoutPanel.add(Utils.createBoundSpinEdit(pm, "timeout", 0, 1000 * 1000, 1000));
-        timeoutPanel.add(new JLabel(" ms"));
-        form.append("Timeout", timeoutPanel);
-
-        add(new JScrollPane(form.getPanel()));
-        setPreferredSize(new Dimension(500, 300));
-
-        propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));
-    }
-
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        super.propertyChange(evt);
-
-        if (evt.getPropertyName().equals("messageKind")) {
-            PublishTestStep.MessageType newMessageType = (PublishTestStep.MessageType)evt.getNewValue();
-            boolean isNumber = newMessageType == PublishTestStep.MessageType.DoubleValue || newMessageType == PublishTestStep.MessageType.FloatValue || newMessageType == PublishTestStep.MessageType.IntegerValue || newMessageType == PublishTestStep.MessageType.LongValue;
-            boolean isFile = newMessageType == PublishTestStep.MessageType.BinaryFile;
-            boolean isText = newMessageType == PublishTestStep.MessageType.Utf8Text || newMessageType == PublishTestStep.MessageType.Utf16Text;
-            numberEdit.setVisible(isNumber);
-            textMemo.setVisible(isText);
-            if(textMemo.getParent() instanceof JScrollPane) {
-                textMemo.getParent().setVisible(isText);
-            }
-            else if(textMemo.getParent().getParent() instanceof JScrollPane){
-                textMemo.getParent().getParent().setVisible(isText);
-            }
-            fileNameEdit.setVisible(isFile);
-            chooseFileButton.setVisible(isFile);
-        }
-    }
-
-    public class SelectFileAction extends AbstractAction {
-        private JFileChooser fileChooser;
-
-        public SelectFileAction() {
-            super("Browse...");
-        }
-
-        public void actionPerformed(ActionEvent arg0) {
-            if (fileChooser == null) {
-                fileChooser = new JFileChooser();
-            }
-
-            int returnVal = fileChooser.showOpenDialog(UISupport.getMainFrame());
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-//                String projectDir = new File(getModelItem().getProject().getPath()).getParent();
-//                File selectedFile = new File(projectDir, fileChooser.getSelectedFile().getAbsolutePath());
-//                fileNameEdit.setText(selectedFile.getPath());
-                fileNameEdit.setText(fileChooser.getSelectedFile().getAbsolutePath());
-            }
-        }
     }
 
 }
