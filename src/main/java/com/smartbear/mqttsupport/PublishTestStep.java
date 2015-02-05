@@ -294,7 +294,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 message.setRetained(retained);
                 message.setQos(qos);
                 message.setPayload(payload);
-                if(!waitForMqttOperation(client.publish(expandedTopic, message), testRunner, result, maxTime)) return result;
+                if(!waitForMqttOperation(client.publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
 
                 success = true;
             } catch (MqttException e) {

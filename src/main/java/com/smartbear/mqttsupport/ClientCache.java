@@ -105,7 +105,13 @@ public class ClientCache {
     }
 
     public IMqttToken getConnectionStatus(String serverUri, ConnectionParams connectionParams) throws MqttException{
-        return getInfo(serverUri, connectionParams).connectionToken;
+        CacheValue info = getInfo(serverUri, connectionParams);
+        if(!info.client.isConnected()){
+            if(info.connectionToken == null || (info.connectionToken.isComplete() && info.connectionToken.getException() == null)){
+                info.connectionToken = info.client.connect(createConnectionOptions(connectionParams));
+            }
+        }
+        return info.connectionToken;
     }
 
     public IMqttToken getConnectionStatus(String serverUri) throws MqttException {
@@ -122,23 +128,29 @@ public class ClientCache {
         else{
             clientId = connectionParams.getFixedId();
         }
+
+        MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId, new MemoryPersistence());
+
+        //IMqttToken token = newClient.connect(createConnectionOptions(connectionParams));
+        map.put(key, new CacheValue(newClient, null));
+        return newClient;
+
+    }
+
+    private MqttConnectOptions createConnectionOptions(ConnectionParams connectionParams) {
         MqttConnectOptions connectOptions;
-        if(connectionParams == null){
+        if (connectionParams == null) {
             connectOptions = getDefaultConnectOptions();
-        }
-        else{
+        } else {
             connectOptions = new MqttConnectOptions();
-            if(connectionParams.hasCredentials()) {
+            if (connectionParams.hasCredentials()) {
                 connectOptions.setUserName(connectionParams.getLogin());
                 connectOptions.setPassword(connectionParams.getPassword().toCharArray());
             }
         }
-        MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId, new MemoryPersistence());
-        IMqttToken token = newClient.connect(connectOptions);
-        map.put(key, new CacheValue(newClient, token));
-        return newClient;
-
+        return connectOptions;
     }
+
 
     private MqttConnectOptions getDefaultConnectOptions() {
         MqttConnectOptions options = new MqttConnectOptions();

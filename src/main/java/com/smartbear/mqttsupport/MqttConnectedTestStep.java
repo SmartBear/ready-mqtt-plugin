@@ -216,7 +216,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
 
     }
 
-    protected boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long maxTime) {
+    protected boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
         while (!token.isComplete() && token.getException() == null) {
             if (!testRunner.isRunning() || (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime)) {
                 if (testRunner.isRunning()) {
@@ -226,6 +226,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
             }
         }
         if (token.getException() != null) {
+            testStepResult.addMessage(errorText);
             testStepResult.setError(token.getException());
             return false;
         }
@@ -244,7 +245,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
 
     protected MqttAsyncClient waitForMqttClient(TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
         ClientCache cache = getCache(testRunContext);
-        if(waitForMqttOperation(cache.getConnectionStatus(testRunContext.expand(getServerUri()), getConnectionParams(testRunContext)), testRunner, testStepResult, maxTime)){
+        if(waitForMqttOperation(cache.getConnectionStatus(testRunContext.expand(getServerUri()), getConnectionParams(testRunContext)), testRunner, testStepResult, maxTime, "Unable connect to the MQTT broker.")){
             return cache.get(testRunContext.expand(getServerUri()), getConnectionParams(testRunContext));
         }
         else{
