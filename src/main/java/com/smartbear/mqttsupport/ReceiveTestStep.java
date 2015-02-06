@@ -18,15 +18,17 @@ import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
+
 import java.util.List;
 import java.util.Map;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.")
 public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable {
 
-    public enum UnexpectedTopicBehavior{
+    public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
         Ignore("Ignore unexpected messages"), Fail("Fail");
         private String title;
+        @Override
         public String getTitle(){return title;}
         UnexpectedTopicBehavior(String title){
             this.title = title;
@@ -42,13 +44,15 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         }
     }
 
-    enum MessageType{
+    enum MessageType {
         Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryData("Raw binary data"), IntegerNumber("Integer number"), FloatNumber("Float number");
-        private String name;
-        private MessageType(String name){this.name = name;}
+        private String title;
+
         @Override
-        public String toString(){
-            return name;
+        public String toString(){return title;}
+
+        MessageType(String title){
+            this.title = title;
         }
         public static MessageType fromString(String s){
             if(s == null) return null;
@@ -64,6 +68,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private final static String QOS_PROP_NAME = "QoS";
     private final static String LISTENED_TOPICS_PROP_NAME = "ListenedTopics";
+    private final static String EXPECTED_MESSAGE_TYPE_PROP_NAME = "ExpectedMessageType";
+    private final static String ON_UNEXPECTED_TOPIC_PROP_NAME = "OnUnexpectedTopic";
 
     private static boolean actionGroupAdded = false;
 
@@ -105,10 +111,21 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     @Override
-    protected void readData(XmlObjectConfigurationReader reader){
+    protected void readData(XmlObjectConfigurationReader reader) {
         super.readData(reader);
         listenedTopics = reader.readString(LISTENED_TOPICS_PROP_NAME, "");
         qos = reader.readInt(QOS_PROP_NAME, 0);
+        try {
+            expectedMessageType = MessageType.valueOf(reader.readString(EXPECTED_MESSAGE_TYPE_PROP_NAME, MessageType.Utf8Text.toString()));
+        } catch (IllegalArgumentException | NullPointerException e){
+            expectedMessageType = MessageType.Utf8Text;
+        }
+        try{
+            onUnexpectedTopic = UnexpectedTopicBehavior.valueOf(reader.readString(ON_UNEXPECTED_TOPIC_PROP_NAME, UnexpectedTopicBehavior.Ignore.toString()));
+        }
+        catch (IllegalArgumentException | NullPointerException e){
+            onUnexpectedTopic = UnexpectedTopicBehavior.Ignore;
+        }
 
     }
 
@@ -118,14 +135,35 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         super.writeData(builder);
         builder.add(LISTENED_TOPICS_PROP_NAME, listenedTopics);
         builder.add(QOS_PROP_NAME, qos);
+        builder.add(EXPECTED_MESSAGE_TYPE_PROP_NAME, expectedMessageType.toString());
+        builder.add(ON_UNEXPECTED_TOPIC_PROP_NAME, onUnexpectedTopic.toString());
     }
 
     public int getQos(){return qos;}
     public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}
 
     public String getListenedTopics(){return listenedTopics;}
-    public void setListenedTopicsPropName(String topics){
-        setStringProperty("listenedTopics", LISTENED_TOPICS_PROP_NAME, listenedTopics);
+    public void setListenedTopics(String newValue){
+        setStringProperty("listenedTopics", LISTENED_TOPICS_PROP_NAME, newValue);
+    }
+
+    public UnexpectedTopicBehavior getOnUnexpectedTopic(){
+        return onUnexpectedTopic;
+    }
+
+    public void setOnUnexpectedTopic(UnexpectedTopicBehavior value){
+        setProperty("onUnexpectedTopic", null, value);
+    }
+
+    public MessageType getExpectedMessageType(){return expectedMessageType;}
+    public void setExpectedMessageType(MessageType value){
+        setProperty("expectedMessageType", null, value);
+//        if(expectedMessageType == value) return;
+//        MessageType old = expectedMessageType;
+//        expectedMessageType = value;
+//        updateData();
+//        notifyPropertyChanged("expectedMessageType", old, value);
+//        //firePropertyValueChanged(MESSAGE_TYPE_PROP_NAME, old.toString(), value.toString());
     }
 
     @Override

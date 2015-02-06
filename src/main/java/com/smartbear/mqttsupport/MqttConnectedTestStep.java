@@ -19,6 +19,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.lang.reflect.Field;
 
+
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     //private ConnectionParams connectionParams = new ConnectionParams();
     private String serverUri;
@@ -28,6 +29,8 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     final static String CLIENT_ID_PROP_NAME = "ClientID";
     final static String LOGIN_PROP_NAME = "Login";
     final static String PASSWORD_PROP_NAME = "Password";
+
+
 
     public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest){
         super(testCase, config, hasEditor, forLoadTest);
@@ -136,6 +139,39 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         firePropertyValueChanged(publishedPropName, old, value);
 
     }
+
+    protected void setProperty(String propName, String publishedPropName, Object value) {
+        Object old;
+        try {
+            Field field = null;
+            Class curClass = getClass();
+            while (field == null && curClass != null){
+                try {
+                    field = curClass.getDeclaredField(propName);
+                } catch (NoSuchFieldException e) {
+                    curClass = curClass.getSuperclass();
+                }
+            }
+            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            field.setAccessible(true);
+            old = field.get(this);
+
+            if (value == null) {
+                if(old == null) return;
+            }
+            else{
+                if(value.equals(old)) return;
+            }
+            field.set(this, value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+        }
+        updateData();
+        notifyPropertyChanged(propName, old, value);
+        if(publishedPropName != null) firePropertyValueChanged(publishedPropName, old == null ? null : old.toString(), value == null ? null : value.toString());
+
+    }
+
 
 //    protected void setStringConnectionProperty(String propName, String publishedPropName, String value) {
 //        String old;

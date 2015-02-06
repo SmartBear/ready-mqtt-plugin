@@ -23,7 +23,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,6 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep> {
+
+    public interface UIOption{
+        String getTitle();
+    }
 
     private static class CaseComboItem{
         public TestCase testCase;
@@ -236,5 +239,20 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         form.append("Quality of service", qosPanel);
 
     }
+
+
+    protected void buildRadioButtonsFromEnum(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label, String propertyName, Class propertyType) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+
+        for(Object option : propertyType.getEnumConstants()){
+            UIOption uiOption = (UIOption) option;
+            JRadioButton radioButton = new JRadioButton(uiOption.getTitle());
+            Bindings.bind(radioButton, pm.getModel(propertyName), option);
+            panel.add(radioButton);
+        }
+        form.append(label, panel);
+    }
+
 
 }
