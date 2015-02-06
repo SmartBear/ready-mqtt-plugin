@@ -52,9 +52,10 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         form.appendSeparator();
         form.appendHeading("Listening settings");
         form.appendTextArea("listenedTopics", "Listened topics", "The list of topic filters (one filter per line)");
-        buildQosRadioButtons(form, pm);
         buildRadioButtonsFromEnum(form, pm, "On unexpected topic", "onUnexpectedTopic", ReceiveTestStep.UnexpectedTopicBehavior.class);
+        buildQosRadioButtons(form, pm);
         form.appendComboBox("expectedMessageType", "Expected message type", ReceiveTestStep.MessageType.values(), "Expected type of a received message");
+        buildTimeoutSpinEdit(form, pm, "Timeout");
         return new JScrollPane(form.getPanel());
     }
     private AssertionsPanel buildAssertionsPanel(){

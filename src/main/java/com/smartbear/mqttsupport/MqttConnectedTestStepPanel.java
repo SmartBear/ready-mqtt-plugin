@@ -17,9 +17,12 @@ import com.eviware.x.form.XFormOptionsField;
 import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import com.jgoodies.binding.list.SelectionInList;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
@@ -252,6 +255,18 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             panel.add(radioButton);
         }
         form.append(label, panel);
+    }
+
+    protected void buildTimeoutSpinEdit(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label){
+        JPanel timeoutPanel = new JPanel();
+        timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
+        timeoutPanel.add(Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1));
+        JComboBox measureCombo = new JComboBox();
+        Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
+        timeoutPanel.add(measureCombo);
+        timeoutPanel.add(new JLabel(" (0 - forever)"));
+        form.append(label, timeoutPanel);
+
     }
 
 

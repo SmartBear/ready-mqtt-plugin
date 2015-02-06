@@ -108,6 +108,26 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 setQos(newQos);
             }
         }, this));
+        addProperty(new DefaultTestStepProperty(TIMEOUT_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler(){
+            @Override
+            public String getValue(DefaultTestStepProperty property) {
+                return Integer.toString(getTimeout());
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty property, String value) {
+                int newTimeout;
+                try{
+                    newTimeout = Integer.parseInt(value);
+                }
+                catch (NumberFormatException e){
+                    return;
+                }
+                setTimeout(newTimeout);
+            }
+
+        }, this));
+
     }
 
     @Override
@@ -144,7 +164,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     public String getListenedTopics(){return listenedTopics;}
     public void setListenedTopics(String newValue){
-        setStringProperty("listenedTopics", LISTENED_TOPICS_PROP_NAME, newValue);
+        setProperty("listenedTopics", LISTENED_TOPICS_PROP_NAME, newValue);
     }
 
     public UnexpectedTopicBehavior getOnUnexpectedTopic(){

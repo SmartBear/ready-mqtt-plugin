@@ -39,7 +39,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private final static String MESSAGE_PROP_NAME = "Message";
     private final static String QOS_PROP_NAME = "QoS";
     private final static String RETAINED_PROP_NAME = "Retained";
-    private final static String TIMEOUT_PROP_NAME = "Timeout";
 
     enum MessageType{
         Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
@@ -65,7 +64,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private String message;
     private String topic;
 
-    private int timeout;
     private int qos;
     private boolean retained;
 
@@ -100,7 +98,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
         addProperty(new DefaultTestStepProperty(TIMEOUT_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler(){
             @Override
             public String getValue(DefaultTestStepProperty property) {
-                return Integer.toString(timeout);
+                return Integer.toString(getTimeout());
             }
 
             @Override
@@ -116,7 +114,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
             }
 
         }, this));
-
         addProperty(new DefaultTestStepProperty(QOS_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty property) {
@@ -282,7 +279,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
                     return result;
                 }
                 long starTime = System.nanoTime();
-                long maxTime = timeout == 0 ? Long.MAX_VALUE : starTime + (long)timeout * 1000 * 1000;
+                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long)getTimeout() * 1000 * 1000;
 
                 byte[] payload = formPayload(result, messageKind, expandedMessage);
                 if(payload == null) return result;
@@ -350,7 +347,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
     }
 
     public void setTopic(String newValue){
-        setStringProperty("topic", TOPIC_PROP_NAME, newValue);
+        setProperty("topic", TOPIC_PROP_NAME, newValue);
     }
 
     public String getMessage(){return message;}
@@ -369,7 +366,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
         catch(NumberFormatException e){
                 return;
         }
-        setStringProperty("message", MESSAGE_PROP_NAME, value);
+        setProperty("message", MESSAGE_PROP_NAME, value);
     }
 
     public int getQos(){return qos;}
@@ -377,9 +374,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
     public boolean getRetained(){return retained;}
     public void setRetained(boolean value){setBooleanProperty("retained", RETAINED_PROP_NAME, value);}
-
-    public int getTimeout(){return timeout;}
-    public void setTimeout(int value){setIntProperty("timeout", TIMEOUT_PROP_NAME, value);}
 
     @Override
     protected void readData(XmlObjectConfigurationReader reader){
@@ -390,7 +384,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
         message = reader.readString(MESSAGE_PROP_NAME, "");
         qos = reader.readInt(QOS_PROP_NAME, 0);
         retained = reader.readBoolean(RETAINED_PROP_NAME, false);
-        timeout = reader.readInt(TIMEOUT_PROP_NAME, 30000);
     }
 
 
@@ -402,7 +395,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
         builder.add(MESSAGE_PROP_NAME, message);
         builder.add(QOS_PROP_NAME, qos);
         builder.add(RETAINED_PROP_NAME, retained);
-        builder.add(TIMEOUT_PROP_NAME, timeout);
     }
 
 //    @Override
