@@ -40,8 +40,8 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         public String toString(){return title;}
     }
 
-    private int timeout;
-    private TimeMeasure timeoutMeasure;
+    private int timeout = 30000;
+    private TimeMeasure timeoutMeasure = TimeMeasure.Seconds;
 
 
     public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest){
@@ -167,7 +167,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         TimeMeasure oldValue = timeoutMeasure;
         if(oldValue == newValue) return;
         int oldShownTimeout = getShownTimeout();
-        newValue = oldValue;
+        timeoutMeasure = newValue;
         notifyPropertyChanged("timeoutMeasure", oldValue, newValue);
         if(newValue == TimeMeasure.Milliseconds){
             setIntProperty("timeout", TIMEOUT_PROP_NAME, oldShownTimeout, 0, Integer.MAX_VALUE);

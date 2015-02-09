@@ -261,7 +261,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JPanel timeoutPanel = new JPanel();
         timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
         timeoutPanel.add(Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1));
-        JComboBox measureCombo = new JComboBox();
+        JComboBox measureCombo = new JComboBox(MqttConnectedTestStep.TimeMeasure.values());
         Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
         timeoutPanel.add(measureCombo);
         timeoutPanel.add(new JLabel(" (0 - forever)"));

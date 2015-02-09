@@ -75,8 +75,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private String listenedTopics;
     private int qos;
-    private UnexpectedTopicBehavior onUnexpectedTopic;
-    private MessageType expectedMessageType;
+    private UnexpectedTopicBehavior onUnexpectedTopic = UnexpectedTopicBehavior.Ignore;
+    private MessageType expectedMessageType = MessageType.Utf8Text;
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
