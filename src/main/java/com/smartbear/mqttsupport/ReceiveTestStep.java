@@ -255,7 +255,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 if(requiredSubscriptions.length > 0) {
                     if(!client.isConnected()) {
                         ++connectAttemptCount;
-                        if(!waitForMqttConnection(actualBrokerUri, actualConnectionParams, testRunner, testRunContext, result, maxTime)) return result;
+                        if(!waitForMqttConnection(client, testRunner, result, maxTime)) return result;
                         activeSubscriptions = client.getCachedSubscriptions();
                         requiredSubscriptions = diffOfStringSets(neededTopics, activeSubscriptions);
                     }
@@ -289,7 +289,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                     else{
                         if(!client.isConnected() && connectAttemptCount == 0){
-                            if(!waitForMqttConnection(actualBrokerUri, actualConnectionParams, testRunner, testRunContext, result, maxTime)) return result;
+                            if(!waitForMqttConnection(client, testRunner, result, maxTime)) return result;
                             ++connectAttemptCount;
                         }
                     }

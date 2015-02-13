@@ -285,14 +285,14 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 byte[] payload = formPayload(result, messageKind, expandedMessage);
                 if(payload == null) return result;
 
-                if(!waitForMqttConnection(expandedUri, connectParams, testRunner, testRunContext, result, maxTime)) return result;
-                MqttAsyncClient client = getCache(testRunContext).get(expandedUri, connectParams).getClientObject();
+                Client client = getCache(testRunContext).get(expandedUri, connectParams);
+                if(!waitForMqttConnection(client, testRunner, result, maxTime)) return result;
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
                 message.setPayload(payload);
-                if(!waitForMqttOperation(client.publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
+                if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
 
                 success = true;
             } catch (MqttException e) {
