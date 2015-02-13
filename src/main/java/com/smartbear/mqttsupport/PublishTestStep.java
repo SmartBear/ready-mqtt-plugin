@@ -272,6 +272,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
         try {
             try {
                 String expandedUri = testRunContext.expand(getServerUri());
+                ConnectionParams connectParams = getConnectionParams(testRunContext);
                 String expandedMessage = testRunContext.expand(message);
                 String expandedTopic = testRunContext.expand(topic);
 
@@ -284,8 +285,8 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 byte[] payload = formPayload(result, messageKind, expandedMessage);
                 if(payload == null) return result;
 
-                MqttAsyncClient client = waitForMqttClient(testRunner, testRunContext, result, maxTime);
-                if(client == null) return result;
+                if(!waitForMqttConnection(expandedUri, connectParams, testRunner, testRunContext, result, maxTime)) return result;
+                MqttAsyncClient client = getCache(testRunContext).get(expandedUri, connectParams).getClientObject();
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);

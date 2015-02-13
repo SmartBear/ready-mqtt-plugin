@@ -74,7 +74,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
             builder.add(PASSWORD_PROP_NAME, getPassword());
         }
         builder.add(TIMEOUT_PROP_NAME, timeout);
-        builder.add(TIMEOUT_MEASURE_PROP_NAME, timeoutMeasure.toString());
+        builder.add(TIMEOUT_MEASURE_PROP_NAME, timeoutMeasure.name());
     }
 
     protected void updateData(TestStepConfig config) {
@@ -335,14 +335,9 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         return cache;
     }
 
-    protected MqttAsyncClient waitForMqttClient(TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
+    protected boolean waitForMqttConnection(String serverUri, ConnectionParams connectionParams, TestCaseRunner testRunner, TestCaseRunContext testRunContext, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
         ClientCache cache = getCache(testRunContext);
-        if(waitForMqttOperation(cache.getConnectionStatus(testRunContext.expand(getServerUri()), getConnectionParams(testRunContext)), testRunner, testStepResult, maxTime, "Unable connect to the MQTT broker.")){
-            return cache.get(testRunContext.expand(getServerUri()), getConnectionParams(testRunContext));
-        }
-        else{
-            return null;
-        }
+        return waitForMqttOperation(cache.get(serverUri, connectionParams).getConnectingStatus(), testRunner, testStepResult, maxTime, "Unable connect to the MQTT broker.");
     }
 
 }

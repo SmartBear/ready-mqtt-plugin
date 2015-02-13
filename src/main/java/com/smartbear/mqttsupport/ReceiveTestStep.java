@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.assertions.TestAssertionRegistry;
 import com.eviware.soapui.model.iface.Interface;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
@@ -15,10 +16,20 @@ import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
+import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
+import org.apache.bcel.generic.RETURN;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 
+
+import javax.xml.transform.Result;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +37,7 @@ import java.util.Map;
 public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable {
 
     public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
-        Ignore("Ignore unexpected messages"), Fail("Fail");
+        Discard("Discard unexpected messages"), Ignore("Ignore (defer) unexpected messages"), Fail("Fail");
         private String title;
         @Override
         public String getTitle(){return title;}
@@ -155,8 +166,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         super.writeData(builder);
         builder.add(LISTENED_TOPICS_PROP_NAME, listenedTopics);
         builder.add(QOS_PROP_NAME, qos);
-        builder.add(EXPECTED_MESSAGE_TYPE_PROP_NAME, expectedMessageType.toString());
-        builder.add(ON_UNEXPECTED_TOPIC_PROP_NAME, onUnexpectedTopic.toString());
+        builder.add(EXPECTED_MESSAGE_TYPE_PROP_NAME, expectedMessageType.name());
+        builder.add(ON_UNEXPECTED_TOPIC_PROP_NAME, onUnexpectedTopic.name());
     }
 
     public int getQos(){return qos;}
@@ -186,9 +197,123 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 //        //firePropertyValueChanged(MESSAGE_TYPE_PROP_NAME, old.toString(), value.toString());
     }
 
+    private boolean topicCorrespondsFilters(String topic, String[] filters){
+        return false;
+    }
+
+    private boolean storeMessage(Client.Message message){
+        return false;
+    }
+
+
+    private String[] diffOfStringSets(String[] minuend, ArrayList<String> subtrahend){
+        ArrayList<String> resultList = new ArrayList<String>();
+        for(String s: minuend){
+            boolean presentsEverywhere = false;
+            for(String s2: subtrahend) {
+                if (Utils.areStringsEqual(s, s2)) {
+                    presentsEverywhere = true;
+                    break;
+                }
+            }
+            if(!presentsEverywhere) resultList.add(s);
+        }
+        String[] result = new String[resultList.size()];
+        resultList.toArray(result);
+        return result;
+    }
+
     @Override
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        return null;
+        WsdlTestStepResult result = new WsdlTestStepResult(this);
+        result.startTimer();
+        boolean success = false;
+
+        try {
+            try {
+                String actualBrokerUri = testRunContext.expand(getServerUri());
+                ConnectionParams actualConnectionParams =  getConnectionParams(testRunContext);
+                Client client = getCache(testRunContext).get(actualBrokerUri, actualConnectionParams);
+
+                String[] neededTopics = listenedTopics.split("[\\r\\n]+");
+                if(neededTopics == null || neededTopics.length == 0){
+                    result.addMessage("The specified listened topic list is empty.");
+                    return result;
+                }
+
+                for(int i = 0; i < neededTopics.length; ++i){
+                    neededTopics[i] = testRunContext.expand(neededTopics[i].trim());
+                }
+
+                long starTime = System.nanoTime();
+                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long)getTimeout() * 1000 * 1000;
+
+                int connectAttemptCount = 0;
+                MqttAsyncClient clientObj = client.getClientObject();
+                ArrayList<String> activeSubscriptions = client.getCachedSubscriptions();
+                String[] requiredSubscriptions = diffOfStringSets(neededTopics, activeSubscriptions);
+                if(requiredSubscriptions.length > 0) {
+                    if(!client.isConnected()) {
+                        ++connectAttemptCount;
+                        if(!waitForMqttConnection(actualBrokerUri, actualConnectionParams, testRunner, testRunContext, result, maxTime)) return result;
+                        activeSubscriptions = client.getCachedSubscriptions();
+                        requiredSubscriptions = diffOfStringSets(neededTopics, activeSubscriptions);
+                    }
+                    int[] qosArray = new int[requiredSubscriptions.length];
+                    Arrays.fill(qosArray, qos);
+                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), testRunner, result, maxTime, "Attempt to subscribe on the specified topics failed.")) {
+                        return result;
+                    }
+                }
+
+                Client.Message suitableMsg = null;
+                MessageQueue messageQueue = client.getMessageQueue();
+                messageQueue.setCurrentMessageToHead();
+                while (System.nanoTime() <= maxTime && testRunner.isRunning()){
+                    Client.Message msg = messageQueue.getMessage();
+                    if(msg != null){
+                        if(topicCorrespondsFilters(msg.topic, neededTopics)){
+                            suitableMsg = msg;
+                            messageQueue.removeCurrentMessage();
+                            break;
+                        }
+                        switch(onUnexpectedTopic){
+                            case Fail:
+                                result.addMessage(String.format("\"%s\" topic of the received message does not correspond to any filter", msg.topic));
+                                return result;
+                            case Discard:
+                                messageQueue.removeCurrentMessage();
+                                messageQueue.setCurrentMessageToHead();
+                                break;
+                        }
+                    }
+                    else{
+                        if(!client.isConnected() && connectAttemptCount == 0){
+                            if(!waitForMqttConnection(actualBrokerUri, actualConnectionParams, testRunner, testRunContext, result, maxTime)) return result;
+                            ++connectAttemptCount;
+                        }
+                    }
+                }
+                if(!testRunner.isRunning()){
+                    return result;
+                }
+                if(suitableMsg == null) {
+                    result.addMessage("The test step's timeout has expired");
+                    return result;
+                }
+                else{
+                    if (!storeMessage(suitableMsg)) return result;
+                }
+                success = true;
+            } catch (MqttException e) {
+                result.setError(e);
+            }
+            return result;
+        } finally {
+            result.stopTimer();
+            result.setStatus(success ? TestStepResult.TestStepStatus.OK : TestStepResult.TestStepStatus.FAILED);
+        }
+
     }
 
     @Override

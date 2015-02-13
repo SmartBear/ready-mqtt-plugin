@@ -3,14 +3,18 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.support.StringUtils;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttToken;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Locale;
 
 
@@ -76,46 +80,22 @@ public class ClientCache {
             return connectionParams.equals(compared.getConnectionParams());
         }
     }
-    private static class CacheValue{
-        MqttAsyncClient client;
-        IMqttToken connectionToken;
-        public CacheValue(MqttAsyncClient client, IMqttToken connectionToken){
-            this.client = client;
-            this.connectionToken = connectionToken;
-        }
-    }
 
 
-    private CacheValue getInfo(String serverUri, ConnectionParams connectionParams) throws MqttException {
+
+    public Client get(String serverUri, ConnectionParams connectionParams) throws MqttException {
         CacheKey key = new CacheKey(serverUri, connectionParams);
-        CacheValue info = map.get(key);
-        if(info == null){
+        Client result = map.get(key);
+        if(result == null){
             register(serverUri, connectionParams);
-            info = map.get(key);
+            result = map.get(key);
         }
-        return info;
+        return result;
     }
 
-    public MqttAsyncClient get(String serverUri, ConnectionParams connectionParams) throws MqttException{
-        return getInfo(serverUri, connectionParams).client;
-    }
 
-    public MqttAsyncClient get(String serverUri) throws MqttException {
-        return get(serverUri);
-    }
-
-    public IMqttToken getConnectionStatus(String serverUri, ConnectionParams connectionParams) throws MqttException{
-        CacheValue info = getInfo(serverUri, connectionParams);
-        if(!info.client.isConnected()){
-            if(info.connectionToken == null || (info.connectionToken.isComplete() && info.connectionToken.getException() == null)){
-                info.connectionToken = info.client.connect(createConnectionOptions(connectionParams));
-            }
-        }
-        return info.connectionToken;
-    }
-
-    public IMqttToken getConnectionStatus(String serverUri) throws MqttException {
-        return getConnectionStatus(serverUri);
+    public Client get(String serverUri) throws MqttException {
+        return get(serverUri, null);
     }
 
     private MqttAsyncClient register(String serverUri, ConnectionParams connectionParams) throws MqttException {
@@ -132,7 +112,7 @@ public class ClientCache {
         MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId, new MemoryPersistence());
 
         //IMqttToken token = newClient.connect(createConnectionOptions(connectionParams));
-        map.put(key, new CacheValue(newClient, null));
+        map.put(key, new Client(newClient, createConnectionOptions(connectionParams)));
         return newClient;
 
     }
@@ -159,15 +139,15 @@ public class ClientCache {
     }
 
     public void assureFinalized() {
-        for (CacheValue info : map.values()) {
+        for (Client client : map.values()) {
             try {
-                if(info.client.isConnected()) info.client.disconnect();
+                if(client.getClientObject().isConnected()) client.getClientObject().disconnect();
             } catch (MqttException e) {
             }
         }
         map.clear();
     }
 
-    private HashMap<CacheKey, CacheValue> map = new HashMap<>();
+    private HashMap<CacheKey, Client> map = new HashMap<>();
 
 }
