@@ -71,4 +71,22 @@ public class Client implements MqttCallback {
 
     public MessageQueue getMessageQueue(){return messageQueue;}
 
+    public void dispose(){
+            if(!connectionOptions.isCleanSession()){
+                ArrayList<String> topicList = subscribedTopics;
+                String[] topics = new String[topicList.size()];
+                topicList.toArray(topics);
+                if(getClientObject().isConnected()) {
+                    try{
+                        getClientObject().unsubscribe(topics);
+                    } catch (MqttException e) {
+                    }
+                }
+            }
+        try {
+            if(getClientObject().isConnected()) getClientObject().disconnect();
+        } catch (MqttException e) {
+        }
+
+    }
 }

@@ -339,4 +339,10 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         return waitForMqttOperation(client.getConnectingStatus(), testRunner, testStepResult, maxTime, "Unable connect to the MQTT broker.");
     }
 
+    @Override
+    public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
+        getCache(testRunContext).assureFinalized();
+        super.finish(testRunner, testRunContext);
+    }
+
 }

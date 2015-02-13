@@ -5,7 +5,6 @@ public class MessageQueue {
     private static class Node{
         public Client.Message data;
         public Node next = null;
-        public boolean removed = false;
     }
 
     private Node first = null, last = null, cur = null, prev = null;
@@ -45,7 +44,7 @@ public class MessageQueue {
                 prev = cur;
                 cur = cur.next;
             }
-            return cur.data;
+            if(cur == null) return null; else return cur.data;
         }
     }
 

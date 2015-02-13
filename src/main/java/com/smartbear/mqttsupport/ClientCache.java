@@ -140,10 +140,7 @@ public class ClientCache {
 
     public void assureFinalized() {
         for (Client client : map.values()) {
-            try {
-                if(client.getClientObject().isConnected()) client.getClientObject().disconnect();
-            } catch (MqttException e) {
-            }
+            client.dispose();
         }
         map.clear();
     }

@@ -173,7 +173,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
             case Utf8Text:
                 if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_8);
             case Utf16Text:
-                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_16);
+                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_16LE);
             case IntegerValue:
                 int iv;
                 try{
@@ -303,12 +303,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
             result.stopTimer();
             result.setStatus(success ? TestStepResult.TestStepStatus.OK : TestStepResult.TestStepStatus.FAILED);
         }
-    }
-
-    @Override
-    public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        getCache(testRunContext).assureFinalized();
-        super.finish(testRunner, testRunContext);
     }
 
 
