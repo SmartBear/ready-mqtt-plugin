@@ -245,11 +245,31 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         setProperty("receivedMessageTopic", RECEIVED_TOPIC_PROP_NAME, value);
     }
 
-    private boolean topicCorrespondsFilters(String topic, String[] filters) {
+    static boolean topicCorrespondsFilters(String topic, String[] filters) {
+        String[] topicParts = topic.split("/", -1);
         for (String filter : filters) {
-            if (Utils.areStringsEqual(topic, filter)) {
-                return true;
+            String[] filterParts = filter.split("/", -1);
+            int checkedLen = filterParts.length;
+            if("#".equals(filterParts[filterParts.length - 1])){
+                checkedLen = filterParts.length - 1;
+                if(checkedLen > topicParts.length) continue;
             }
+            else{
+                if(filterParts.length != topicParts.length) continue;
+            }
+            if(checkedLen == 0){
+                if(topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$') continue; else return true;
+            }
+            if(!Utils.areStringsEqual(filterParts[0], topicParts[0]) && (!"+".equals(filterParts[0]) || (topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$'))){
+                continue;
+            }
+            int partNo = 1;
+            for(; partNo < checkedLen; ++partNo){
+                if(!Utils.areStringsEqual(filterParts[partNo], topicParts[partNo]) && !"+".equals(filterParts[partNo])){
+                    break;
+                }
+            }
+            if(partNo == checkedLen) return true;
         }
         return false;
     }
