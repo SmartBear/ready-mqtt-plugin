@@ -32,6 +32,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -426,21 +427,22 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         boolean success = false;
-
+        setReceivedMessage(null);
+        setReceivedMessageTopic(null);
         try {
             try {
                 String actualBrokerUri = testRunContext.expand(getServerUri());
                 ConnectionParams actualConnectionParams = getConnectionParams(testRunContext);
                 Client client = getCache(testRunContext).get(actualBrokerUri, actualConnectionParams);
 
-                String[] neededTopics = listenedTopics.split("[\\r\\n]+");
+                String[] neededTopics = testRunContext.expand(listenedTopics).split("[\\r\\n]+");
                 if (neededTopics == null || neededTopics.length == 0) {
                     result.addMessage("The specified listened topic list is empty.");
                     return result;
                 }
 
                 for (int i = 0; i < neededTopics.length; ++i) {
-                    neededTopics[i] = testRunContext.expand(neededTopics[i].trim());
+                    neededTopics[i] = neededTopics[i].trim();
                 }
 
                 long starTime = System.nanoTime();
@@ -464,6 +466,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), testRunner, result, maxTime, "Attempt to subscribe on the specified topics failed.")) {
                         return result;
                     }
+                    Collections.addAll(activeSubscriptions, requiredSubscriptions);
                 }
 
                 Client.Message suitableMsg = null;
