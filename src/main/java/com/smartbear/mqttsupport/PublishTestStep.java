@@ -41,7 +41,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private final static String RETAINED_PROP_NAME = "Retained";
 
     enum MessageType{
-        Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
+        Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double"), Xml ("XML"), Json ("JSON");
         private String name;
         private MessageType(String name){this.name = name;}
         @Override

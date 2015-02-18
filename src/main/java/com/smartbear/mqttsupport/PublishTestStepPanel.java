@@ -1,16 +1,18 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.WsdlTestSuite;
+import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.components.PropertyComponent;
 import com.eviware.soapui.support.components.SimpleBindingForm;
+import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
+import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
+import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.eviware.x.form.ValidationMessage;
-import com.eviware.x.form.XForm;
 import com.eviware.x.form.XFormDialog;
 import com.eviware.x.form.XFormField;
 import com.eviware.x.form.XFormFieldListener;
@@ -20,9 +22,7 @@ import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 
-import javax.naming.Binding;
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -32,15 +32,21 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep> {
 
@@ -51,6 +57,10 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
     private JPasswordField hiddenPasswordEdit;
     private JTextField visiblePasswordEdit;
     private char passwordChar;
+    private JTabbedPane jsonEditor;
+    private JsonTreeEditor jsonTreeEditor;
+    private JTabbedPane xmlEditor;
+
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
@@ -83,6 +93,7 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
             return testStep.getName();
         }
     }
+
 
     private ArrayList<CaseComboItem> formCaseList(TestStep excludedTestStep){
         List<WsdlTestSuite> testSuites = getModelItem().getProject().getTestSuiteList();
@@ -252,6 +263,36 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         fileNameEdit = form.appendTextField("message", "File name", "The file which content will be used as payload");
         chooseFileButton = form.addRightButton(new SelectFileAction());
 
+        jsonEditor = new JTabbedPane();
+
+        RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
+        syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
+        syntaxTextArea.setColumns(form.getDefaultTextAreaColumns());
+        syntaxTextArea.setRows(form.getDefaultTextAreaRows());
+        jsonEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        jsonEditor.setPreferredSize(new Dimension(450, 350));
+        form.append("Message", jsonEditor);
+
+        jsonTreeEditor = new JsonTreeEditor(true, getModelItem());
+        JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
+        jsonEditor.addTab("Tree View", scrollPane);
+
+        xmlEditor = new JTabbedPane();
+        XmlObjectTree xmlTreeEditor = new XmlObjectTree(true, getModelItem());
+        xmlEditor.addTab("Outline (as Tree)", xmlTreeEditor);
+        syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
+        syntaxTextArea.setColumns(form.getDefaultTextAreaColumns());
+        syntaxTextArea.setRows(form.getDefaultTextAreaRows());
+        Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
+        xmlEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        xmlEditor.setPreferredSize(new Dimension(450, 350));
+        form.append("Message", xmlEditor);
+
+
         form.appendSeparator();
         form.appendHeading("Message Delivering Settings");
         JPanel qosPanel = new JPanel();
@@ -297,7 +338,15 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
             }
             fileNameEdit.setVisible(isFile);
             chooseFileButton.setVisible(isFile);
+            jsonEditor.setVisible(newMessageType == PublishTestStep.MessageType.Json);
+            xmlEditor.setVisible(newMessageType == PublishTestStep.MessageType.Xml);
         }
+    }
+
+    @Override
+    protected boolean release() {
+        jsonTreeEditor.release();
+        return super.release();
     }
 
     public class SelectFileAction extends AbstractAction {
@@ -322,4 +371,33 @@ public class PublishTestStepPanel extends ModelItemDesktopPanel<PublishTestStep>
         }
     }
 
+    public static class JsonTreeEditor extends JsonObjectTree{
+        private String prevValue = null;
+
+        public JsonTreeEditor(boolean editable, ModelItem modelItem){
+            super(editable, modelItem);
+        }
+
+        public void setText(String text){
+            setContent(text);
+            detectChange();
+        }
+
+        public String getText(){return getXml();}
+
+        @Override
+        protected void processFocusEvent(FocusEvent event){
+            super.processFocusEvent(event);
+            if(!event.isTemporary()) detectChange();
+        }
+
+        private void detectChange(){
+            String newValue = getText();
+            if(!Utils.areStringsEqual(prevValue, newValue)){
+                firePropertyChange("text", prevValue, newValue);
+                prevValue = newValue;
+            }
+        }
+
+    }
 }
