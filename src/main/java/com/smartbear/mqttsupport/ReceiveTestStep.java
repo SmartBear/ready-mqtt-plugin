@@ -1,26 +1,33 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
+import com.eviware.soapui.config.TestAssertionConfig;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.wsdl.support.assertions.AssertableConfig;
+import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
+import com.eviware.soapui.impl.wsdl.testcase.WsdlTestRunContext;
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlMessageAssertion;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.assertions.TestAssertionRegistry;
+import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.iface.Attachment;
 import com.eviware.soapui.model.iface.Interface;
+import com.eviware.soapui.model.iface.MessageExchange;
+import com.eviware.soapui.model.iface.Operation;
+import com.eviware.soapui.model.iface.Response;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
-import com.eviware.soapui.model.testsuite.Assertable;
-import com.eviware.soapui.model.testsuite.AssertionsListener;
-import com.eviware.soapui.model.testsuite.TestAssertion;
-import com.eviware.soapui.model.testsuite.TestCaseRunContext;
-import com.eviware.soapui.model.testsuite.TestCaseRunner;
-import com.eviware.soapui.model.testsuite.TestStep;
-import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.model.testsuite.*;
+import com.eviware.soapui.model.testsuite.AssertionError;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.types.StringToStringMap;
+import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
-
 import com.google.common.base.Charsets;
+import org.apache.xbean.finder.util.Classes;
+import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
@@ -33,7 +40,6 @@ import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -109,6 +115,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private String receivedMessage = null;
     private String receivedMessageTopic = null;
+    private AssertionsSupport assertionsSupport;
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -120,6 +127,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(config.getConfig());
             readData(reader);
         }
+        initAssertions();
 
         addProperty(new TestStepBeanProperty(LISTENED_TOPICS_PROP_NAME, false, this, "listenedTopics", this));
         addProperty(new DefaultTestStepProperty(QOS_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
@@ -162,6 +170,11 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         addProperty(new TestStepBeanProperty(RECEIVED_TOPIC_PROP_NAME, true, this, "receivedMessageTopic", this));
 
     }
+
+    private void initAssertions() {
+        assertionsSupport = new AssertionsSupport(this, new AssertableConfigImpl());
+    }
+
 
     @Override
     protected void readData(XmlObjectConfigurationReader reader) {
@@ -446,7 +459,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
-        boolean success = false;
+        result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
         try {
@@ -458,6 +471,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 String[] neededTopics = testRunContext.expand(listenedTopics).split("[\\r\\n]+");
                 if (neededTopics == null || neededTopics.length == 0) {
                     result.addMessage("The specified listened topic list is empty.");
+                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
 
@@ -503,6 +517,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         switch (onUnexpectedTopic) {
                             case Fail:
                                 result.addMessage(String.format("\"%s\" topic of the received message does not correspond to any filter", msg.topic));
+                                result.setStatus(TestStepResult.TestStepStatus.FAILED);
                                 return result;
                             case Discard:
                                 messageQueue.removeCurrentMessage();
@@ -518,97 +533,156 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         }
                     }
                 }
-                if (!testRunner.isRunning()) {
-                    return result;
-                }
                 if (suitableMsg == null) {
-                    result.addMessage("The test step's timeout has expired");
+                    if (!testRunner.isRunning()) {
+                        result.setStatus(TestStepResult.TestStepStatus.CANCELED);
+                    }
+                    else {
+                        result.addMessage("The test step's timeout has expired");
+                        result.setStatus(TestStepResult.TestStepStatus.FAILED);
+                    }
                     return result;
                 } else {
                     if (!storeMessage(suitableMsg, result)) {
+                        result.setStatus(TestStepResult.TestStepStatus.FAILED);
                         return result;
                     }
                 }
-                success = true;
+                for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
+                    applyAssertion(assertion);
+//                    if(assertion.getStatus() == AssertionStatus.FAILED)
+                    AssertionError[] errors = assertion.getErrors();
+                    if (errors != null) {
+                        for (AssertionError error : errors) {
+                            result.addMessage("[" + assertion.getName() + "] " + error.getMessage());
+                        }
+                    }
+                }
+                result.setStatus(getAssertionStatus() == AssertionStatus.FAILED ? TestStepResult.TestStepStatus.FAILED : TestStepResult.TestStepStatus.OK);
             } catch (MqttException e) {
                 result.setError(e);
             }
             return result;
         } finally {
             result.stopTimer();
-            result.setStatus(success ? TestStepResult.TestStepStatus.OK : TestStepResult.TestStepStatus.FAILED);
+        }
+
+    }
+
+
+    private void applyAssertion(WsdlMessageAssertion assertion){
+        assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
+    }
+
+    @Override
+    public TestAssertion addAssertion(String selection) {
+//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
+
+        try {
+            WsdlMessageAssertion assertion = assertionsSupport.addWsdlAssertion(selection);
+            if (assertion == null) {
+                return null;
+            }
+
+            if (receivedMessageTopic != null) {
+                applyAssertion(assertion);
+                //notifier.notifyChange();
+            }
+
+            return assertion;
+        } catch (Exception e) {
+            SoapUI.logError(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public void addAssertionsListener(AssertionsListener listener) {
+        assertionsSupport.addAssertionsListener(listener);
+    }
+
+    @Override
+    public int getAssertionCount() {
+        return assertionsSupport.getAssertionCount();
+    }
+
+    @Override
+    public TestAssertion getAssertionAt(int c) {
+        return assertionsSupport.getAssertionAt(c);
+    }
+
+    @Override
+    public void removeAssertionsListener(AssertionsListener listener) {
+        assertionsSupport.removeAssertionsListener(listener);
+    }
+
+    @Override
+    public void removeAssertion(TestAssertion assertion) {
+//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
+
+        try {
+            assertionsSupport.removeAssertion((WsdlMessageAssertion) assertion);
+
+        } finally {
+            ((WsdlMessageAssertion) assertion).release();
+  //          notifier.notifyChange();
         }
 
     }
 
     @Override
-    public TestAssertion addAssertion(String selection) {
-        return null;
-    }
-
-    @Override
-    public void addAssertionsListener(AssertionsListener listener) {
-
-    }
-
-    @Override
-    public int getAssertionCount() {
-        return 0;
-    }
-
-    @Override
-    public TestAssertion getAssertionAt(int c) {
-        return null;
-    }
-
-    @Override
-    public void removeAssertionsListener(AssertionsListener listener) {
-
-    }
-
-    @Override
-    public void removeAssertion(TestAssertion assertion) {
-
-    }
-
-    @Override
     public AssertionStatus getAssertionStatus() {
-        return AssertionStatus.UNKNOWN;
+        if(receivedMessageTopic == null){
+            return AssertionStatus.FAILED;
+        }
+
+        int cnt = getAssertionCount();
+        if (cnt == 0) {
+            return AssertionStatus.UNKNOWN;
+        }
+
+        for (int c = 0; c < cnt; c++) {
+            if (getAssertionAt(c).getStatus() == AssertionStatus.FAILED) {
+                return AssertionStatus.FAILED;
+            }
+        }
+        return AssertionStatus.VALID;
     }
 
     @Override
     public String getAssertableContentAsXml() {
-        return null;
+        //XmlObject.Factory.parse(receivedMessage)
+        return getReceivedMessage();
     }
 
     @Override
     public String getAssertableContent() {
-        return null;
+        return getReceivedMessage();
     }
 
     @Override
     public String getDefaultAssertableContent() {
-        return null;
+        return "";
     }
 
     @Override
     public TestAssertionRegistry.AssertableType getAssertableType() {
-        return null;
+        return TestAssertionRegistry.AssertableType.BOTH;
     }
 
     @Override
     public List<TestAssertion> getAssertionList() {
-        return null;
+        return new ArrayList<TestAssertion>(assertionsSupport.getAssertionList());
     }
 
     @Override
     public TestAssertion getAssertionByName(String name) {
-        return null;
+        return assertionsSupport.getAssertionByName(name);
     }
 
     @Override
     public TestStep getTestStep() {
-        return null;
+        return this;
     }
 
     @Override
@@ -618,16 +692,181 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public TestAssertion cloneAssertion(TestAssertion source, String name) {
-        return null;
+        return assertionsSupport.cloneAssertion(source, name);
     }
 
     @Override
     public Map<String, TestAssertion> getAssertions() {
-        return null;
+        return assertionsSupport.getAssertions();
     }
 
     @Override
     public TestAssertion moveAssertion(int ix, int offset) {
-        return null;
+//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
+        WsdlMessageAssertion assertion = assertionsSupport.getAssertionAt(ix);
+        try {
+            return assertionsSupport.moveAssertion(ix, offset);
+        } finally {
+            ((WsdlMessageAssertion) assertion).release();
+  //          notifier.notifyChange();
+        }
+    }
+
+    private class AssertableConfigImpl implements AssertableConfig {
+
+        private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
+
+        public TestAssertionConfig addNewAssertion()
+        {
+            TestAssertionConfig newConfig = TestAssertionConfig.Factory.newInstance();
+            assertionConfigs.add(newConfig);
+            updateData();
+            return newConfig;
+        }
+
+        public List<TestAssertionConfig> getAssertionList() {
+            return assertionConfigs;
+        }
+
+        public void removeAssertion(int ix) {
+            assertionConfigs.remove(ix);
+            updateData();
+        }
+
+        public TestAssertionConfig insertAssertion(TestAssertionConfig source, int ix) {
+            TestAssertionConfig conf = TestAssertionConfig.Factory.newInstance();
+            conf.set(source);
+            assertionConfigs.add(ix, conf);
+            updateData();
+            return conf;
+        }
+    }
+
+    private class MessageExchangeImpl implements MessageExchange {
+
+        @Override
+        public Operation getOperation() {
+            return null;
+        }
+
+        @Override
+        public ModelItem getModelItem() {
+            return ReceiveTestStep.this;
+        }
+
+        @Override
+        public long getTimestamp() {
+            return 0;
+        }
+
+        @Override
+        public long getTimeTaken() {
+            return 0;
+        }
+
+        @Override
+        public String getEndpoint() {
+            return null;
+        }
+
+        @Override
+        public StringToStringMap getProperties() {
+            return null;
+        }
+
+        @Override
+        public String getRequestContent() {
+            return null;
+        }
+
+        @Override
+        public String getResponseContent() {
+            return null;
+        }
+
+        @Override
+        public String getRequestContentAsXml() {
+            return null;
+        }
+
+        @Override
+        public String getResponseContentAsXml() {
+            return null;
+        }
+
+        @Override
+        public StringToStringsMap getRequestHeaders() {
+            return null;
+        }
+
+        @Override
+        public StringToStringsMap getResponseHeaders() {
+            return null;
+        }
+
+        @Override
+        public Attachment[] getRequestAttachments() {
+            return new Attachment[0];
+        }
+
+        @Override
+        public Attachment[] getResponseAttachments() {
+            return new Attachment[0];
+        }
+
+        @Override
+        public String[] getMessages() {
+            return new String[0];
+        }
+
+        @Override
+        public boolean isDiscarded() {
+            return false;
+        }
+
+        @Override
+        public boolean hasRawData() {
+            return false;
+        }
+
+        @Override
+        public byte[] getRawRequestData() {
+            return new byte[0];
+        }
+
+        @Override
+        public byte[] getRawResponseData() {
+            return new byte[0];
+        }
+
+        @Override
+        public Attachment[] getRequestAttachmentsForPart(String partName) {
+            return new Attachment[0];
+        }
+
+        @Override
+        public Attachment[] getResponseAttachmentsForPart(String partName) {
+            return new Attachment[0];
+        }
+
+        @Override
+        public boolean hasRequest(boolean ignoreEmpty) {
+            return false;
+        }
+
+        @Override
+        public boolean hasResponse() {
+            return false;
+        }
+
+        @Override
+        public Response getResponse() {
+            return null;
+        }
+
+        @Override
+        public String getProperty(String name) {
+            return null;
+        }
     }
 }

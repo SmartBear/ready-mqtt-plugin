@@ -9,6 +9,7 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
+import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -310,9 +311,15 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
 
     protected boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
         while (!token.isComplete() && token.getException() == null) {
-            if (!testRunner.isRunning() || (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime)) {
-                if (testRunner.isRunning()) {
+            boolean stopped = !testRunner.isRunning();
+            if (stopped || (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime)) {
+                if (stopped) {
+                    testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
+                }
+                else{
                     testStepResult.addMessage("The test step's timeout has expired");
+                    testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
+
                 }
                 return false;
             }
@@ -320,6 +327,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         if (token.getException() != null) {
             testStepResult.addMessage(errorText);
             testStepResult.setError(token.getException());
+            testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
             return false;
         }
         return true;
