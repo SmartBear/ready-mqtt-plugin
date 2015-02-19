@@ -26,7 +26,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -260,7 +262,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     protected void buildTimeoutSpinEdit(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label){
         JPanel timeoutPanel = new JPanel();
         timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
-        timeoutPanel.add(Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1));
+        JSpinner spinEdit = Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1);
+        spinEdit.setPreferredSize(new Dimension(80, spinEdit.getHeight()));
+        timeoutPanel.add(spinEdit);
         JComboBox measureCombo = new JComboBox(MqttConnectedTestStep.TimeMeasure.values());
         Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
         timeoutPanel.add(measureCombo);

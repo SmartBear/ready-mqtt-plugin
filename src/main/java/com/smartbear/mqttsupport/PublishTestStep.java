@@ -9,6 +9,7 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
+import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
@@ -41,7 +42,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private final static String RETAINED_PROP_NAME = "Retained";
 
     enum MessageType{
-        Utf8Text("Text (UTF8)"), Utf16Text("Text (UTF16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double"), Xml ("XML"), Json ("JSON");
+        Json ("JSON"), Xml ("XML"), Utf8Text("Text (UTF-8)"), Utf16Text("Text (UTF-16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
         private String name;
         private MessageType(String name){this.name = name;}
         @Override
@@ -60,7 +61,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
         }
     }
 
-    private MessageType messageKind = MessageType.Utf8Text;
+    private MessageType messageKind = MessageType.Json;
     private String message;
     private String topic;
 
@@ -135,7 +136,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
     }
 
-
     private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
         if (StringUtils.isNullOrEmpty(serverUri)) {
@@ -170,7 +170,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private byte[] formPayload(WsdlTestStepResult errorsStorage, MessageType messageType, String msg){
         byte[] buf;
         switch(messageType){
-            case Utf8Text:
+            case Utf8Text: case Json: case Xml:
                 if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_8);
             case Utf16Text:
                 if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_16LE);
@@ -373,8 +373,11 @@ public class PublishTestStep extends MqttConnectedTestStep {
     @Override
     protected void readData(XmlObjectConfigurationReader reader){
         super.readData(reader);
-        int messageKindNo = reader.readInt(MESSAGE_KIND_PROP_NAME, messageKind.ordinal());
-        if(messageKindNo >= 0 && messageKindNo < MessageType.values().length) messageKind = MessageType.values()[messageKindNo];
+        try{
+            messageKind = MessageType.valueOf(reader.readString(MESSAGE_KIND_PROP_NAME, MessageType.Json.name()));
+        } catch (IllegalArgumentException | NullPointerException e){
+            messageKind = MessageType.Json;
+        }
         topic = reader.readString(TOPIC_PROP_NAME, "");
         message = reader.readString(MESSAGE_PROP_NAME, "");
         qos = reader.readInt(QOS_PROP_NAME, 0);
@@ -385,7 +388,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
     @Override
     protected void writeData(XmlObjectConfigurationBuilder builder){
         super.writeData(builder);
-        if(messageKind != null) builder.add(MESSAGE_KIND_PROP_NAME, messageKind.ordinal());
+        if(messageKind != null) builder.add(MESSAGE_KIND_PROP_NAME, messageKind.name());
         builder.add(TOPIC_PROP_NAME, topic);
         builder.add(MESSAGE_PROP_NAME, message);
         builder.add(QOS_PROP_NAME, qos);
