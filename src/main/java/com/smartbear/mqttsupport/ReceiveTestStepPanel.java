@@ -4,19 +4,28 @@ import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.support.JsonUtil;
+import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.SimpleBindingForm;
+import com.eviware.soapui.support.xml.SyntaxEditorUtil;
+import com.eviware.soapui.support.xml.XmlUtils;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -27,6 +36,11 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JComponentInspector<JComponent> assertionInspector;
     private JInspectorPanel inspectorPanel;
     private AssertionsPanel assertionsPanel;
+    private JTextArea recMessageMemo;
+    private JTabbedPane jsonEditor;
+    private Utils.JsonTreeEditor jsonTreeEditor;
+    private JTabbedPane xmlEditor;
+    private Utils.XmlTreeEditor xmlTreeEditor;
 
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
@@ -53,6 +67,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
         add(inspectorPanel.getComponent());
 
+        propertyChange(new PropertyChangeEvent(getModelItem(), "receivedMessage", null, getModelItem().getReceivedMessage()));
+
     }
 
 
@@ -73,7 +89,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         JTextField recTopicEdit = form.appendTextField("receivedMessageTopic", "Topic", "The topic of the received message");
         recTopicEdit.setEditable(false);
 
-        final JTextArea recMessageMemo = form.appendTextArea("receivedMessage", "Message", "The payload of the received message");
+        recMessageMemo = form.appendTextArea("receivedMessage", "Message", "The payload of the received message");
         recMessageMemo.setEditable(false);
         recMessageMemo.getCaret().setVisible(true);
         recMessageMemo.addFocusListener(new FocusListener() {
@@ -88,6 +104,42 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             }
         });
         recMessageMemo.setRows(8);
+
+        jsonEditor = new JTabbedPane();
+
+        RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
+        syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        Bindings.bind(syntaxTextArea, pm.getModel("receivedMessage"), true);
+        syntaxTextArea.setEditable(false);
+        jsonEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+
+        jsonTreeEditor = new Utils.JsonTreeEditor(false, getModelItem());
+        JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Bindings.bind(jsonTreeEditor, "text", pm.getModel("receivedMessage"));
+        jsonEditor.addTab("Tree View", scrollPane);
+
+        jsonEditor.setPreferredSize(new Dimension(450, 350));
+        form.append("Message", jsonEditor);
+
+        xmlEditor = new JTabbedPane();
+
+        syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
+        syntaxTextArea.setEditable(false);
+        Bindings.bind(syntaxTextArea, pm.getModel("receivedMessage"), true);
+        xmlEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+
+        xmlTreeEditor = new Utils.XmlTreeEditor(false, getModelItem());
+        scrollPane = new JScrollPane(xmlTreeEditor);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Bindings.bind(xmlTreeEditor, "text", pm.getModel("receivedMessage"));
+        xmlEditor.addTab("Tree View", scrollPane);
+
+        xmlEditor.setPreferredSize(new Dimension(450, 350));
+        form.append("Message", xmlEditor);
+
 
         return new JScrollPane(form.getPanel());
     }
@@ -121,6 +173,30 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         if(event.getPropertyName().equals("assertionStatus")){
             updateStatusIcon();
         }
+        else if(event.getPropertyName().equals("receivedMessage")){
+            String msg = (String)event.getNewValue();
+            if(StringUtils.isNullOrEmpty(msg)){
+                Utils.showMemo(recMessageMemo, true);
+                jsonEditor.setVisible(false);
+                xmlEditor.setVisible(false);
+            }
+            else if(JsonUtil.seemsToBeJson(msg)) {
+                Utils.showMemo(recMessageMemo, false);
+                jsonEditor.setVisible(true);
+                xmlEditor.setVisible(false);
+            }
+            else if(XmlUtils.seemsToBeXml(msg)){
+                Utils.showMemo(recMessageMemo, false);
+                jsonEditor.setVisible(false);
+                xmlEditor.setVisible(true);
+            }
+            else{
+                Utils.showMemo(recMessageMemo, true);
+                jsonEditor.setVisible(false);
+                xmlEditor.setVisible(false);
+            }
+        }
+
     }
 
     @Override

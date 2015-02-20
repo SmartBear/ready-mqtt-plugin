@@ -37,9 +37,9 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JTextField fileNameEdit;
     private JButton chooseFileButton;
     private JTabbedPane jsonEditor;
-    private JsonTreeEditor jsonTreeEditor;
+    private Utils.JsonTreeEditor jsonTreeEditor;
     private JTabbedPane xmlEditor;
-    private XmlTreeEditor xmlTreeEditor;
+    private Utils.XmlTreeEditor xmlTreeEditor;
 
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
@@ -69,7 +69,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
         jsonEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
 
-        jsonTreeEditor = new JsonTreeEditor(true, getModelItem());
+        jsonTreeEditor = new Utils.JsonTreeEditor(true, getModelItem());
         JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -85,7 +85,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
         xmlEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
 
-        xmlTreeEditor = new XmlTreeEditor(true, getModelItem());
+        xmlTreeEditor = new Utils.XmlTreeEditor(true, getModelItem());
         scrollPane = new JScrollPane(xmlTreeEditor);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -161,69 +161,5 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         }
     }
 
-    public static class JsonTreeEditor extends JsonObjectTree{
-        private String prevValue = null;
-        private boolean isCurValueNull = false;
-
-        public JsonTreeEditor(boolean editable, ModelItem modelItem){
-            super(editable, modelItem);
-        }
-
-        public void setText(String text){
-            isCurValueNull = text == null;
-            if(isCurValueNull) text = "";
-            setContent(text);
-            detectChange();
-        }
-
-        public String getText(){
-            String result = getXml();
-            return "".equals(result) && isCurValueNull ? null : result;
-        }
-
-        @Override
-        protected void processFocusEvent(FocusEvent event){
-            super.processFocusEvent(event);
-            if(!event.isTemporary()) detectChange();
-        }
-
-        private void detectChange(){
-            String newValue = getText();
-            if(!Utils.areStringsEqual(prevValue, newValue)){
-                firePropertyChange("text", prevValue, newValue);
-                prevValue = newValue;
-            }
-        }
-
-    }
-
-    public static class XmlTreeEditor extends XmlObjectTree{
-        private String prevValue = null;
-
-        public XmlTreeEditor(boolean editable, ModelItem modelItem){
-            super(editable, modelItem);
-        }
-
-        public void setText(String text){
-            setContent(text);
-            detectChange(text);
-        }
-
-        public String getText(){return getXml();}
-
-        @Override
-        protected void processFocusEvent(FocusEvent event){
-            super.processFocusEvent(event);
-            if(!event.isTemporary()) detectChange(getText());
-        }
-
-        private void detectChange(String newValue){
-            if(!Utils.areStringsEqual(prevValue, newValue)){
-                firePropertyChange("text", prevValue, newValue);
-                prevValue = newValue;
-            }
-        }
-
-    }
 
 }
