@@ -67,7 +67,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         }
     }
 
-    protected void writeData(XmlObjectConfigurationBuilder builder){
+    protected void writeData(XmlObjectBuilder builder){
         builder.add(SERVER_URI_PROP_NAME, serverUri);
         if(clientId != null) builder.add(CLIENT_ID_PROP_NAME, login);
         if(login != null){
@@ -79,7 +79,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     }
 
     protected void updateData(TestStepConfig config) {
-        XmlObjectConfigurationBuilder builder = new XmlObjectConfigurationBuilder();
+        XmlObjectBuilder builder = new XmlObjectBuilder();
         writeData(builder);
         config.setConfig(builder.finish());
     }

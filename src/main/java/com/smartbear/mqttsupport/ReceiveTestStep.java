@@ -8,7 +8,6 @@ import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestRunContext;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlMessageAssertion;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestRequest;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.assertions.TestAssertionRegistry;
 import com.eviware.soapui.model.ModelItem;
@@ -19,15 +18,20 @@ import com.eviware.soapui.model.iface.Operation;
 import com.eviware.soapui.model.iface.Response;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
-import com.eviware.soapui.model.testsuite.*;
+import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionError;
+import com.eviware.soapui.model.testsuite.AssertionsListener;
+import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.model.testsuite.TestCaseRunContext;
+import com.eviware.soapui.model.testsuite.TestCaseRunner;
+import com.eviware.soapui.model.testsuite.TestStep;
+import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
-import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.google.common.base.Charsets;
-import org.apache.xbean.finder.util.Classes;
+import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -109,6 +113,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private final static String RECEIVED_MESSAGE_PROP_NAME = "ReceivedMessage";
     private final static String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
 
+    private final static String ASSERTION_SECTION = "assertion";
+
     private static boolean actionGroupAdded = false;
 
     private String listenedTopics;
@@ -120,6 +126,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private String receivedMessageTopic = null;
     private AssertionsSupport assertionsSupport;
     private AssertionStatus prevAsseriontStatus = AssertionStatus.UNKNOWN;
+    private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -131,7 +138,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(config.getConfig());
             readData(reader);
         }
-        initAssertions();
+        initAssertions(config);
 
         addProperty(new TestStepBeanProperty(LISTENED_TOPICS_PROP_NAME, false, this, "listenedTopics", this));
         addProperty(new DefaultTestStepProperty(QOS_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
@@ -175,7 +182,25 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     }
 
-    private void initAssertions() {
+    private void initAssertions(TestStepConfig testStepData) {
+        if(testStepData != null && testStepData.getConfig() != null){
+            XmlObject config = testStepData.getConfig();
+            XmlObject[] assertionsSections = config.selectPath("$this/" + ASSERTION_SECTION);
+            for(XmlObject assertionSection: assertionsSections){
+//                //TestAssertionConfig assertionConfig = TestAssertionConfig.Factory.newInstance();
+//                //assertionConfig.set(assertionSection);
+//                TestAssertionConfig assertionConfig = (TestAssertionConfig)( assertionSection.changeType(TestAssertionConfig.type));
+                TestAssertionConfig assertionConfig;
+                try {
+                    assertionConfig = TestAssertionConfig.Factory.parse(assertionSection.toString());
+                }
+                catch(XmlException e){
+                    SoapUI.logError(e);
+                    continue;
+                }
+                assertionConfigs.add(assertionConfig);
+            }
+        }
         assertionsSupport = new AssertionsSupport(this, new AssertableConfigImpl());
     }
 
@@ -200,12 +225,15 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
 
     @Override
-    protected void writeData(XmlObjectConfigurationBuilder builder) {
+    protected void writeData(XmlObjectBuilder builder) {
         super.writeData(builder);
         builder.add(LISTENED_TOPICS_PROP_NAME, listenedTopics);
         builder.add(QOS_PROP_NAME, qos);
         builder.add(EXPECTED_MESSAGE_TYPE_PROP_NAME, expectedMessageType.name());
         builder.add(ON_UNEXPECTED_TOPIC_PROP_NAME, onUnexpectedTopic.name());
+        for(TestAssertionConfig assertionConfig: assertionConfigs){
+            builder.addSection(ASSERTION_SECTION, assertionConfig);
+        }
     }
 
     public int getQos() {
@@ -602,6 +630,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     public void propertyChange(PropertyChangeEvent event) {
         if (event.getPropertyName().equals(TestAssertion.CONFIGURATION_PROPERTY)
                 || event.getPropertyName().equals(TestAssertion.DISABLED_PROPERTY)) {
+            updateData();
             assertReceivedMessage();
         }
 
@@ -742,13 +771,10 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private class AssertableConfigImpl implements AssertableConfig {
 
-        private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
-
         public TestAssertionConfig addNewAssertion()
         {
             TestAssertionConfig newConfig = TestAssertionConfig.Factory.newInstance();
             assertionConfigs.add(newConfig);
-            updateData();
             return newConfig;
         }
 

@@ -386,7 +386,7 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
 
     @Override
-    protected void writeData(XmlObjectConfigurationBuilder builder){
+    protected void writeData(XmlObjectBuilder builder){
         super.writeData(builder);
         if(messageKind != null) builder.add(MESSAGE_KIND_PROP_NAME, messageKind.name());
         builder.add(TOPIC_PROP_NAME, topic);
