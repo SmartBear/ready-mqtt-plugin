@@ -2,6 +2,8 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.model.testsuite.Assertable;
+import com.eviware.soapui.model.testsuite.AssertionsListener;
+import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
@@ -12,15 +14,18 @@ import com.jgoodies.binding.PresentationModel;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
+import java.beans.PropertyChangeEvent;
 
-public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> {
+public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener {
 
     private JComponentInspector<JComponent> assertionInspector;
     private JInspectorPanel inspectorPanel;
+    private AssertionsPanel assertionsPanel;
 
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
         buildUI();
+        modelItem.addAssertionsListener(this);
     }
 
     private void buildUI() {
@@ -28,7 +33,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         JComponent mainPanel = buildMainPanel();
         inspectorPanel = JInspectorPanelFactory.build(mainPanel);
 
-        AssertionsPanel assertionsPanel = buildAssertionsPanel();
+        assertionsPanel = buildAssertionsPanel();
 
         assertionInspector = new JComponentInspector<JComponent>(assertionsPanel, "Assertions ("
                 + getModelItem().getAssertionCount() + ")", "Assertions for this Message", true);
@@ -82,4 +87,41 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         }
     }
 
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        super.propertyChange(event);
+        if(event.getPropertyName().equals("assertionStatus")){
+            updateStatusIcon();
+        }
+    }
+
+    @Override
+    public boolean onClose(boolean canCancel) {
+        if (super.onClose(canCancel)) {
+            assertionsPanel.release();
+            inspectorPanel.release();
+            getModelItem().removeAssertionsListener(this);
+            return true;
+        }
+
+        return false;
+    }
+    private void assertionListChanged(){
+        assertionInspector.setTitle(String.format("Assertions (%d)", getModelItem().getAssertionCount()));
+    }
+
+    @Override
+    public void assertionAdded(TestAssertion assertion) {
+        assertionListChanged();
+    }
+
+    @Override
+    public void assertionRemoved(TestAssertion assertion) {
+        assertionListChanged();
+    }
+
+    @Override
+    public void assertionMoved(TestAssertion assertion, int ix, int offset) {
+        assertionListChanged();
+    }
 }

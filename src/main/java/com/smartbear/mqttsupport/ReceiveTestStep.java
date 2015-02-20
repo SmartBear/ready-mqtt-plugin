@@ -8,6 +8,7 @@ import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestRunContext;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlMessageAssertion;
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestRequest;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.assertions.TestAssertionRegistry;
 import com.eviware.soapui.model.ModelItem;
@@ -31,6 +32,8 @@ import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -44,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.")
-public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable {
+public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener {
 
     public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
         Discard("Discard unexpected messages"), Ignore("Ignore (defer) unexpected messages"), Fail("Fail");
@@ -116,6 +119,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private String receivedMessage = null;
     private String receivedMessageTopic = null;
     private AssertionsSupport assertionsSupport;
+    private AssertionStatus prevAsseriontStatus = AssertionStatus.UNKNOWN;
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -548,6 +552,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         return result;
                     }
                 }
+
                 for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
                     applyAssertion(assertion);
 //                    if(assertion.getStatus() == AssertionStatus.FAILED)
@@ -564,6 +569,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             }
             return result;
         } finally {
+            checkAssertionStatusChange();
             result.stopTimer();
         }
 
@@ -574,9 +580,35 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
     }
 
+    private void checkAssertionStatusChange(){
+        AssertionStatus curAssertionStatus = getAssertionStatus();
+        if(curAssertionStatus != prevAsseriontStatus){
+            notifyPropertyChanged("assertionStatus", prevAsseriontStatus, curAssertionStatus);
+            prevAsseriontStatus = curAssertionStatus;
+        }
+
+    }
+
+    private void assertReceivedMessage(){
+        if(getReceivedMessageTopic() != null){
+            for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
+                applyAssertion(assertion);
+            }
+        }
+        checkAssertionStatusChange();
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+        if (event.getPropertyName().equals(TestAssertion.CONFIGURATION_PROPERTY)
+                || event.getPropertyName().equals(TestAssertion.DISABLED_PROPERTY)) {
+            assertReceivedMessage();
+        }
+
+    }
+
     @Override
     public TestAssertion addAssertion(String selection) {
-//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
 
         try {
             WsdlMessageAssertion assertion = assertionsSupport.addWsdlAssertion(selection);
@@ -586,7 +618,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
             if (receivedMessageTopic != null) {
                 applyAssertion(assertion);
-                //notifier.notifyChange();
+                checkAssertionStatusChange();
             }
 
             return assertion;
@@ -618,22 +650,19 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public void removeAssertion(TestAssertion assertion) {
-//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
-
         try {
             assertionsSupport.removeAssertion((WsdlMessageAssertion) assertion);
 
         } finally {
             ((WsdlMessageAssertion) assertion).release();
-  //          notifier.notifyChange();
         }
-
+        checkAssertionStatusChange();
     }
 
     @Override
     public AssertionStatus getAssertionStatus() {
         if(receivedMessageTopic == null){
-            return AssertionStatus.FAILED;
+            return AssertionStatus.UNKNOWN;
         }
 
         int cnt = getAssertionCount();
@@ -702,13 +731,12 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public TestAssertion moveAssertion(int ix, int offset) {
-//        PropertyChangeNotifier notifier = new PropertyChangeNotifier();
         WsdlMessageAssertion assertion = assertionsSupport.getAssertionAt(ix);
         try {
             return assertionsSupport.moveAssertion(ix, offset);
         } finally {
             ((WsdlMessageAssertion) assertion).release();
-  //          notifier.notifyChange();
+            checkAssertionStatusChange();
         }
     }
 
