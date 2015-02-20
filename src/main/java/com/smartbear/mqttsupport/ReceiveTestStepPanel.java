@@ -11,9 +11,15 @@ import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
+import com.jgoodies.binding.adapter.Bindings;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import java.awt.Dimension;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.beans.PropertyChangeEvent;
 
 public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener {
@@ -61,6 +67,28 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         buildQosRadioButtons(form, pm);
         form.appendComboBox("expectedMessageType", "Expected message type", ReceiveTestStep.MessageType.values(), "Expected type of a received message");
         buildTimeoutSpinEdit(form, pm, "Timeout");
+        form.appendSeparator();
+        form.appendHeading("Received message");
+
+        JTextField recTopicEdit = form.appendTextField("receivedMessageTopic", "Topic", "The topic of the received message");
+        recTopicEdit.setEditable(false);
+
+        final JTextArea recMessageMemo = form.appendTextArea("receivedMessage", "Message", "The payload of the received message");
+        recMessageMemo.setEditable(false);
+        recMessageMemo.getCaret().setVisible(true);
+        recMessageMemo.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                recMessageMemo.getCaret().setVisible(true);
+
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+
+            }
+        });
+        recMessageMemo.setRows(8);
+
         return new JScrollPane(form.getPanel());
     }
     private AssertionsPanel buildAssertionsPanel(){
