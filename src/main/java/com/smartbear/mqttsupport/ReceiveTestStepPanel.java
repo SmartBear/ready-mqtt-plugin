@@ -151,16 +151,16 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
         switch (status) {
             case FAILED: {
-                assertionInspector.setIcon(UISupport.createImageIcon("/failed_assertion.png"));
+                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion.png"));
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
             case UNKNOWN: {
-                assertionInspector.setIcon(UISupport.createImageIcon("/unknown_assertion.png"));
+                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_assertion.png"));
                 break;
             }
             case VALID: {
-                assertionInspector.setIcon(UISupport.createImageIcon("/valid_assertion.png"));
+                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion.png"));
                 inspectorPanel.deactivate();
                 break;
             }

@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestAssertionConfig;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertableConfig;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
@@ -27,6 +28,7 @@ import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -36,6 +38,7 @@ import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
+import javax.swing.ImageIcon;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.nio.ByteBuffer;
@@ -128,6 +131,14 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private AssertionStatus prevAsseriontStatus = AssertionStatus.UNKNOWN;
     private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
 
+    private ImageIcon validStepIcon;
+    private ImageIcon failedStepIcon;
+    private ImageIcon disabledStepIcon;
+    private ImageIcon unknownStepIcon;
+    private IconAnimator<ReceiveTestStep> iconAnimator;
+    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN;
+
+
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
         if (!actionGroupAdded) {
@@ -180,6 +191,18 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         addProperty(new TestStepBeanProperty(RECEIVED_MESSAGE_PROP_NAME, true, this, "receivedMessage", this));
         addProperty(new TestStepBeanProperty(RECEIVED_TOPIC_PROP_NAME, true, this, "receivedMessageTopic", this));
 
+        if (!forLoadTest) {
+            initIcons();
+        }
+    }
+
+    protected void initIcons() {
+        validStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step.png");
+        failedStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
+        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
+        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
+
+        iconAnimator =  new IconAnimator<ReceiveTestStep>(this, "/com/smartbear/mqttsupport/receive_step_base.png", "/com/smartbear/mqttsupport/receive_step.png", 5);
     }
 
     private void initAssertions(TestStepConfig testStepData) {
@@ -492,6 +515,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
+        if(iconAnimator != null) iconAnimator.start();
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
         try {
@@ -598,10 +622,26 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             }
             return result;
         } finally {
-            checkAssertionStatusChange();
             result.stopTimer();
+            checkAssertionStatusChange();
+            if(iconAnimator != null) iconAnimator.stop();
+            lastResult = result.getStatus();
         }
 
+    }
+
+    @Override
+    public ImageIcon getIcon() {
+        if(iconAnimator == null) return null;
+        ImageIcon icon = iconAnimator.getIcon();
+        if(icon == iconAnimator.getBaseIcon()){
+            switch(lastResult){
+                case OK: return validStepIcon;
+                case FAILED: return failedStepIcon;
+                case UNKNOWN: case CANCELED: return unknownStepIcon;
+            }
+        }
+        return icon;
     }
 
 
