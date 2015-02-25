@@ -2,6 +2,8 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.support.AbstractHttpRequest;
+import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
@@ -16,6 +18,7 @@ import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.boundary.IntegerBoundary;
 import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
@@ -25,6 +28,8 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.validation.Payload;
 import javax.xml.transform.Result;
 import java.io.File;
@@ -33,7 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-@PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.")
+@PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
 public class PublishTestStep extends MqttConnectedTestStep {
     private final static String MESSAGE_KIND_PROP_NAME = "MessageKind";
     private final static String TOPIC_PROP_NAME = "Topic";
@@ -69,6 +74,13 @@ public class PublishTestStep extends MqttConnectedTestStep {
     private boolean retained;
 
     private static boolean actionGroupAdded = false;
+
+    private ImageIcon validStepIcon;
+    private ImageIcon failedStepIcon;
+    private ImageIcon disabledStepIcon;
+    private ImageIcon unknownStepIcon;
+    private IconAnimator<PublishTestStep> iconAnimator;
+    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN;
 
     public PublishTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -134,6 +146,18 @@ public class PublishTestStep extends MqttConnectedTestStep {
             }
         }, this));
 
+        if (!forLoadTest) {
+            initIcons();
+        }
+    }
+
+    protected void initIcons() {
+        validStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/valid_publish_step.png");
+        failedStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_publish_step.png");
+        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_publish_step.png");
+        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_publish_step.png");
+
+        iconAnimator =  new IconAnimator<PublishTestStep>(this, "/com/smartbear/mqttsupport/publish_step_base.png", "/com/smartbear/mqttsupport/publish_step.png", 5);
     }
 
     private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
@@ -267,8 +291,8 @@ public class PublishTestStep extends MqttConnectedTestStep {
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
-        boolean success = false;
-
+        result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
+        if(iconAnimator != null) iconAnimator.start();
         try {
             try {
                 String expandedUri = testRunContext.expand(getServerUri());
@@ -277,13 +301,17 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 String expandedTopic = testRunContext.expand(topic);
 
                 if (!checkProperties(result, expandedUri, expandedTopic, messageKind, expandedMessage)) {
+                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
                 long starTime = System.nanoTime();
                 long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long)getTimeout() * 1000 * 1000;
 
                 byte[] payload = formPayload(result, messageKind, expandedMessage);
-                if(payload == null) return result;
+                if(payload == null){
+                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
+                    return result;
+                }
 
                 Client client = getCache(testRunContext).get(expandedUri, connectParams);
                 if(!waitForMqttConnection(client, testRunner, result, maxTime)) return result;
@@ -294,14 +322,16 @@ public class PublishTestStep extends MqttConnectedTestStep {
                 message.setPayload(payload);
                 if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
 
-                success = true;
+                result.setStatus(TestStepResult.TestStepStatus.OK);
             } catch (MqttException e) {
+                result.setStatus(TestStepResult.TestStepStatus.FAILED);
                 result.setError(e);
             }
             return result;
         } finally {
             result.stopTimer();
-            result.setStatus(success ? TestStepResult.TestStepStatus.OK : TestStepResult.TestStepStatus.FAILED);
+            if(iconAnimator != null) iconAnimator.stop();
+            lastResult = result.getStatus();
         }
     }
 
@@ -395,15 +425,17 @@ public class PublishTestStep extends MqttConnectedTestStep {
         builder.add(RETAINED_PROP_NAME, retained);
     }
 
-//    @Override
-//    public void onSuccess(IMqttToken asyncActionToken) {
-//
-//    }
-//
-//    @Override
-//    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-//
-//    }
-//
-
+    @Override
+    public ImageIcon getIcon() {
+        if(iconAnimator == null) return null;
+        ImageIcon icon = iconAnimator.getIcon();
+        if(icon == iconAnimator.getBaseIcon()){
+            switch(lastResult){
+                case OK: return validStepIcon;
+                case FAILED: return failedStepIcon;
+                case UNKNOWN: case CANCELED: return unknownStepIcon;
+            }
+        }
+        return icon;
+    }
 }

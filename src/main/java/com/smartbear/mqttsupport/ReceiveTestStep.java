@@ -594,6 +594,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 result.setStatus(getAssertionStatus() == AssertionStatus.FAILED ? TestStepResult.TestStepStatus.FAILED : TestStepResult.TestStepStatus.OK);
             } catch (MqttException e) {
                 result.setError(e);
+                result.setStatus(TestStepResult.TestStepStatus.FAILED);
             }
             return result;
         } finally {

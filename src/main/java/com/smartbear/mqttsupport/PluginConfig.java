@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.plugins.PluginAdapter;
 import com.eviware.soapui.plugins.PluginConfiguration;
+import com.eviware.soapui.support.UISupport;
 
 @PluginConfiguration(groupId = "com.smartbear.plugins", name = "MQTT Support Plugin", version = "1.0",
         autoDetect = true, description = "Adds MQTT test steps",
@@ -11,4 +12,8 @@ public class PluginConfig extends PluginAdapter {
 
     public final static int DEFAULT_TCP_PORT = 1883;
     public final static int DEFAULT_SSL_PORT = 8883;
+    public PluginConfig(){
+        super();
+        UISupport.addResourceClassLoader(getClass().getClassLoader());
+    }
 }
