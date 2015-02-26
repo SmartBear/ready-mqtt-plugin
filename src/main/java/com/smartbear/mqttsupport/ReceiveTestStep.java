@@ -17,18 +17,19 @@ import com.eviware.soapui.model.iface.Interface;
 import com.eviware.soapui.model.iface.MessageExchange;
 import com.eviware.soapui.model.iface.Operation;
 import com.eviware.soapui.model.iface.Response;
-import com.eviware.soapui.model.support.DefaultTestStepProperty;
+import com.eviware.soapui.model.mock.MockRunner;import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionError;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
-import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
-import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.monitor.TestMonitor;
+import com.eviware.soapui.monitor.TestMonitorListener;import com.eviware.soapui.plugins.auto.PluginTestStep;
+import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -53,10 +54,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.")
-public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener {
+@PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.", iconPath = "com/smartbear/mqttsupport/receive_step.png")
+public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener {
 
-    public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
+public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
         Discard("Discard unexpected messages"), Ignore("Ignore (defer) unexpected messages"), Fail("Fail");
         private String title;
 
@@ -128,7 +129,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private String receivedMessage = null;
     private String receivedMessageTopic = null;
     private AssertionsSupport assertionsSupport;
-    private AssertionStatus prevAsseriontStatus = AssertionStatus.UNKNOWN;
+    private AssertionStatus assertionStatus = AssertionStatus.UNKNOWN;
     private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
 
     private ImageIcon validStepIcon;
@@ -136,7 +137,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<ReceiveTestStep> iconAnimator;
-    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN;
+    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN; //does not include assertions check state
 
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
@@ -194,6 +195,11 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         if (!forLoadTest) {
             initIcons();
         }
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null){
+            testMonitor.addTestMonitorListener(this);
+        }
+        updateState();
     }
 
     protected void initIcons() {
@@ -202,7 +208,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
 
-        iconAnimator =  new IconAnimator<ReceiveTestStep>(this, "/com/smartbear/mqttsupport/receive_step_base.png", "/com/smartbear/mqttsupport/receive_step.png", 5);
+        iconAnimator =  new IconAnimator<ReceiveTestStep>(this, "com/smartbear/mqttsupport/receive_step_base.png", "com/smartbear/mqttsupport/receive_step.png", 5);
     }
 
     private void initAssertions(TestStepConfig testStepData) {
@@ -227,6 +233,18 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         assertionsSupport = new AssertionsSupport(this, new AssertableConfigImpl());
     }
 
+    @Override
+    public void setIcon(ImageIcon newIcon){
+        if(iconAnimator != null && newIcon == iconAnimator.getBaseIcon()) return;
+        super.setIcon(newIcon);
+    }
+
+    @Override
+    public void release(){
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null) testMonitor.removeTestMonitorListener(this);
+        super.release();
+    }
 
     @Override
     protected void readData(XmlObjectConfigurationReader reader) {
@@ -289,12 +307,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     public void setExpectedMessageType(MessageType value) {
         setProperty("expectedMessageType", null, value);
-//        if(expectedMessageType == value) return;
-//        MessageType old = expectedMessageType;
-//        expectedMessageType = value;
-//        updateData();
-//        notifyPropertyChanged("expectedMessageType", old, value);
-//        //firePropertyValueChanged(MESSAGE_TYPE_PROP_NAME, old.toString(), value.toString());
     }
 
     public String getReceivedMessage() {
@@ -515,6 +527,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
+        lastResult = TestStepResult.TestStepStatus.UNKNOWN;
+        updateState();
         if(iconAnimator != null) iconAnimator.start();
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
@@ -607,7 +621,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
                 for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
                     applyAssertion(assertion);
-//                    if(assertion.getStatus() == AssertionStatus.FAILED)
                     AssertionError[] errors = assertion.getErrors();
                     if (errors != null) {
                         for (AssertionError error : errors) {
@@ -615,7 +628,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         }
                     }
                 }
-                result.setStatus(getAssertionStatus() == AssertionStatus.FAILED ? TestStepResult.TestStepStatus.FAILED : TestStepResult.TestStepStatus.OK);
+                result.setStatus(TestStepResult.TestStepStatus.OK);
+
             } catch (MqttException e) {
                 result.setError(e);
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
@@ -623,39 +637,64 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             return result;
         } finally {
             result.stopTimer();
-            checkAssertionStatusChange();
             if(iconAnimator != null) iconAnimator.stop();
             lastResult = result.getStatus();
+            updateState();
+            if(lastResult == TestStepResult.TestStepStatus.OK && getAssertionStatus() == AssertionStatus.FAILED) result.setStatus(TestStepResult.TestStepStatus.FAILED);
         }
 
     }
 
-    @Override
-    public ImageIcon getIcon() {
-        if(iconAnimator == null) return null;
-        ImageIcon icon = iconAnimator.getIcon();
-        if(icon == iconAnimator.getBaseIcon()){
-            switch(lastResult){
-                case OK: return validStepIcon;
-                case FAILED: return failedStepIcon;
-                case UNKNOWN: case CANCELED: return unknownStepIcon;
+
+    private void updateState() {
+        AssertionStatus oldAssertionStatus = assertionStatus;
+        if(lastResult == TestStepResult.TestStepStatus.OK){
+            int cnt = getAssertionCount();
+            if (cnt == 0) {
+                assertionStatus = AssertionStatus.UNKNOWN;
+            } else {
+                assertionStatus = AssertionStatus.VALID;
+                for (int c = 0; c < cnt; c++) {
+                    if (getAssertionAt(c).getStatus() == AssertionStatus.FAILED) {
+                        assertionStatus = AssertionStatus.FAILED;
+                        break;
+                    }
+                }
             }
         }
-        return icon;
+        else{
+            assertionStatus = AssertionStatus.UNKNOWN;
+        }
+        if(oldAssertionStatus != assertionStatus){
+            notifyPropertyChanged("assertionStatus", oldAssertionStatus, assertionStatus);
+        }
+        if(iconAnimator == null) return;
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null
+                && (testMonitor.hasRunningLoadTest(getTestStep().getTestCase()) || testMonitor.hasRunningSecurityTest(getTestStep().getTestCase()))) {
+            setIcon(disabledStepIcon);
+        }
+        else{
+            ImageIcon icon = iconAnimator.getIcon();
+            if(icon == iconAnimator.getBaseIcon()){
+                switch(lastResult){
+                    case OK:
+                        setIcon(getAssertionStatus() == AssertionStatus.FAILED ? failedStepIcon : validStepIcon);
+                        break;
+                    case FAILED:
+                        setIcon(failedStepIcon);
+                        break;
+                    case UNKNOWN: case CANCELED:
+                        setIcon(unknownStepIcon);
+                        break;
+                }
+            }
+        }
     }
 
 
     private void applyAssertion(WsdlMessageAssertion assertion){
         assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
-    }
-
-    private void checkAssertionStatusChange(){
-        AssertionStatus curAssertionStatus = getAssertionStatus();
-        if(curAssertionStatus != prevAsseriontStatus){
-            notifyPropertyChanged("assertionStatus", prevAsseriontStatus, curAssertionStatus);
-            prevAsseriontStatus = curAssertionStatus;
-        }
-
     }
 
     private void assertReceivedMessage(){
@@ -664,7 +703,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 applyAssertion(assertion);
             }
         }
-        checkAssertionStatusChange();
+        updateState();
     }
 
     @Override
@@ -688,7 +727,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
             if (receivedMessageTopic != null) {
                 applyAssertion(assertion);
-                checkAssertionStatusChange();
+                updateState();
             }
 
             return assertion;
@@ -726,26 +765,12 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } finally {
             ((WsdlMessageAssertion) assertion).release();
         }
-        checkAssertionStatusChange();
+        updateState();
     }
 
     @Override
     public AssertionStatus getAssertionStatus() {
-        if(receivedMessageTopic == null){
-            return AssertionStatus.UNKNOWN;
-        }
-
-        int cnt = getAssertionCount();
-        if (cnt == 0) {
-            return AssertionStatus.UNKNOWN;
-        }
-
-        for (int c = 0; c < cnt; c++) {
-            if (getAssertionAt(c).getStatus() == AssertionStatus.FAILED) {
-                return AssertionStatus.FAILED;
-            }
-        }
-        return AssertionStatus.VALID;
+        return assertionStatus;
     }
 
     @Override
@@ -806,7 +831,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             return assertionsSupport.moveAssertion(ix, offset);
         } finally {
             ((WsdlMessageAssertion) assertion).release();
-            checkAssertionStatusChange();
+            updateState();
         }
     }
 
@@ -964,4 +989,38 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             return null;
         }
     }
-}
+
+
+    @Override
+    public void loadTestStarted(LoadTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void loadTestFinished(LoadTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void securityTestStarted(SecurityTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void securityTestFinished(SecurityTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void testCaseStarted(TestCaseRunner runner) {
+
+    }@Override
+     public void testCaseFinished(TestCaseRunner runner) {
+
+    }@Override
+     public void mockServiceStarted(MockRunner runner) {
+
+    }@Override
+     public void mockServiceStopped(MockRunner runner) {
+
+    }}

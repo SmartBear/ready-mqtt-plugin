@@ -6,17 +6,19 @@ import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
-import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
+import com.eviware.soapui.model.mock.MockRunner;import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
-import com.eviware.soapui.model.testsuite.TestCase;
+import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.monitor.TestMonitor;
+import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.security.boundary.IntegerBoundary;
+import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.security.boundary.IntegerBoundary;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
@@ -39,7 +41,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
-public class PublishTestStep extends MqttConnectedTestStep {
+public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener {
     private final static String MESSAGE_KIND_PROP_NAME = "MessageKind";
     private final static String TOPIC_PROP_NAME = "Topic";
     private final static String MESSAGE_PROP_NAME = "Message";
@@ -75,12 +77,9 @@ public class PublishTestStep extends MqttConnectedTestStep {
 
     private static boolean actionGroupAdded = false;
 
-    private ImageIcon validStepIcon;
-    private ImageIcon failedStepIcon;
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<PublishTestStep> iconAnimator;
-    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN;
 
     public PublishTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -149,15 +148,25 @@ public class PublishTestStep extends MqttConnectedTestStep {
         if (!forLoadTest) {
             initIcons();
         }
+        setIcon(unknownStepIcon);
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null){
+            testMonitor.addTestMonitorListener(this);
+        }
     }
 
     protected void initIcons() {
-        validStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/valid_publish_step.png");
-        failedStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_publish_step.png");
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_publish_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_publish_step.png");
 
-        iconAnimator =  new IconAnimator<PublishTestStep>(this, "/com/smartbear/mqttsupport/publish_step_base.png", "/com/smartbear/mqttsupport/publish_step.png", 5);
+        iconAnimator =  new IconAnimator<PublishTestStep>(this, "com/smartbear/mqttsupport/unknown_publish_step.png", "com/smartbear/mqttsupport/publish_step.png", 5);
+    }
+
+    @Override
+    public void release(){
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null) testMonitor.removeTestMonitorListener(this);
+        super.release();
     }
 
     private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
@@ -331,7 +340,6 @@ public class PublishTestStep extends MqttConnectedTestStep {
         } finally {
             result.stopTimer();
             if(iconAnimator != null) iconAnimator.stop();
-            lastResult = result.getStatus();
         }
     }
 
@@ -425,17 +433,53 @@ public class PublishTestStep extends MqttConnectedTestStep {
         builder.add(RETAINED_PROP_NAME, retained);
     }
 
-    @Override
-    public ImageIcon getIcon() {
-        if(iconAnimator == null) return null;
-        ImageIcon icon = iconAnimator.getIcon();
-        if(icon == iconAnimator.getBaseIcon()){
-            switch(lastResult){
-                case OK: return validStepIcon;
-                case FAILED: return failedStepIcon;
-                case UNKNOWN: case CANCELED: return unknownStepIcon;
-            }
+    private void updateState() {
+        if(iconAnimator == null) return;
+        TestMonitor testMonitor = SoapUI.getTestMonitor();
+        if (testMonitor != null
+                && (testMonitor.hasRunningLoadTest(getTestCase()) || testMonitor.hasRunningSecurityTest(getTestCase()))) {
+            setIcon(disabledStepIcon);
         }
-        return icon;
+        else {
+            setIcon(unknownStepIcon);
+        }
     }
+
+    @Override
+    public void loadTestStarted(LoadTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void loadTestFinished(LoadTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void securityTestStarted(SecurityTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void securityTestFinished(SecurityTestRunner runner) {
+        updateState();
+    }
+
+    @Override
+    public void testCaseStarted(TestCaseRunner runner) {
+
+    }
+    @Override
+     public void testCaseFinished(TestCaseRunner runner) {
+
+    }
+    @Override
+     public void mockServiceStarted(MockRunner runner) {
+
+    }
+    @Override
+     public void mockServiceStopped(MockRunner runner) {
+
+    }
+
 }
