@@ -331,7 +331,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                 message.setPayload(payload);
                 if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
 
-                result.setStatus(TestStepResult.TestStepStatus.OK);
             } catch (MqttException e) {
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
                 result.setError(e);
