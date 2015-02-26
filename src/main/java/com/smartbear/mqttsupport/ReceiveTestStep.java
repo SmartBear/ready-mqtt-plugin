@@ -137,7 +137,6 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<ReceiveTestStep> iconAnimator;
-    private TestStepResult.TestStepStatus lastResult = TestStepResult.TestStepStatus.UNKNOWN; //does not include assertions check state
 
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
@@ -527,7 +526,6 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
-        lastResult = TestStepResult.TestStepStatus.UNKNOWN;
         updateState();
         if(iconAnimator != null) iconAnimator.start();
         setReceivedMessage(null);
@@ -628,7 +626,6 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                         }
                     }
                 }
-                result.setStatus(TestStepResult.TestStepStatus.OK);
 
             } catch (MqttException e) {
                 result.setError(e);
@@ -638,9 +635,17 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         } finally {
             result.stopTimer();
             if(iconAnimator != null) iconAnimator.stop();
-            lastResult = result.getStatus();
             updateState();
-            if(lastResult == TestStepResult.TestStepStatus.OK && getAssertionStatus() == AssertionStatus.FAILED) result.setStatus(TestStepResult.TestStepStatus.FAILED);
+            if(result.getStatus() == TestStepResult.TestStepStatus.UNKNOWN) {
+                switch(getAssertionStatus()){
+                    case FAILED:
+                        result.setStatus(TestStepResult.TestStepStatus.FAILED);
+                        break;
+                    case VALID:
+                        result.setStatus(TestStepResult.TestStepStatus.OK);
+                        break;
+                }
+            }
         }
 
     }
@@ -648,7 +653,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
 
     private void updateState() {
         AssertionStatus oldAssertionStatus = assertionStatus;
-        if(lastResult == TestStepResult.TestStepStatus.OK){
+        if(getReceivedMessageTopic() != null){
             int cnt = getAssertionCount();
             if (cnt == 0) {
                 assertionStatus = AssertionStatus.UNKNOWN;
@@ -677,14 +682,14 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         else{
             ImageIcon icon = iconAnimator.getIcon();
             if(icon == iconAnimator.getBaseIcon()){
-                switch(lastResult){
-                    case OK:
-                        setIcon(getAssertionStatus() == AssertionStatus.FAILED ? failedStepIcon : validStepIcon);
+                switch(assertionStatus){
+                    case VALID:
+                        setIcon(validStepIcon);
                         break;
                     case FAILED:
                         setIcon(failedStepIcon);
                         break;
-                    case UNKNOWN: case CANCELED:
+                    case UNKNOWN:
                         setIcon(unknownStepIcon);
                         break;
                 }
