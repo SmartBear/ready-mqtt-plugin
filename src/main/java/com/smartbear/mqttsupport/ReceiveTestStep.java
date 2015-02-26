@@ -522,14 +522,22 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
     }
 
     @Override
+    public void prepare(TestCaseRunner testRunner, TestCaseRunContext testRunContext) throws Exception {
+        super.prepare(testRunner, testRunContext);
+        setReceivedMessage(null);
+        setReceivedMessageTopic(null);
+        for (TestAssertion assertion : assertionsSupport.getAssertionList()) {
+            assertion.prepare(testRunner, testRunContext);
+        }
+        updateState();
+    }
+
+    @Override
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
-        updateState();
         if(iconAnimator != null) iconAnimator.start();
-        setReceivedMessage(null);
-        setReceivedMessageTopic(null);
         try {
             try {
                 String actualBrokerUri = testRunContext.expand(getServerUri());
