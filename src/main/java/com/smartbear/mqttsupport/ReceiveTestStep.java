@@ -29,7 +29,7 @@ import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.support.StringUtils;import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -42,7 +42,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import javax.swing.ImageIcon;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.nio.ByteBuffer;
+import java.net.URI;import java.net.URISyntaxException;import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -502,7 +502,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
     }
 
 
-    private String[] diffOfStringSets(String[] minuend, ArrayList<String> subtrahend) {
+    private String[] diffOfStringSets(ArrayList<String> minuend, ArrayList<String> subtrahend) {
         ArrayList<String> resultList = new ArrayList<String>();
         for (String s : minuend) {
             boolean presentsEverywhere = false;
@@ -532,6 +532,9 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         updateState();
     }
 
+
+
+
     @Override
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
@@ -541,18 +544,25 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         try {
             try {
                 String actualBrokerUri = testRunContext.expand(getServerUri());
-                ConnectionParams actualConnectionParams = getConnectionParams(testRunContext);
-                Client client = getCache(testRunContext).get(actualBrokerUri, actualConnectionParams);
-
-                String[] neededTopics = testRunContext.expand(listenedTopics).split("[\\r\\n]+");
-                if (neededTopics == null || neededTopics.length == 0) {
-                    result.addMessage("The specified listened topic list is empty.");
+                String uriCheckResult = Utils.checkServerUri(actualBrokerUri);
+                if(uriCheckResult != null){
+                    result.addMessage(uriCheckResult);
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
+                ConnectionParams actualConnectionParams = getConnectionParams(testRunContext);
+                Client client = getCache(testRunContext).get(actualBrokerUri, actualConnectionParams);
 
-                for (int i = 0; i < neededTopics.length; ++i) {
-                    neededTopics[i] = neededTopics[i].trim();
+                String[] splitTopics = testRunContext.expand(listenedTopics).split("[\\r\\n]+");
+
+                ArrayList<String> neededTopics = new ArrayList<String>();
+                for (String t : splitTopics) {
+                    if(StringUtils.hasContent(t)) neededTopics.add(t.trim());
+                }
+                if (neededTopics.size() == 0) {
+                    result.addMessage("The specified listened topic list is empty.");
+                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
+                    return result;
                 }
 
                 long starTime = System.nanoTime();
@@ -585,7 +595,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                 while (System.nanoTime() <= maxTime && testRunner.isRunning()) {
                     Client.Message msg = messageQueue.getMessage();
                     if (msg != null) {
-                        if (topicCorrespondsFilters(msg.topic, neededTopics)) {
+                        if (topicCorrespondsFilters(msg.topic, splitTopics)) {
                             suitableMsg = msg;
                             messageQueue.removeCurrentMessage();
                             break;

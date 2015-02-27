@@ -21,18 +21,18 @@ import java.util.Locale;
 public class ClientCache {
     private static class CacheKey {
         private String serverUri;
+        private String originalServerUri;
         private ConnectionParams connectionParams;
 
         public CacheKey(String serverUri, ConnectionParams connectionParams) {
             if (serverUri == null) {
                 serverUri = "";
             }
-
             URI uri = null;
             try {
                 uri = new URI(serverUri);
-                if (StringUtils.isNullOrEmpty(uri.getScheme())) {
-                    uri = new URI("tcp", uri.getSchemeSpecificPart(), uri.getFragment());
+                if (uri.getAuthority() == null) {
+                    uri = new URI("tcp://" + serverUri);
                 }
                 if (uri.getPort() == -1) {
                     if ("tcp".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
@@ -41,9 +41,11 @@ public class ClientCache {
                         uri = new URI("ssl", uri.getUserInfo(), uri.getHost(), PluginConfig.DEFAULT_SSL_PORT, uri.getPath(), uri.getQuery(), uri.getFragment());
                     }
                 }
+                this.originalServerUri = uri.toString();
                 this.serverUri = uri.toString().toLowerCase(Locale.ENGLISH);
             } catch (URISyntaxException e) {
                 this.serverUri = serverUri;
+                this.originalServerUri = serverUri;
             }
             this.connectionParams = connectionParams;
         }
@@ -109,7 +111,7 @@ public class ClientCache {
             clientId = connectionParams.getFixedId();
         }
 
-        MqttAsyncClient newClient = new MqttAsyncClient(serverUri, clientId, new MemoryPersistence());
+        MqttAsyncClient newClient = new MqttAsyncClient(key.originalServerUri, clientId, new MemoryPersistence());
 
         //IMqttToken token = newClient.connect(createConnectionOptions(connectionParams));
         map.put(key, new Client(newClient, createConnectionOptions(connectionParams)));

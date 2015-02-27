@@ -1,7 +1,7 @@
 package com.smartbear.mqttsupport;
 
-import com.eviware.soapui.model.ModelItem;
-import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.support.StringUtils;import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
@@ -14,20 +14,20 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
-import java.awt.event.FocusEvent;
+import java.awt.event.FocusEvent;import java.net.URI;import java.net.URISyntaxException;
 
 class Utils {
 
-    public static boolean areStringsEqual(String s1, String s2, boolean caseSensitive, boolean dontDistinctNullAndEmpty){
+    public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty){
         if(dontDistinctNullAndEmpty) {
             if (s1 == null || s1.length() == 0) return s2 == null || s2.length() == 0;
         }
-        return areStringsEqual(s1, s2, caseSensitive);
+        return areStringsEqual(s1, s2, caseInsensitive);
     }
 
-    public static boolean areStringsEqual(String s1, String s2, boolean caseSensitive){
+    public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive){
         if(s1 == null) return s2 == null;
-        if(caseSensitive) return s1.equalsIgnoreCase(s2); else return s1.equals(s2);
+        if(caseInsensitive) return s1.equalsIgnoreCase(s2); else return s1.equals(s2);
     }
     public static boolean areStringsEqual(String s1, String s2){
         return areStringsEqual(s1, s2, false);
@@ -51,6 +51,33 @@ class Utils {
             memo.getParent().getParent().setVisible(visible);
         }
 
+    }
+
+    public static String checkServerUri(String serverUri) {
+        if (StringUtils.isNullOrEmpty(serverUri)) {
+            return "The Server URI is not specified for the test step.";
+        } else {
+            URI uri;
+            try {
+                uri = new URI(serverUri);
+                String protocol;
+                if(uri.getAuthority() == null){
+                    uri = new URI("tcp://" + serverUri);
+                    protocol = "tcp";
+                }
+                else{
+                    protocol = uri.getScheme();
+                }
+                if(protocol != null && !areStringsEqual(protocol, "tcp", false) && !areStringsEqual(protocol, "ssl", false)){
+                    return "The Server URI contains unknown protocol. Only \"tcp\" and \"ssl\" are allowed.";
+                }
+                if(!areStringsEqual(uri.getPath(), "")) return "The Server URI must not contain a path part.";
+                if(StringUtils.isNullOrEmpty(uri.getHost())) return "The string specified as Server URI is not a valid URI.";
+            } catch (URISyntaxException e) {
+                return "The string specified as Server URI is not a valid URI.";
+            }
+        }
+        return null;
     }
 
     public static class JsonTreeEditor extends JsonObjectTree {

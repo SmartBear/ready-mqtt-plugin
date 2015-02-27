@@ -171,17 +171,10 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
-        if (StringUtils.isNullOrEmpty(serverUri)) {
-            result.addMessage("The Server URI is not specified for the test step.");
+        String uriCheckResult = Utils.checkServerUri(serverUri);
+        if (uriCheckResult != null) {
+            result.addMessage(uriCheckResult);
             ok = false;
-        } else {
-            URI uri;
-            try {
-                uri = new URI(serverUri);
-            } catch (URISyntaxException e) {
-                result.addMessage("The string specified as Server URI is not a valid URI.");
-                ok = false;
-            }
         }
         if(StringUtils.isNullOrEmpty(topicToCheck)){
             result.addMessage("The topic of message is not specified");
