@@ -293,7 +293,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
-        result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
+        result.setStatus(TestStepResult.TestStepStatus.OK);
         if(iconAnimator != null) iconAnimator.start();
         try {
             try {
