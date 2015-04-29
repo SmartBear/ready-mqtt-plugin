@@ -4,8 +4,10 @@ import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepWithProperties;
+import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
+import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
@@ -351,6 +353,10 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         getCache(testRunContext).assureFinalized();
         super.finish(testRunner, testRunContext);
+    }
+
+    public Project getOwningProject(){
+        return ModelSupport.getModelItemProject(this);
     }
 
 }

@@ -73,7 +73,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     }
 
     private ArrayList<CaseComboItem> formCaseList(TestStep excludedTestStep){
-        List<WsdlTestSuite> testSuites = getModelItem().getProject().getTestSuiteList();
+        List<? extends TestSuite> testSuites = getModelItem().getOwningProject().getTestSuiteList();
         ArrayList<CaseComboItem> allowedTestCases = new ArrayList<CaseComboItem>();
         if(testSuites != null) {
             for (TestSuite testSuite : testSuites) {
