@@ -5,7 +5,7 @@
     <name>Ready! API MQTT Plugin</name>
     <artifactId>ready-mqtt-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <repositories>
         <repository>
             <id>eviware</id>
