@@ -7,6 +7,7 @@ import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.SimpleBindingForm;
+import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.eviware.x.form.ValidationMessage;
 import com.eviware.x.form.XFormDialog;
@@ -109,8 +110,8 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     protected void buildConnectionSection(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm) {
         form.appendHeading("Connection to MQTT Server");
-        form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
-        form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
+        JTextField serverEdit = form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
+        JTextField clientIdEdit = form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
         JTextField loginEdit = form.appendTextField("login", "Login (optional)", "Login to MQTT server. Fill this if the server requires authentication.");
 
         final String PASSWORD_TOOLTIP = "Password to MQTT server. Fill this if the server requires authentication.";
@@ -229,6 +230,12 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
             }
         });
+
+        PropertyExpansionPopupListener.enable(serverEdit, getModelItem());
+        PropertyExpansionPopupListener.enable(loginEdit, getModelItem());
+        PropertyExpansionPopupListener.enable(passwordEdit, getModelItem());
+        PropertyExpansionPopupListener.enable(clientIdEdit, getModelItem());
+
     }
 
     protected void buildQosRadioButtons(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm){

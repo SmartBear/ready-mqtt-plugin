@@ -11,6 +11,7 @@ import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.SimpleBindingForm;
+import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
@@ -78,7 +79,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         buildConnectionSection(form, pm);
         form.appendSeparator();
         form.appendHeading("Listening settings");
-        form.appendTextArea("listenedTopics", "Listened topics", "The list of topic filters (one filter per line)");
+        JTextArea topicsMemo = form.appendTextArea("listenedTopics", "Listened topics", "The list of topic filters (one filter per line)");
+        PropertyExpansionPopupListener.enable(topicsMemo, getModelItem());
         buildRadioButtonsFromEnum(form, pm, "On unexpected topic", "onUnexpectedTopic", ReceiveTestStep.UnexpectedTopicBehavior.class);
         buildQosRadioButtons(form, pm);
         form.appendComboBox("expectedMessageType", "Expected message type", ReceiveTestStep.MessageType.values(), "Expected type of a received message");
