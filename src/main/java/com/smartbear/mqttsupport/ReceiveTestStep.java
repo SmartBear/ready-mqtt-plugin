@@ -17,7 +17,10 @@ import com.eviware.soapui.model.iface.Interface;
 import com.eviware.soapui.model.iface.MessageExchange;
 import com.eviware.soapui.model.iface.Operation;
 import com.eviware.soapui.model.iface.Response;
-import com.eviware.soapui.model.mock.MockRunner;import com.eviware.soapui.model.support.DefaultTestStepProperty;
+import com.eviware.soapui.model.mock.MockRunner;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
+import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionError;
@@ -25,6 +28,7 @@ import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
+import com.eviware.soapui.model.testsuite.TestRunContext;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.monitor.TestMonitor;
@@ -55,9 +59,9 @@ import java.util.List;
 import java.util.Map;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.", iconPath = "com/smartbear/mqttsupport/receive_step.png")
-public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener {
+public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener, ExecutableTestStep {
 
-public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
+    public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOption {
         Discard("Discard unexpected messages"), Ignore("Ignore (defer) unexpected messages"), Fail("Fail");
         private String title;
 
@@ -522,6 +526,21 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
     }
 
     @Override
+    public WsdlTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
+        setReceivedMessage(null);
+        setReceivedMessageTopic(null);
+        updateState();
+        try{
+            return doExecute(runContext, cancellationToken);
+        }
+        finally {
+            afterExecution(runContext);
+        }
+
+    }
+
+
+    @Override
     public void prepare(TestCaseRunner testRunner, TestCaseRunContext testRunContext) throws Exception {
         super.prepare(testRunner, testRunContext);
         setReceivedMessage(null);
@@ -532,28 +551,24 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
         updateState();
     }
 
-
-
-
-    @Override
-    public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
+    public WsdlTestStepResult doExecute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
         if(iconAnimator != null) iconAnimator.start();
         try {
             try {
-                String actualBrokerUri = testRunContext.expand(getServerUri());
+                String actualBrokerUri = runContext.expand(getServerUri());
                 String uriCheckResult = Utils.checkServerUri(actualBrokerUri);
                 if(uriCheckResult != null){
                     result.addMessage(uriCheckResult);
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
-                ConnectionParams actualConnectionParams = getConnectionParams(testRunContext);
-                Client client = getCache(testRunContext).get(actualBrokerUri, actualConnectionParams);
+                ConnectionParams actualConnectionParams = getConnectionParams(runContext);
+                Client client = getCache(runContext).get(actualBrokerUri, actualConnectionParams);
 
-                String[] splitTopics = testRunContext.expand(listenedTopics).split("[\\r\\n]+");
+                String[] splitTopics = runContext.expand(listenedTopics).split("[\\r\\n]+");
 
                 ArrayList<String> neededTopics = new ArrayList<String>();
                 for (String t : splitTopics) {
@@ -575,7 +590,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                 if (requiredSubscriptions.length > 0) {
                     if (!client.isConnected()) {
                         ++connectAttemptCount;
-                        if (!waitForMqttConnection(client, testRunner, result, maxTime)) {
+                        if (!waitForMqttConnection(client, cancellationToken, result, maxTime)) {
                             return result;
                         }
                         activeSubscriptions = client.getCachedSubscriptions();
@@ -583,7 +598,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                     }
                     int[] qosArray = new int[requiredSubscriptions.length];
                     Arrays.fill(qosArray, qos);
-                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), testRunner, result, maxTime, "Attempt to subscribe on the specified topics failed.")) {
+                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), cancellationToken, result, maxTime, "Attempt to subscribe on the specified topics failed.")) {
                         return result;
                     }
                     Collections.addAll(activeSubscriptions, requiredSubscriptions);
@@ -592,7 +607,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                 Client.Message suitableMsg = null;
                 MessageQueue messageQueue = client.getMessageQueue();
                 messageQueue.setCurrentMessageToHead();
-                while (System.nanoTime() <= maxTime && testRunner.isRunning()) {
+                while (System.nanoTime() <= maxTime && !cancellationToken.cancelled()) {
                     Client.Message msg = messageQueue.getMessage();
                     if (msg != null) {
                         if (topicCorrespondsFilters(msg.topic, splitTopics)) {
@@ -612,7 +627,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                         }
                     } else {
                         if (!client.isConnected() && connectAttemptCount == 0) {
-                            if (!waitForMqttConnection(client, testRunner, result, maxTime)) {
+                            if (!waitForMqttConnection(client, cancellationToken, result, maxTime)) {
                                 return result;
                             }
                             ++connectAttemptCount;
@@ -620,7 +635,7 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
                     }
                 }
                 if (suitableMsg == null) {
-                    if (!testRunner.isRunning()) {
+                    if (cancellationToken.cancelled()) {
                         result.setStatus(TestStepResult.TestStepStatus.CANCELED);
                     }
                     else {
@@ -668,6 +683,20 @@ public enum UnexpectedTopicBehavior implements MqttConnectedTestStepPanel.UIOpti
 
     }
 
+    @Override
+    public TestStepResult run(final TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
+        return doExecute(testRunContext, new CancellationToken() {
+            @Override
+            public boolean cancelled() {
+                return !testRunner.isRunning();
+            }
+
+            @Override
+            public String cancellationReason() {
+                return null;
+            }
+        });
+    }
 
     private void updateState() {
         AssertionStatus oldAssertionStatus = assertionStatus;

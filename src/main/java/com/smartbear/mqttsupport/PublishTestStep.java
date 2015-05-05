@@ -8,12 +8,14 @@ import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.mock.MockRunner;import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
+import com.eviware.soapui.model.testsuite.TestRunContext;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
@@ -41,7 +43,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
-public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener {
+public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener, ExecutableTestStep {
     private final static String MESSAGE_KIND_PROP_NAME = "MessageKind";
     private final static String TOPIC_PROP_NAME = "Topic";
     private final static String MESSAGE_PROP_NAME = "Message";
@@ -290,7 +292,22 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
 
     @Override
-    public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
+    public TestStepResult run(final TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
+        return doExecute(testRunContext, new CancellationToken() {
+            @Override
+            public boolean cancelled() {
+                return !testRunner.isRunning();
+            }
+
+            @Override
+            public String cancellationReason() {
+                return null;
+            }
+        });
+    }
+
+    public WsdlTestStepResult doExecute(PropertyExpansionContext testRunContext, CancellationToken cancellationToken) {
+
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.OK);
@@ -316,13 +333,13 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                 }
 
                 Client client = getCache(testRunContext).get(expandedUri, connectParams);
-                if(!waitForMqttConnection(client, testRunner, result, maxTime)) return result;
+                if(!waitForMqttConnection(client, cancellationToken, result, maxTime)) return result;
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
                 message.setPayload(payload);
-                if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), testRunner, result, maxTime, "Attempt to publish the message failed.")) return result;
+                if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), cancellationToken, result, maxTime, "Attempt to publish the message failed.")) return result;
 
             } catch (MqttException e) {
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
@@ -393,6 +410,18 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         }
         setProperty("message", MESSAGE_PROP_NAME, value);
     }
+
+    @Override
+    public WsdlTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
+        try{
+            return doExecute(runContext, cancellationToken);
+        }
+        finally {
+            afterExecution(runContext);
+        }
+
+    }
+
 
     public int getQos(){return qos;}
     public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}

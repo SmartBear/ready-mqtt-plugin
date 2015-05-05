@@ -11,6 +11,7 @@ import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
+import com.eviware.soapui.model.testsuite.TestRunContext;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
@@ -311,9 +312,9 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
 
     }
 
-    protected boolean waitForMqttOperation(IMqttToken token, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
+    protected boolean waitForMqttOperation(IMqttToken token, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
         while (!token.isComplete() && token.getException() == null) {
-            boolean stopped = !testRunner.isRunning();
+            boolean stopped = cancellationToken.cancelled();
             if (stopped || (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime)) {
                 if (stopped) {
                     testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
@@ -335,7 +336,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         return true;
     }
 
-    protected ClientCache getCache(TestCaseRunContext testRunContext){
+    protected ClientCache getCache(PropertyExpansionContext testRunContext){
         final String CLIENT_CACHE_PROPNAME = "client_cache";
         ClientCache cache = (ClientCache)(testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
         if(cache == null){
@@ -345,13 +346,18 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
         return cache;
     }
 
-    protected boolean waitForMqttConnection(Client client, TestCaseRunner testRunner, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
-        return waitForMqttOperation(client.getConnectingStatus(), testRunner, testStepResult, maxTime, "Unable connect to the MQTT broker.");
+    protected boolean waitForMqttConnection(Client client, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
+        return waitForMqttOperation(client.getConnectingStatus(), cancellationToken, testStepResult, maxTime, "Unable connect to the MQTT broker.");
+    }
+
+
+    protected void afterExecution(PropertyExpansionContext runContext) {
+        getCache(runContext).assureFinalized();
     }
 
     @Override
     public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        getCache(testRunContext).assureFinalized();
+        afterExecution(testRunContext);
         super.finish(testRunner, testRunContext);
     }
 

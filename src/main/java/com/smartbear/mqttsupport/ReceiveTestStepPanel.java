@@ -10,6 +10,7 @@ import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
+import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
@@ -22,11 +23,13 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.JComponent;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -142,9 +145,20 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         xmlEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", xmlEditor);
 
-
-        return new JScrollPane(form.getPanel());
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
+        mainPanel.add(buildToolBar(), BorderLayout.NORTH);
+        mainPanel.add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
+        return mainPanel;
     }
+
+    private JComponent buildToolBar(){
+        JXToolBar toolBar = UISupport.createToolbar();
+        RunTestStepAction startAction = new RunTestStepAction(getModelItem());
+        toolBar.add(UISupport.createActionButton(startAction, true));
+        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
+        return toolBar;
+    }
+
     private AssertionsPanel buildAssertionsPanel(){
         return new AssertionsPanel(getModelItem());
     }

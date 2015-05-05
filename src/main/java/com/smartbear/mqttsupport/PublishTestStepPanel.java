@@ -4,6 +4,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.model.ModelItem;
 
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
@@ -15,13 +16,16 @@ import com.jgoodies.binding.adapter.Bindings;
 
 import javax.swing.AbstractAction;
 
+import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
@@ -108,10 +112,19 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         form.appendCheckBox("retained", "Retained", "");
         buildTimeoutSpinEdit(form, pm, "Timeout");
 
-        add(new JScrollPane(form.getPanel()));
+        add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
+        add(buildToolbar(), BorderLayout.NORTH);
         setPreferredSize(new Dimension(500, 300));
 
         propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));
+    }
+
+    private JComponent buildToolbar(){
+        JXToolBar toolBar = UISupport.createToolbar();
+        RunTestStepAction startAction = new RunTestStepAction(getModelItem());
+        toolBar.add(UISupport.createActionButton(startAction, true));
+        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
+        return toolBar;
     }
 
     @Override
@@ -166,6 +179,5 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
             }
         }
     }
-
 
 }
