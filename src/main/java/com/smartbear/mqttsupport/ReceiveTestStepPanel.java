@@ -279,26 +279,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         assertionListChanged();
     }
 
-
-
     @Override
-    public void afterExecution(ExecutableTestStep testStep, WsdlTestStepResult executionResult) {
-        if(executionResult.getStatus() == TestStepResult.TestStepStatus.CANCELED){
-            logMessage(executionResult.getTimeStamp(), "CANCELED");
-        }
-        else {
-            if(getModelItem().getReceivedMessageTopic() == null){
-                if(executionResult.getError() == null){
-                    logMessage(executionResult.getTimeStamp(), "Unable to receive a message (" + StringUtils.join(executionResult.getMessages(), " ") + ")");
-                }
-                else{
-                    logMessage(executionResult.getTimeStamp(), "Error during message receiving: " + Utils.getExceptionMessage(executionResult.getError()));
-                }
-            }
-            else{
-                logMessage(executionResult.getTimeStamp(), String.format("Message with %s topic has been received within %d ms", getModelItem().getReceivedMessageTopic(), executionResult.getTimeTaken()));
-            }
-        }
+    public void afterExecution(ExecutableTestStep testStep, ExecutableTestStepResult executionResult) {
+        logArea.addLine(DateUtil.formatFull(new Date(executionResult.getTimeStamp())) + " - " + executionResult.getOutcome());
     }
 
     private void logMessage(long time, String message){

@@ -7,7 +7,7 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.testsuite.TestRunContext;
 
 public interface ExecutableTestStep extends ModelItem {
-    public WsdlTestStepResult execute(PropertyExpansionContext context, CancellationToken cancellationToken);
+    public ExecutableTestStepResult execute(PropertyExpansionContext context, CancellationToken cancellationToken);
     public void addExecutionListener(ExecutionListener listener);
     public void removeExecutionListener(ExecutionListener listener);
 }

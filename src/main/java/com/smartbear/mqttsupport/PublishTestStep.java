@@ -27,6 +27,7 @@ import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
 import com.google.common.base.Charsets;
+import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -50,6 +51,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     private final static String MESSAGE_PROP_NAME = "Message";
     private final static String QOS_PROP_NAME = "QoS";
     private final static String RETAINED_PROP_NAME = "Retained";
+    private final static Logger log = Logger.getLogger(PluginConfig.LOGGER_NAME);
 
     enum MessageType{
         Json ("JSON"), Xml ("XML"), Utf8Text("Text (UTF-8)"), Utf16Text("Text (UTF-16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
@@ -308,9 +310,9 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         });
     }
 
-    public WsdlTestStepResult doExecute(PropertyExpansionContext testRunContext, CancellationToken cancellationToken) {
+    private ExecutableTestStepResult doExecute(PropertyExpansionContext testRunContext, CancellationToken cancellationToken) {
 
-        WsdlTestStepResult result = new WsdlTestStepResult(this);
+        ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.OK);
         if(iconAnimator != null) iconAnimator.start();
@@ -351,7 +353,39 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         } finally {
             result.stopTimer();
             if(iconAnimator != null) iconAnimator.stop();
+            result.setOutcome(formOutcome(result));
+            log.info(String.format("%s - [%s test step]", result.getOutcome(), getName()));
             notifyExecutionListeners(result);
+        }
+    }
+
+    private String formOutcome(WsdlTestStepResult executionResult) {
+        switch (executionResult.getStatus()){
+            case CANCELED:
+                return "CANCELED";
+            case FAILED:
+                if(executionResult.getError() == null){
+                    return "Unable to publish the message (" + StringUtils.join(executionResult.getMessages(), " ") + ")";
+                }
+                else{
+                    return "Error during message publishing: " + Utils.getExceptionMessage(executionResult.getError());
+                }
+            default:
+                return String.format("The message has been published within %d ms", executionResult.getTimeTaken());
+
+        }
+
+    }
+
+    private void notifyExecutionListeners(ExecutableTestStepResult stepRunResult){
+        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
+        for(ExecutionListener listener: listeners){
+            try{
+                listener.afterExecution(this, stepRunResult);
+            }
+            catch (Throwable e){
+                SoapUI.logError(e);
+            }
         }
     }
 
@@ -425,7 +459,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     }
 
     @Override
-    public WsdlTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
+    public ExecutableTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
         try{
             return doExecute(runContext, cancellationToken);
         }
@@ -435,17 +469,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     }
 
-    private void notifyExecutionListeners(WsdlTestStepResult stepRunResult){
-        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
-        for(ExecutionListener listener: listeners){
-            try{
-                listener.afterExecution(this, stepRunResult);
-            }
-            catch (Throwable e){
-                SoapUI.logError(e);
-            }
-        }
-    }
 
     public int getQos(){return qos;}
     public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}

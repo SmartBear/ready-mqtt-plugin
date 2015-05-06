@@ -212,27 +212,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     }
 
     @Override
-    public void afterExecution(ExecutableTestStep testStep, WsdlTestStepResult executionResult) {
-        switch (executionResult.getStatus()){
-            case CANCELED:
-                logMessage(executionResult.getTimeStamp(), "CANCELED");
-                break;
-            case FAILED:
-                if(executionResult.getError() == null){
-                    logMessage(executionResult.getTimeStamp(), "Unable to publish the message (" + StringUtils.join(executionResult.getMessages(), " ") + ")");
-                }
-                else{
-                    logMessage(executionResult.getTimeStamp(), "Error during message publishing: " + Utils.getExceptionMessage(executionResult.getError()));
-                }
-                break;
-            default:
-                logMessage(executionResult.getTimeStamp(), String.format("The message has been published within %d ms", executionResult.getTimeTaken()));
-
-        }
-    }
-
-    private void logMessage(long time, String message){
-        logArea.addLine(DateUtil.formatFull(new Date(time)) + " - " + message);
+    public void afterExecution(ExecutableTestStep testStep, ExecutableTestStepResult executionResult) {
+        logArea.addLine(DateUtil.formatFull(new Date(executionResult.getTimeStamp())) + " - " + executionResult.getOutcome());
     }
 
     public class SelectFileAction extends AbstractAction {

@@ -38,6 +38,7 @@ import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.google.common.base.Charsets;
+import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -122,6 +123,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private final static String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
 
     private final static String ASSERTION_SECTION = "assertion";
+    private final static Logger log = Logger.getLogger(PluginConfig.LOGGER_NAME);
 
     private static boolean actionGroupAdded = false;
 
@@ -528,7 +530,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     @Override
-    public WsdlTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
+    public ExecutableTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
         updateState();
@@ -564,8 +566,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         updateState();
     }
 
-    public WsdlTestStepResult doExecute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
-        WsdlTestStepResult result = new WsdlTestStepResult(this);
+    public ExecutableTestStepResult doExecute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
+        ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
         if(iconAnimator != null) iconAnimator.start();
@@ -692,12 +694,34 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         break;
                 }
             }
+            result.setOutcome(formOutcome(result));
+            log.info(String.format("%s - [%s test step]", result.getOutcome(), getName()));
             notifyExecutionListeners(result);
         }
 
     }
 
-    private void notifyExecutionListeners(WsdlTestStepResult stepRunResult){
+    private String formOutcome(ExecutableTestStepResult executionResult){
+        if(executionResult.getStatus() == TestStepResult.TestStepStatus.CANCELED){
+            return "CANCELED";
+        }
+        else {
+            if(getReceivedMessageTopic() == null){
+                if(executionResult.getError() == null){
+                    return "Unable to receive a message (" + StringUtils.join(executionResult.getMessages(), " ") + ")";
+                }
+                else{
+                    return "Error during message receiving: " + Utils.getExceptionMessage(executionResult.getError());
+                }
+            }
+            else{
+                return String.format("Message with %s topic has been received within %d ms", getReceivedMessageTopic(), executionResult.getTimeTaken());
+            }
+        }
+
+    }
+
+    private void notifyExecutionListeners(ExecutableTestStepResult stepRunResult){
         ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
         for(ExecutionListener listener: listeners){
             try{
