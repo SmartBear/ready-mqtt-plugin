@@ -1,10 +1,14 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
+import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
@@ -12,6 +16,7 @@ import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
+import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
@@ -28,14 +33,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.beans.PropertyChangeEvent;
+import java.util.Date;
 
-public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener {
+public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener, ExecutionListener {
 
     private JComponentInspector<JComponent> assertionInspector;
     private JInspectorPanel inspectorPanel;
@@ -46,10 +53,17 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JTabbedPane xmlEditor;
     private Utils.XmlTreeEditor xmlTreeEditor;
 
+    private JComponentInspector<JComponent> logInspector;
+    private JLogList logArea;
+
+    private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
+
+
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
         buildUI();
         modelItem.addAssertionsListener(this);
+        modelItem.addExecutionListener(this);
     }
 
     private void buildUI() {
@@ -63,6 +77,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
                 + getModelItem().getAssertionCount() + ")", "Assertions for this Message", true);
 
         inspectorPanel.addInspector(assertionInspector);
+
+        logInspector = new JComponentInspector<JComponent>(buildLogPanel(), String.format(LOG_TAB_TITLE, 0), "Log of the test step executions", true);
+        inspectorPanel.addInspector(logInspector);
 
         inspectorPanel.setDefaultDividerLocation(0.6F);
         inspectorPanel.setCurrentInspector("Assertions");
@@ -163,6 +180,19 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return new AssertionsPanel(getModelItem());
     }
 
+    protected JComponent buildLogPanel() {
+        logArea = new JLogList("Test Step Log");
+
+        logArea.getLogList().getModel().addListDataListener(new ListDataChangeListener() {
+
+            public void dataChanged(ListModel model) {
+                logInspector.setTitle(String.format(LOG_TAB_TITLE, model.getSize()));
+            }
+        });
+
+        return logArea;
+    }
+
     private void updateStatusIcon() {
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
         switch (status) {
@@ -220,12 +250,15 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         if (super.onClose(canCancel)) {
             assertionsPanel.release();
             inspectorPanel.release();
+
+            getModelItem().removeExecutionListener(this);
             getModelItem().removeAssertionsListener(this);
             return true;
         }
 
         return false;
     }
+
     private void assertionListChanged(){
         assertionInspector.setTitle(String.format("Assertions (%d)", getModelItem().getAssertionCount()));
     }
@@ -243,5 +276,31 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     @Override
     public void assertionMoved(TestAssertion assertion, int ix, int offset) {
         assertionListChanged();
+    }
+
+
+
+    @Override
+    public void afterExecution(ExecutableTestStep testStep, WsdlTestStepResult executionResult) {
+        if(executionResult.getStatus() == TestStepResult.TestStepStatus.CANCELED){
+            logMessage(executionResult.getTimeStamp(), "CANCELED");
+        }
+        else {
+            if(getModelItem().getReceivedMessageTopic() == null){
+                if(executionResult.getError() == null){
+                    logMessage(executionResult.getTimeStamp(), "Unable to receive a message (" + StringUtils.join(executionResult.getMessages(), " ") + ")");
+                }
+                else{
+                    logMessage(executionResult.getTimeStamp(), "Error during message receiving: " + Utils.getExceptionMessage(executionResult.getError()));
+                }
+            }
+            else{
+                logMessage(executionResult.getTimeStamp(), String.format("Message with %s topic has been received within %d ms", getModelItem().getReceivedMessageTopic(), executionResult.getTimeTaken()));
+            }
+        }
+    }
+
+    private void logMessage(long time, String message){
+        logArea.addLine(DateUtil.formatFull(new Date(time)) + " - " + message);
     }
 }

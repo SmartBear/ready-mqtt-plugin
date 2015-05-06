@@ -1,13 +1,22 @@
 package com.smartbear.mqttsupport;
 
 
+import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.ModelItem;
 
+import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.support.DateUtil;
+import com.eviware.soapui.support.ListDataChangeListener;
+import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JComponentInspector;
+import com.eviware.soapui.support.components.JInspectorPanel;
+import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
+import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 
@@ -20,22 +29,25 @@ import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.beans.PropertyChangeEvent;
+import java.util.Date;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
-public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTestStep> {
+public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTestStep> implements ExecutionListener {
 
     private JTextField numberEdit;
     private JTextArea textMemo;
@@ -46,14 +58,38 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JTabbedPane xmlEditor;
     private Utils.XmlTreeEditor xmlTreeEditor;
 
+    private JInspectorPanel inspectorPanel;
+    private JComponentInspector<JComponent> logInspector;
+    private JLogList logArea;
+    private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
+
+
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
         buildUI();
+        modelItem.addExecutionListener(this);
     }
 
 
-    private void buildUI() {
+    private void buildUI(){
+        JComponent mainPanel = buildMainPanel();
+        inspectorPanel = JInspectorPanelFactory.build(mainPanel);
+
+
+        logInspector = new JComponentInspector<JComponent>(buildLogPanel(), String.format(LOG_TAB_TITLE, 0), "Log of the test step executions", true);
+        inspectorPanel.addInspector(logInspector);
+
+        inspectorPanel.setDefaultDividerLocation(0.6F);
+//        inspectorPanel.setCurrentInspector("Assertions");
+
+
+        add(inspectorPanel.getComponent());
+        setPreferredSize(new Dimension(500, 300));
+
+    }
+
+    private JComponent buildMainPanel() {
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         SimpleBindingForm form = new SimpleBindingForm(pm);
         buildConnectionSection(form, pm);
@@ -112,11 +148,13 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         form.appendCheckBox("retained", "Retained", "");
         buildTimeoutSpinEdit(form, pm, "Timeout");
 
-        add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
-        add(buildToolbar(), BorderLayout.NORTH);
-        setPreferredSize(new Dimension(500, 300));
+        JPanel result = new JPanel(new BorderLayout(0, 0));
+        result.add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
+        result.add(buildToolbar(), BorderLayout.NORTH);
 
         propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));
+
+        return result;
     }
 
     private JComponent buildToolbar(){
@@ -125,6 +163,19 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         toolBar.add(UISupport.createActionButton(startAction, true));
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
         return toolBar;
+    }
+
+    protected JComponent buildLogPanel() {
+        logArea = new JLogList("Test Step Log");
+
+        logArea.getLogList().getModel().addListDataListener(new ListDataChangeListener() {
+
+            public void dataChanged(ListModel model) {
+                logInspector.setTitle(String.format(LOG_TAB_TITLE, model.getSize()));
+            }
+        });
+
+        return logArea;
     }
 
     @Override
@@ -153,9 +204,35 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     @Override
     protected boolean release() {
+        getModelItem().removeExecutionListener(this);
+        inspectorPanel.release();
         jsonTreeEditor.release();
         xmlTreeEditor.release();
         return super.release();
+    }
+
+    @Override
+    public void afterExecution(ExecutableTestStep testStep, WsdlTestStepResult executionResult) {
+        switch (executionResult.getStatus()){
+            case CANCELED:
+                logMessage(executionResult.getTimeStamp(), "CANCELED");
+                break;
+            case FAILED:
+                if(executionResult.getError() == null){
+                    logMessage(executionResult.getTimeStamp(), "Unable to publish the message (" + StringUtils.join(executionResult.getMessages(), " ") + ")");
+                }
+                else{
+                    logMessage(executionResult.getTimeStamp(), "Error during message publishing: " + Utils.getExceptionMessage(executionResult.getError()));
+                }
+                break;
+            default:
+                logMessage(executionResult.getTimeStamp(), String.format("The message has been published within %d ms", executionResult.getTimeTaken()));
+
+        }
+    }
+
+    private void logMessage(long time, String message){
+        logArea.addLine(DateUtil.formatFull(new Date(time)) + " - " + message);
     }
 
     public class SelectFileAction extends AbstractAction {

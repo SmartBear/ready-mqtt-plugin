@@ -320,7 +320,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
                     testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
                 }
                 else{
-                    testStepResult.addMessage("The test step's timeout has expired");
+                    testStepResult.addMessage("The test step's timeout has expired.");
                     testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
 
                 }
@@ -351,13 +351,13 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
     }
 
 
-    protected void afterExecution(PropertyExpansionContext runContext) {
+    protected void cleanAfterExecution(PropertyExpansionContext runContext) {
         getCache(runContext).assureFinalized();
     }
 
     @Override
     public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        afterExecution(testRunContext);
+        cleanAfterExecution(testRunContext);
         super.finish(testRunner, testRunContext);
     }
 

@@ -80,6 +80,14 @@ class Utils {
         return null;
     }
 
+    public static String getExceptionMessage(Throwable e){
+        String result = StringUtils.hasContent(e.getMessage())? String.format("%s \"%s\"", e.getClass().getName(), e.getMessage()) : e.getClass().getName();
+        if(e.getCause() != null){
+            result += "; cause: " + getExceptionMessage(e.getCause());
+        }
+        return result;
+    }
+
     public static class JsonTreeEditor extends JsonObjectTree {
         private String prevValue = null;
         private boolean isCurValueNull = false;

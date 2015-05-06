@@ -41,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
 public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener, ExecutableTestStep {
@@ -82,6 +83,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<PublishTestStep> iconAnimator;
+    private ArrayList<ExecutionListener> executionListeners;
 
     public PublishTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -349,9 +351,20 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         } finally {
             result.stopTimer();
             if(iconAnimator != null) iconAnimator.stop();
+            notifyExecutionListeners(result);
         }
     }
 
+    @Override
+    public void addExecutionListener(ExecutionListener listener) {
+        if(executionListeners == null) executionListeners = new ArrayList<ExecutionListener>();
+        executionListeners.add(listener);
+    }
+
+    @Override
+    public void removeExecutionListener(ExecutionListener listener) {
+        executionListeners.remove(listener);
+    }
 
     public MessageType getMessageKind(){return messageKind;}
     public void setMessageKind(MessageType newValue){
@@ -417,11 +430,22 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             return doExecute(runContext, cancellationToken);
         }
         finally {
-            afterExecution(runContext);
+            cleanAfterExecution(runContext);
         }
 
     }
 
+    private void notifyExecutionListeners(WsdlTestStepResult stepRunResult){
+        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
+        for(ExecutionListener listener: listeners){
+            try{
+                listener.afterExecution(this, stepRunResult);
+            }
+            catch (Throwable e){
+                SoapUI.logError(e);
+            }
+        }
+    }
 
     public int getQos(){return qos;}
     public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}

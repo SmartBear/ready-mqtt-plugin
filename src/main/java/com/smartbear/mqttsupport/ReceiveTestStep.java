@@ -142,6 +142,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private ImageIcon unknownStepIcon;
     private IconAnimator<ReceiveTestStep> iconAnimator;
 
+    private ArrayList<ExecutionListener> executionListeners;
+
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -534,9 +536,20 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             return doExecute(runContext, cancellationToken);
         }
         finally {
-            afterExecution(runContext);
+            cleanAfterExecution(runContext);
         }
 
+    }
+
+    @Override
+    public void addExecutionListener(ExecutionListener listener) {
+        if(executionListeners == null) executionListeners = new ArrayList<ExecutionListener>();
+        executionListeners.add(listener);
+    }
+
+    @Override
+    public void removeExecutionListener(ExecutionListener listener) {
+        executionListeners.remove(listener);
     }
 
 
@@ -679,8 +692,21 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         break;
                 }
             }
+            notifyExecutionListeners(result);
         }
 
+    }
+
+    private void notifyExecutionListeners(WsdlTestStepResult stepRunResult){
+        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
+        for(ExecutionListener listener: listeners){
+            try{
+                listener.afterExecution(this, stepRunResult);
+            }
+            catch (Throwable e){
+                SoapUI.logError(e);
+            }
+        }
     }
 
     @Override
