@@ -393,7 +393,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         }
         String text;
         String actualFormat = "hexadecimal digits sequence";
-        if(payload.length >= 3 && payload[0] == 0xef && payload[1] == 0xbb & payload[2] == 0xbf){
+        if(payload.length >= 3 && payload[0] == ((byte)0xef) && payload[1] == ((byte)0xbb) && payload[2] == ((byte)0xbf)){
             text = bytesToString(payload, 3, Charsets.UTF_8);
             if(text == null) text = bytesToHexString(payload); else actualFormat = "UTF-8 text";
         }
@@ -419,7 +419,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     setReceivedMessage("");
                     return true;
                 }
-                if(payload.length >= 3 && payload[0] == 0xef && payload[1] == 0xbb & payload[2] == 0xbf){
+                if(payload.length >= 3 && payload[0] == ((byte)0xef) && payload[1] == ((byte)0xbb) && payload[2] == ((byte)0xbf)){
                     if(payload.length == 3) {
                         setReceivedMessage("");
                         return true;
