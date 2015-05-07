@@ -40,6 +40,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
@@ -160,7 +161,9 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JComponent buildToolbar(){
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
-        toolBar.add(UISupport.createActionButton(startAction, true));
+        JButton submitButton = UISupport.createActionButton(startAction, true);
+        toolBar.add(submitButton);
+        submitButton.setMnemonic(KeyEvent.VK_ENTER);
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
         return toolBar;
     }

@@ -27,6 +27,7 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -39,6 +40,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
@@ -171,7 +173,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JComponent buildToolBar(){
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
-        toolBar.add(UISupport.createActionButton(startAction, true));
+        JButton submitButton = UISupport.createActionButton(startAction, true);
+        toolBar.add(submitButton);
+        submitButton.setMnemonic(KeyEvent.VK_ENTER);
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
         return toolBar;
     }
