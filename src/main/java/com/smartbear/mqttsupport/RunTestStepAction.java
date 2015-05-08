@@ -20,14 +20,15 @@ public class RunTestStepAction extends AbstractAction implements Runnable, Cance
 
     public RunTestStepAction(ExecutableTestStep testStep) {
         this.testStep = testStep;
-        this.stopAction = new StopTestStepAction(this);
-        putValue(Action.SMALL_ICON, UISupport.createImageIcon("/submit_request.png"));
+        putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/eviware/soapui/resources/images/submit_request.png"));
         if (UISupport.isMac()) {
             putValue(Action.SHORT_DESCRIPTION, "Run test step (Alt-Ctrl-Enter)");
         } else {
             putValue(Action.SHORT_DESCRIPTION, "Run test step (Alt-Enter)");
         }
         putValue(Action.ACCELERATOR_KEY, UISupport.getKeyStroke("alt ENTER"));
+        this.stopAction = new StopTestStepAction(this);
+        this.stopAction.setEnabled(false);
     }
 
     @Override

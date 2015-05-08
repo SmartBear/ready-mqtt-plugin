@@ -165,18 +165,18 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         form.append("Message", xmlEditor);
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        mainPanel.add(buildToolBar(), BorderLayout.NORTH);
+        mainPanel.add(buildToolbar(), BorderLayout.NORTH);
         mainPanel.add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
         return mainPanel;
     }
 
-    private JComponent buildToolBar(){
+    private JComponent buildToolbar(){
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
-        JButton submitButton = UISupport.createActionButton(startAction, true);
+        JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
         toolBar.add(submitButton);
         submitButton.setMnemonic(KeyEvent.VK_ENTER);
-        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
+        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), startAction.getCorrespondingStopAction().isEnabled()));
         return toolBar;
     }
 

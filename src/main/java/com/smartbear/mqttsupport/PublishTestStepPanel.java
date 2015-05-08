@@ -161,10 +161,10 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JComponent buildToolbar(){
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
-        JButton submitButton = UISupport.createActionButton(startAction, true);
+        JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
         toolBar.add(submitButton);
         submitButton.setMnemonic(KeyEvent.VK_ENTER);
-        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), false));
+        toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), startAction.getCorrespondingStopAction().isEnabled()));
         return toolBar;
     }
 
