@@ -21,6 +21,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 
+import javax.swing.SwingUtilities;
 import java.lang.reflect.Field;
 
 
@@ -219,38 +220,45 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties {
 //
 //    }
 
-    protected boolean setProperty(String propName, String publishedPropName, Object value) {
+    protected boolean setProperty(final String propName, final String publishedPropName, final Object value) {
         Object old;
-        try {
-            Field field = null;
-            Class curClass = getClass();
-            while (field == null && curClass != null){
-                try {
-                    field = curClass.getDeclaredField(propName);
-                } catch (NoSuchFieldException e) {
-                    curClass = curClass.getSuperclass();
+        synchronized (this) {
+            try {
+                Field field = null;
+                Class curClass = getClass();
+                while (field == null && curClass != null) {
+                    try {
+                        field = curClass.getDeclaredField(propName);
+                    } catch (NoSuchFieldException e) {
+                        curClass = curClass.getSuperclass();
+                    }
                 }
-            }
-            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
-            field.setAccessible(true);
-            old = field.get(this);
+                if (field == null)
+                    throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+                field.setAccessible(true);
+                old = field.get(this);
 
-            if (value == null) {
-                if(old == null) return false;
+                if (value == null) {
+                    if (old == null) return false;
+                } else {
+                    if (value.equals(old)) return false;
+                }
+                field.set(this, value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
             }
-            else{
-                if(value.equals(old)) return false;
-            }
-            field.set(this, value);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+            updateData();
         }
-        updateData();
-        notifyPropertyChanged(propName, old, value);
-        if(publishedPropName != null) firePropertyValueChanged(publishedPropName, old == null ? null : old.toString(), value == null ? null : value.toString());
+        final Object oldValue = old;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                notifyPropertyChanged(propName, oldValue, value);
+                if(publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+            }
+        });
         return true;
     }
-
 
 
     protected boolean setIntProperty(String propName, String publishedPropName, int value, int minAllowed, int maxAllowed) {

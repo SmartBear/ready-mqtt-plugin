@@ -21,12 +21,14 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.security.boundary.IntegerBoundary;
+import com.eviware.soapui.support.SoapUITools;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
 import com.google.common.base.Charsets;
+import com.smartbear.ready.util.ReadyTools;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -35,6 +37,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 import javax.validation.Payload;
 import javax.xml.transform.Result;
 import java.io.File;
@@ -377,15 +380,24 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     }
 
-    private void notifyExecutionListeners(ExecutableTestStepResult stepRunResult){
-        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
-        for(ExecutionListener listener: listeners){
-            try{
-                listener.afterExecution(this, stepRunResult);
+    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult){
+        if(SwingUtilities.isEventDispatchThread()){
+            for(ExecutionListener listener: executionListeners){
+                try{
+                    listener.afterExecution(this, stepRunResult);
+                }
+                catch (Throwable e){
+                    SoapUI.logError(e);
+                }
             }
-            catch (Throwable e){
-                SoapUI.logError(e);
-            }
+        }
+        else{
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    notifyExecutionListeners(stepRunResult);
+                }
+            });
         }
     }
 

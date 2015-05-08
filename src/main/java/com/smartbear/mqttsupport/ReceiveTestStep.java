@@ -45,6 +45,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import javax.swing.ImageIcon;
+import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.net.URI;import java.net.URISyntaxException;import java.nio.ByteBuffer;
@@ -721,15 +722,24 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     }
 
-    private void notifyExecutionListeners(ExecutableTestStepResult stepRunResult){
-        ArrayList<ExecutionListener> listeners = (ArrayList<ExecutionListener>) executionListeners.clone();
-        for(ExecutionListener listener: listeners){
-            try{
-                listener.afterExecution(this, stepRunResult);
+    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult){
+        if(SwingUtilities.isEventDispatchThread()){
+            for(ExecutionListener listener: executionListeners){
+                try{
+                    listener.afterExecution(this, stepRunResult);
+                }
+                catch (Throwable e){
+                    SoapUI.logError(e);
+                }
             }
-            catch (Throwable e){
-                SoapUI.logError(e);
-            }
+        }
+        else{
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    notifyExecutionListeners(stepRunResult);
+                }
+            });
         }
     }
 
@@ -749,7 +759,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     private void updateState() {
-        AssertionStatus oldAssertionStatus = assertionStatus;
+        final AssertionStatus oldAssertionStatus = assertionStatus;
         if(getReceivedMessageTopic() != null){
             int cnt = getAssertionCount();
             if (cnt == 0) {
@@ -768,7 +778,14 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             assertionStatus = AssertionStatus.UNKNOWN;
         }
         if(oldAssertionStatus != assertionStatus){
-            notifyPropertyChanged("assertionStatus", oldAssertionStatus, assertionStatus);
+            final AssertionStatus newAssertionStatus = assertionStatus;
+            SwingUtilities.invokeLater(new Runnable() {
+                   @Override
+                   public void run() {
+                       notifyPropertyChanged("assertionStatus", oldAssertionStatus, newAssertionStatus);
+                   }
+               }
+            );
         }
         if(iconAnimator == null) return;
         TestMonitor testMonitor = SoapUI.getTestMonitor();
