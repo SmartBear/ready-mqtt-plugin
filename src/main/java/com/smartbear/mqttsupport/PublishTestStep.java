@@ -49,7 +49,7 @@ import java.util.ArrayList;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
 public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener, ExecutableTestStep {
-    private final static String MESSAGE_KIND_PROP_NAME = "MessageKind";
+    private final static String MESSAGE_KIND_PROP_NAME = "MessageType";
     private final static String TOPIC_PROP_NAME = "Topic";
     private final static String MESSAGE_PROP_NAME = "Message";
     private final static String QOS_PROP_NAME = "QoS";
@@ -110,7 +110,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             @Override
             public void setValue(DefaultTestStepProperty property, String value) {
                 MessageType messageType = MessageType.fromString(value);
-                if(messageType != null) messageKind = messageType;
+                if(messageType != null) setMessageKind(messageType);
             }
         }, this));
         addProperty(new TestStepBeanProperty(TOPIC_PROP_NAME, false, this, "topic", this));
