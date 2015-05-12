@@ -100,8 +100,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         SimpleBindingForm form = new SimpleBindingForm(pm);
         buildConnectionSection(form, pm);
         form.appendSeparator();
-        form.appendHeading("Listening settings");
-        JTextArea topicsMemo = form.appendTextArea("listenedTopics", "Listened topics", "The list of topic filters (one filter per line)");
+        form.appendHeading("Subscription settings");
+        JTextArea topicsMemo = form.appendTextArea("listenedTopics", "Subscribed topics", "The list of topic filters (one filter per line)");
         PropertyExpansionPopupListener.enable(topicsMemo, getModelItem());
         buildRadioButtonsFromEnum(form, pm, "On unexpected topic", "onUnexpectedTopic", ReceiveTestStep.UnexpectedTopicBehavior.class);
         buildQosRadioButtons(form, pm);
