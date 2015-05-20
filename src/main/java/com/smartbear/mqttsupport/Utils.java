@@ -1,20 +1,22 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;import com.eviware.soapui.model.ModelItem;
-import com.eviware.soapui.support.StringUtils;import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
+import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
 import com.jgoodies.binding.adapter.SpinnerToValueModelConnector;
 import com.jgoodies.binding.value.ValueModel;
-import com.toedter.calendar.JSpinnerDateEditor;
 
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
-import java.awt.event.FocusEvent;import java.net.URI;import java.net.URISyntaxException;
+import java.awt.event.FocusEvent;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 class Utils {
 
@@ -55,7 +57,7 @@ class Utils {
 
     public static String checkServerUri(String serverUri) {
         if (StringUtils.isNullOrEmpty(serverUri)) {
-            return "The Server URI is not specified for the test step.";
+            return "The Server URI is not specified for the connection.";
         } else {
             URI uri;
             try {
@@ -87,6 +89,33 @@ class Utils {
         }
         return result;
     }
+
+    public static String bytesToHexString(byte[] buf){
+        final String decimals = "0123456789ABCDEF";
+        if(buf == null) return null;
+        char[] r = new char[buf.length * 2];
+        for(int i = 0; i < buf.length; ++i){
+            r[i * 2] = decimals.charAt((buf[i] & 0xf0) >> 4);
+            r[i * 2 + 1] = decimals.charAt(buf[i] & 0x0f);
+        }
+        return new String(r);
+    }
+
+    public static byte[] hexStringToBytes(String str){
+        if(str == null) return null;
+        if(str.length() % 2 != 0) throw new IllegalArgumentException();
+        byte[] result = new byte[str.length() / 2];
+        try {
+            for(int i = 0; i < result.length; ++i){
+                result[i] = (byte)Short.parseShort(str.substring(i * 2, i * 2 + 2), 16);
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException();
+        }
+        return result;
+    }
+
+
 
     public static class JsonTreeEditor extends JsonObjectTree {
         private String prevValue = null;

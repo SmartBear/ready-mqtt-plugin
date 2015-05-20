@@ -1,120 +1,63 @@
 package com.smartbear.mqttsupport;
 
-import com.eviware.soapui.support.StringUtils;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttToken;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Locale;
+import java.util.Map;
 
 
 public class ClientCache {
-    private static class CacheKey {
-        private String serverUri;
-        private String originalServerUri;
-        private ConnectionParams connectionParams;
 
-        public CacheKey(String serverUri, ConnectionParams connectionParams) {
-            if (serverUri == null) {
-                serverUri = "";
-            }
-            URI uri = null;
-            try {
-                uri = new URI(serverUri);
-                if (uri.getAuthority() == null) {
-                    uri = new URI("tcp://" + serverUri);
-                }
-                if (uri.getPort() == -1) {
-                    if ("tcp".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
-                        uri = new URI("tcp", uri.getUserInfo(), uri.getHost(), PluginConfig.DEFAULT_TCP_PORT, uri.getPath(), uri.getQuery(), uri.getFragment());
-                    } else if ("ssl".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
-                        uri = new URI("ssl", uri.getUserInfo(), uri.getHost(), PluginConfig.DEFAULT_SSL_PORT, uri.getPath(), uri.getQuery(), uri.getFragment());
-                    }
-                }
-                this.originalServerUri = uri.toString();
-                this.serverUri = uri.toString().toLowerCase(Locale.ENGLISH);
-            } catch (URISyntaxException e) {
-                this.serverUri = serverUri;
-                this.originalServerUri = serverUri;
-            }
-            this.connectionParams = connectionParams;
-        }
-
-        public String getServerUri() {
-            return serverUri;
-        }
-
-        public ConnectionParams getConnectionParams() {
-            return connectionParams;
-        }
-
-        @Override
-        public int hashCode() {
-            if (connectionParams == null) {
-                return serverUri.hashCode();
-            } else {
-                return (serverUri + "@" + connectionParams.getKey()).hashCode();
-            }
-        }
-
-        @Override
-        public boolean equals(Object arg) {
-            if (arg == null || !(arg instanceof CacheKey)) {
-                return false;
-            }
-            CacheKey compared = (CacheKey) arg;
-            if (!serverUri.equals(compared.getServerUri())) {
-                return false;
-            }
-            if (connectionParams == null) {
-                return compared.getConnectionParams() == null;
-            }
-            return connectionParams.equals(compared.getConnectionParams());
-        }
-    }
-
-
-
-    public Client get(String serverUri, ConnectionParams connectionParams) throws MqttException {
-        CacheKey key = new CacheKey(serverUri, connectionParams);
-        Client result = map.get(key);
+    public Client getLegacy(ConnectionParams connectionParams) throws MqttException {
+        Client result = map.get(connectionParams);
         if(result == null){
-            register(serverUri, connectionParams);
-            result = map.get(key);
+            result = register(connectionParams);
         }
         return result;
     }
 
-
-    public Client get(String serverUri) throws MqttException {
-        return get(serverUri, null);
+    public Client get(String connectionName){
+        return mapByName.get(connectionName);
     }
 
-    private MqttAsyncClient register(String serverUri, ConnectionParams connectionParams) throws MqttException {
+    public Client add(ConnectionParams connectionParams) throws MqttException{
+        if(connectionParams.isLegacy()) throw new IllegalArgumentException("This caching mechanism is not appropriate for the legacy mode.");
+        Client result = get(connectionParams.getName());
+        if(result == null){
+            if(!connectionParams.isGeneratedId()){
+                result = map.get(connectionParams);
+                if(result != null){
+                    mapByName.put(connectionParams.getName(), result);
+                    return result;
+                }
+            }
+            register(connectionParams);
+            result = get(connectionParams.getName());
+        }
+        return result;
+    }
 
-        CacheKey key = new CacheKey(serverUri, connectionParams);
+    private Client register(ConnectionParams connectionParams) throws MqttException {
         String clientId;
-        if (connectionParams == null || connectionParams.hasGeneratedId()) {
+        if (connectionParams.isGeneratedId()) {
             clientId = MqttAsyncClient.generateClientId();
         }
         else{
             clientId = connectionParams.getFixedId();
         }
 
-        MqttAsyncClient newClient = new MqttAsyncClient(key.originalServerUri, clientId, new MemoryPersistence());
-
-        //IMqttToken token = newClient.connect(createConnectionOptions(connectionParams));
-        map.put(key, new Client(newClient, createConnectionOptions(connectionParams)));
+        MqttAsyncClient clientObj = new MqttAsyncClient(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
+        Client newClient = new Client(clientObj, createConnectionOptions(connectionParams));
+        if(connectionParams.isLegacy() || !connectionParams.isGeneratedId()) {
+            map.put(connectionParams, newClient);
+        }
+        if(!connectionParams.isLegacy()){
+            mapByName.put(connectionParams.getName(), newClient);
+        }
         return newClient;
 
     }
@@ -141,12 +84,18 @@ public class ClientCache {
     }
 
     public void assureFinalized() {
-        for (Client client : map.values()) {
-            client.dispose();
+        ArrayList<String> duplicates = new ArrayList<>();
+        for(Map.Entry<ConnectionParams, Client> pair : map.entrySet()){
+            if(!pair.getKey().isLegacy()) duplicates.add(pair.getKey().getName());
         }
         map.clear();
+        for (Map.Entry<String, Client> pair : mapByName.entrySet()) {
+            if(!duplicates.contains(pair.getKey())) pair.getValue().dispose();
+        }
+        mapByName.clear();
     }
 
-    private HashMap<CacheKey, Client> map = new HashMap<>();
+    private HashMap<ConnectionParams, Client> map = new HashMap<>();
+    private HashMap<String, Client> mapByName = new HashMap<>();
 
 }

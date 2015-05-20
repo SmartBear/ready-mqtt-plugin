@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import static com.smartbear.mqttsupport.Utils.*;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.", iconPath = "com/smartbear/mqttsupport/receive_step.png")
 public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener, ExecutableTestStep {
@@ -375,17 +376,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         }
     }
 
-    private String bytesToHexString(byte[] buf){
-        final String decimals = "0123456789ABCDEF";
-        if(buf == null) return null;
-        char[] r = new char[buf.length * 2];
-        for(int i = 0; i < buf.length; ++i){
-            r[i * 2] = decimals.charAt((buf[i] & 0xf0) >> 4);
-            r[i * 2 + 1] = decimals.charAt(buf[i] & 0x0f);
-        }
-        return new String(r);
-    }
-
     private void onInvalidPayload(byte[] payload, WsdlTestStepResult errors){
         if(payload == null || payload.length == 0) {
             setReceivedMessage(null);
@@ -574,15 +564,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         if(iconAnimator != null) iconAnimator.start();
         try {
             try {
-                String actualBrokerUri = runContext.expand(getServerUri());
-                String uriCheckResult = Utils.checkServerUri(actualBrokerUri);
-                if(uriCheckResult != null){
-                    result.addMessage(uriCheckResult);
-                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                    return result;
-                }
-                ConnectionParams actualConnectionParams = getConnectionParams(runContext);
-                Client client = getCache(runContext).get(actualBrokerUri, actualConnectionParams);
+                Client client = getClient(runContext, result);
 
                 String[] splitTopics = runContext.expand(listenedTopics).split("[\\r\\n]+");
 

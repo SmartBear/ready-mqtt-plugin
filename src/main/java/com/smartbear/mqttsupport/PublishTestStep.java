@@ -28,7 +28,6 @@ import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
 import com.google.common.base.Charsets;
-import com.smartbear.ready.util.ReadyTools;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -38,7 +37,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
-import javax.validation.Payload;
 import javax.xml.transform.Result;
 import java.io.File;
 import java.io.FileInputStream;
@@ -178,13 +176,8 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         super.release();
     }
 
-    private boolean checkProperties(WsdlTestStepResult result, String serverUri, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
+    private boolean checkProperties(WsdlTestStepResult result, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
-        String uriCheckResult = Utils.checkServerUri(serverUri);
-        if (uriCheckResult != null) {
-            result.addMessage(uriCheckResult);
-            ok = false;
-        }
         if(StringUtils.isNullOrEmpty(topicToCheck)){
             result.addMessage("The topic of message is not specified");
             ok = false;
@@ -321,12 +314,12 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         if(iconAnimator != null) iconAnimator.start();
         try {
             try {
-                String expandedUri = testRunContext.expand(getServerUri());
-                ConnectionParams connectParams = getConnectionParams(testRunContext);
+                Client client = getClient(testRunContext, result);
+                if(client == null) return result;
                 String expandedMessage = testRunContext.expand(message);
                 String expandedTopic = testRunContext.expand(topic);
 
-                if (!checkProperties(result, expandedUri, expandedTopic, messageKind, expandedMessage)) {
+                if (!checkProperties(result, expandedTopic, messageKind, expandedMessage)) {
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
@@ -339,7 +332,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                     return result;
                 }
 
-                Client client = getCache(testRunContext).get(expandedUri, connectParams);
                 if(!waitForMqttConnection(client, cancellationToken, result, maxTime)) return result;
 
                 MqttMessage message = new MqttMessage();

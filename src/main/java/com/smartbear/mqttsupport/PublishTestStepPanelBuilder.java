@@ -1,8 +1,6 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.EmptyPanelBuilder;
-import com.eviware.soapui.impl.wsdl.panels.teststeps.FileWaitDesktopPanel;
-import com.eviware.soapui.impl.wsdl.teststeps.FileWaitTestStep;
 import com.eviware.soapui.plugins.auto.PluginPanelBuilder;
 import com.eviware.soapui.ui.desktop.DesktopPanel;
 
