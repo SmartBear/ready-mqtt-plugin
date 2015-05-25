@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.Objects;
 import static com.smartbear.mqttsupport.Utils.*;
 
-public class ConnectionParams implements PropertyChangeNotifier {
+public class Connection implements PropertyChangeNotifier {
     private final static boolean ARE_NAMES_CASE_INSENSITIVE = true;
 
     private final static String NAME_PROP_NAME = "Name";
@@ -36,7 +36,7 @@ public class ConnectionParams implements PropertyChangeNotifier {
     private String password;
     private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
-    public ConnectionParams(){
+    public Connection(){
     }
 
 
@@ -181,8 +181,8 @@ public class ConnectionParams implements PropertyChangeNotifier {
 //        }
 //    }
 
-    public ConnectionParams expand(PropertyExpansionContext context){
-        ConnectionParams result = new ConnectionParams();
+    public Connection expand(PropertyExpansionContext context){
+        Connection result = new Connection();
         result.setName(getName());
         result.setServerUri(context.expand(getServerUri()));
         result.setFixedId(context.expand(getFixedId()));
@@ -193,8 +193,8 @@ public class ConnectionParams implements PropertyChangeNotifier {
 
     @Override
     public boolean equals(Object arg){
-        if(arg == null || !(arg instanceof ConnectionParams))return false;
-        ConnectionParams params2 = (ConnectionParams)arg;
+        if(arg == null || !(arg instanceof Connection))return false;
+        Connection params2 = (Connection)arg;
         //if(Utils.areStringsEqual(name, params2.name, ARE_NAMES_CASE_INSENSITIVE, true) && name != null && name.length() != 0) return true;
         return Utils.areStringsEqual(getNormalizedServerUri(),  params2.getNormalizedServerUri())
             && Utils.areStringsEqual(fixedId, params2.fixedId, false, true)
