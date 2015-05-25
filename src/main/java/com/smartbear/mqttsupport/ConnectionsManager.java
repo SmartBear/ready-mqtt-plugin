@@ -22,13 +22,6 @@ class ConnectionsManager  {
     private static ConnectionsManager instance = null;
 
     private ConnectionsManager(){
-        Workspace workspace = SoapUI.getWorkspace();
-        for(Project project: workspace.getProjectList()){
-            if(project.isOpen()){
-                ArrayList<Connection> projectConnections = grabConnections(project);
-                this.connections.put(project, projectConnections);
-            }
-        }
     }
 
     private static ConnectionsManager getInstance(){
@@ -36,21 +29,39 @@ class ConnectionsManager  {
         return instance;
     }
 
+    private ArrayList<Connection> getProjectConnectionsList(ModelItem modelItem, boolean ensureListCreated){
+        Project project = ModelSupport.getModelItemProject(modelItem);
+        if(project == null) throw new IllegalArgumentException();
+        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
+        if(projectConnections == null && !connections.containsKey(project)){
+            if(project.isOpen()){
+                projectConnections = grabConnections(project);
+                if(projectConnections == null && ensureListCreated) projectConnections = new ArrayList<>();
+                getInstance().connections.put(project, projectConnections);
+            }
+            else if(ensureListCreated) {
+                throw new IllegalStateException("Attempt to access to MQTT connections of the project which is not open.");
+            }
+        }
+        else if(ensureListCreated){
+            projectConnections = new ArrayList<>();
+            connections.put(project, projectConnections);
+        }
+        return projectConnections;
+    }
 
     public static Connection getConnection(ModelItem modelItem, String connectionName){
-        Project project = ModelSupport.getModelItemProject(modelItem);
-        if(project == null || StringUtils.isNullOrEmpty(connectionName)) throw new IllegalArgumentException();
-        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
-        for(Connection connection: projectConnections){
+        if(StringUtils.isNullOrEmpty(connectionName)) throw new IllegalArgumentException();
+        ArrayList<Connection> connections = getInstance().getProjectConnectionsList(modelItem, false);
+        if(connections == null) return null;
+        for(Connection connection: connections){
             if(Utils.areStringsEqual(connectionName, connection.getName())) return connection;
         }
         return null;
     }
 
     public static List<Connection> getAvailableConnections(ModelItem modelItem){
-        Project project = ModelSupport.getModelItemProject(modelItem);
-        if(project == null) throw new IllegalArgumentException();
-        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
+        ArrayList<Connection> projectConnections = getInstance().getProjectConnectionsList(modelItem, false);
         if(projectConnections == null) return null;
         return new ArrayList<Connection>(projectConnections);
     }
@@ -58,11 +69,7 @@ class ConnectionsManager  {
     public static void addConnection(ModelItem modelItem, Connection connection){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
-        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
-        if(projectConnections == null) {
-            projectConnections = new ArrayList<Connection>();
-            getInstance().connections.put(project, projectConnections);
-        }
+        ArrayList<Connection> projectConnections = getInstance().getProjectConnectionsList(project, true);
         boolean alreadyAdded = false;
         for(Connection curConnection: projectConnections){
             if(curConnection == connection) {
@@ -79,8 +86,7 @@ class ConnectionsManager  {
     public static void removeConnection(ModelItem modelItem, Connection connection){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
-        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
-        if(projectConnections == null) return;
+        ArrayList<Connection> projectConnections = getInstance().getProjectConnectionsList(project, true);
         boolean removed = false;
         for(int i = 0; i < projectConnections.size(); ++i){
             if(projectConnections.get(i) == connection) {
