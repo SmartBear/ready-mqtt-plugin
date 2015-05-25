@@ -17,7 +17,7 @@ class ConnectionsManager  {
     private final static String CONNECTIONS_SETTING_NAME = "MQTTConnections";
     private final static String CONNECTION_SECTION_NAME = "Connection";
 
-    private HashMap<Project, ArrayList<ConnectionParams>> connections = new HashMap<>();
+    private HashMap<Project, ArrayList<Connection>> connections = new HashMap<>();
     private HashMap<Project, ArrayList<ConnectionsListener>> listeners = new HashMap<>();
     private static ConnectionsManager instance = null;
 
@@ -25,7 +25,7 @@ class ConnectionsManager  {
         Workspace workspace = SoapUI.getWorkspace();
         for(Project project: workspace.getProjectList()){
             if(project.isOpen()){
-                ArrayList<ConnectionParams> projectConnections = grabConnections(project);
+                ArrayList<Connection> projectConnections = grabConnections(project);
                 this.connections.put(project, projectConnections);
             }
         }
@@ -37,34 +37,34 @@ class ConnectionsManager  {
     }
 
 
-    public static ConnectionParams getConnection(ModelItem modelItem, String connectionName){
+    public static Connection getConnection(ModelItem modelItem, String connectionName){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null || StringUtils.isNullOrEmpty(connectionName)) throw new IllegalArgumentException();
-        ArrayList<ConnectionParams> projectConnections = getInstance().connections.get(project);
-        for(ConnectionParams connection: projectConnections){
+        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
+        for(Connection connection: projectConnections){
             if(Utils.areStringsEqual(connectionName, connection.getName())) return connection;
         }
         return null;
     }
 
-    public static List<ConnectionParams> getAvailableConnections(ModelItem modelItem){
+    public static List<Connection> getAvailableConnections(ModelItem modelItem){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
-        ArrayList<ConnectionParams> projectConnections = getInstance().connections.get(project);
+        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
         if(projectConnections == null) return null;
-        return new ArrayList<ConnectionParams>(projectConnections);
+        return new ArrayList<Connection>(projectConnections);
     }
 
-    public static void addConnection(ModelItem modelItem, ConnectionParams connection){
+    public static void addConnection(ModelItem modelItem, Connection connection){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
-        ArrayList<ConnectionParams> projectConnections = getInstance().connections.get(project);
+        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
         if(projectConnections == null) {
-            projectConnections = new ArrayList<ConnectionParams>();
+            projectConnections = new ArrayList<Connection>();
             getInstance().connections.put(project, projectConnections);
         }
         boolean alreadyAdded = false;
-        for(ConnectionParams curConnection: projectConnections){
+        for(Connection curConnection: projectConnections){
             if(curConnection == connection) {
                 alreadyAdded = true;
                 break;
@@ -76,10 +76,10 @@ class ConnectionsManager  {
         }
     };
 
-    public static void removeConnection(ModelItem modelItem, ConnectionParams connection){
+    public static void removeConnection(ModelItem modelItem, Connection connection){
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
-        ArrayList<ConnectionParams> projectConnections = getInstance().connections.get(project);
+        ArrayList<Connection> projectConnections = getInstance().connections.get(project);
         if(projectConnections == null) return;
         boolean removed = false;
         for(int i = 0; i < projectConnections.size(); ++i){
@@ -120,7 +120,7 @@ class ConnectionsManager  {
 
     static void onProjectLoaded(Project project){
         if(instance == null) return;
-        ArrayList<ConnectionParams> projectConnections = grabConnections(project);
+        ArrayList<Connection> projectConnections = grabConnections(project);
         getInstance().connections.put(project, projectConnections);
         fireConnectionsListChangedEvent(project);
     }
@@ -130,8 +130,8 @@ class ConnectionsManager  {
         saveConnections(project, getInstance().connections.get(project));
     }
 
-    private static ArrayList<ConnectionParams> grabConnections(Project project){
-        ArrayList<ConnectionParams> result = null;
+    private static ArrayList<Connection> grabConnections(Project project){
+        ArrayList<Connection> result = null;
         String settingValue = project.getSettings().getString(CONNECTIONS_SETTING_NAME, "");
         if(StringUtils.hasContent(settingValue)) {
             XmlObject root = null;
@@ -142,10 +142,10 @@ class ConnectionsManager  {
                 SoapUI.logError(e);
                 return result;
             }
-            result = new ArrayList<ConnectionParams>();
+            result = new ArrayList<Connection>();
             XmlObject[] connectionSections = root.selectPath("$this/" + CONNECTION_SECTION_NAME);
             for(XmlObject section : connectionSections){
-                ConnectionParams connection = new ConnectionParams();
+                Connection connection = new Connection();
                 connection.load(section);
                 result.add(connection);
             }
@@ -153,13 +153,13 @@ class ConnectionsManager  {
         return result;
     }
 
-    private static void saveConnections(Project project, List<ConnectionParams> connections){
+    private static void saveConnections(Project project, List<Connection> connections){
         if(connections == null || connections.size() == 0){
             project.getSettings().clearSetting(CONNECTIONS_SETTING_NAME);
         }
         else {
             XmlObjectBuilder builder = new XmlObjectBuilder();
-            for (ConnectionParams connection : connections) {
+            for (Connection connection : connections) {
                 XmlObject connectionXml = connection.save();
                 builder.addSection(CONNECTION_SECTION_NAME, connectionXml);
             }

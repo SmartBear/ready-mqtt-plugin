@@ -11,55 +11,98 @@ import java.util.Map;
 
 
 public class ClientCache {
+    private static final int LEGACY_UNTITLED_CLIENT = -1;
+    private static final int FIRST_UNTITLED_CLIENT = 0;
+
+    private static class CacheKey{
+        public ConnectionParams params;
+        public int generatedClientNo;
+
+        public CacheKey(ConnectionParams params, int generatedClientNo){
+            this.params = params;
+            this.generatedClientNo = generatedClientNo;
+        }
+
+        public CacheKey(ConnectionParams params){
+            this(params, LEGACY_UNTITLED_CLIENT);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            CacheKey cacheKey = (CacheKey) o;
+
+            if (!params.equals(cacheKey.params)) {
+                return false;
+            }
+
+            if (params.isGeneratedId() && cacheKey.params.isGeneratedId() && generatedClientNo != cacheKey.generatedClientNo) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return String.format("%s\n%s\n%s", params.getNormalizedServerUri(), params.fixedId, params.login).hashCode();
+        }
+    }
+
 
     public Client getLegacy(ConnectionParams connectionParams) throws MqttException {
-        Client result = map.get(connectionParams);
+        Client result = map.get(new CacheKey(connectionParams, LEGACY_UNTITLED_CLIENT));
         if(result == null){
-            result = register(connectionParams);
+            result = register(connectionParams, LEGACY_UNTITLED_CLIENT);
         }
         return result;
     }
 
     public Client get(String connectionName){
-        return mapByName.get(connectionName);
+        CacheKey key = mapByName.get(connectionName);
+        if(key == null) return null;
+        return map.get(key);
     }
 
-    public Client add(ConnectionParams connectionParams) throws MqttException{
-        if(connectionParams.isLegacy()) throw new IllegalArgumentException("This caching mechanism is not appropriate for the legacy mode.");
-        Client result = get(connectionParams.getName());
+    public Client add(String connectionName, ConnectionParams params) throws MqttException{
+        Client result = get(connectionName);
         if(result == null){
-            if(!connectionParams.isGeneratedId()){
-                result = map.get(connectionParams);
-                if(result != null){
-                    mapByName.put(connectionParams.getName(), result);
-                    return result;
-                }
+            if(!params.isGeneratedId()){
+                result = getLegacy(params);
+                mapByName.put(connectionName, new CacheKey(params));
             }
-            register(connectionParams);
-            result = get(connectionParams.getName());
+            else{
+                int clientNo = FIRST_UNTITLED_CLIENT;
+                while(map.get(new CacheKey(params, clientNo)) != null){
+                    clientNo++;
+                }
+                mapByName.put(connectionName, new CacheKey(params, clientNo));
+                result = register(params,  clientNo);
+            }
         }
         return result;
     }
 
-    private Client register(ConnectionParams connectionParams) throws MqttException {
+    private Client register(ConnectionParams connectionParams, int generatedClientNo) throws MqttException {
+        CacheKey cacheKey = new CacheKey(connectionParams, generatedClientNo);
         String clientId;
         if (connectionParams.isGeneratedId()) {
             clientId = MqttAsyncClient.generateClientId();
         }
         else{
-            clientId = connectionParams.getFixedId();
+            clientId = connectionParams.fixedId;
         }
 
         MqttAsyncClient clientObj = new MqttAsyncClient(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
         Client newClient = new Client(clientObj, createConnectionOptions(connectionParams));
-        if(connectionParams.isLegacy() || !connectionParams.isGeneratedId()) {
-            map.put(connectionParams, newClient);
-        }
-        if(!connectionParams.isLegacy()){
-            mapByName.put(connectionParams.getName(), newClient);
-        }
+        map.put(cacheKey, newClient);
         return newClient;
-
     }
 
     private MqttConnectOptions createConnectionOptions(ConnectionParams connectionParams) {
@@ -69,8 +112,8 @@ public class ClientCache {
         } else {
             connectOptions = new MqttConnectOptions();
             if (connectionParams.hasCredentials()) {
-                connectOptions.setUserName(connectionParams.getLogin());
-                connectOptions.setPassword(connectionParams.getPassword().toCharArray());
+                connectOptions.setUserName(connectionParams.login);
+                connectOptions.setPassword(connectionParams.password.toCharArray());
             }
         }
         return connectOptions;
@@ -84,18 +127,14 @@ public class ClientCache {
     }
 
     public void assureFinalized() {
-        ArrayList<String> duplicates = new ArrayList<>();
-        for(Map.Entry<ConnectionParams, Client> pair : map.entrySet()){
-            if(!pair.getKey().isLegacy()) duplicates.add(pair.getKey().getName());
+        for(Client client: map.values()){
+            client.dispose();
         }
         map.clear();
-        for (Map.Entry<String, Client> pair : mapByName.entrySet()) {
-            if(!duplicates.contains(pair.getKey())) pair.getValue().dispose();
-        }
         mapByName.clear();
     }
 
-    private HashMap<ConnectionParams, Client> map = new HashMap<>();
-    private HashMap<String, Client> mapByName = new HashMap<>();
+    private HashMap<CacheKey, Client> map = new HashMap<>();
+    private HashMap<String, CacheKey> mapByName = new HashMap<>();
 
 }

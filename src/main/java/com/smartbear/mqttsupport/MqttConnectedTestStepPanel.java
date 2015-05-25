@@ -1,28 +1,13 @@
 package com.smartbear.mqttsupport;
 
-import com.eviware.soapui.impl.wsdl.WsdlTestSuite;
-import com.eviware.soapui.model.ModelItem;
-import com.eviware.soapui.model.testsuite.TestCase;
-import com.eviware.soapui.model.testsuite.TestStep;
-import com.eviware.soapui.model.testsuite.TestSuite;
-import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
-import com.eviware.x.form.ValidationMessage;
-import com.eviware.x.form.XFormDialog;
-import com.eviware.x.form.XFormField;
-import com.eviware.x.form.XFormFieldListener;
-import com.eviware.x.form.XFormFieldValidator;
-import com.eviware.x.form.XFormOptionsField;
-import com.eviware.x.form.support.ADialogBuilder;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.list.SelectionInList;
 import com.jgoodies.binding.value.AbstractValueModel;
 import com.jgoodies.binding.value.ValueModel;
-import groovy.beans.Bindable;
 
 import javax.swing.AbstractListModel;
 import javax.swing.BoxLayout;
@@ -120,9 +105,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 //    }
 
     static class ConnectionComboItem{
-        private ConnectionParams obj;
-        public ConnectionComboItem(ConnectionParams connectionParams){
-            obj = connectionParams;
+        private Connection obj;
+        public ConnectionComboItem(Connection connection){
+            obj = connection;
         }
 
         @Override
@@ -130,7 +115,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             if(obj.isLegacy()) return LEGACY_CONNECTION_NAME; else return obj.getName();
         }
 
-        public ConnectionParams getObject(){return obj;}
+        public Connection getObject(){return obj;}
 
         @Override
         public boolean equals(Object op) {
@@ -152,14 +137,14 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         private void updateItems(){
             items.clear();
-            List<ConnectionParams> list = ConnectionsManager.getAvailableConnections(getModelItem());
+            List<Connection> list = ConnectionsManager.getAvailableConnections(getModelItem());
             if(list != null){
-                for(ConnectionParams curParams: list){
+                for(Connection curParams: list){
                     items.add(new ConnectionComboItem(curParams));
                 }
             }
-            if(getModelItem().getConnectionParams() != null && getModelItem().getConnectionParams().isLegacy()){
-                items.add(new ConnectionComboItem(getModelItem().getConnectionParams()));
+            if(getModelItem().getConnection() != null && getModelItem().getConnection().isLegacy()){
+                items.add(new ConnectionComboItem(getModelItem().getConnection()));
             }
             fireContentsChanged(this, -1, -1);
         }
@@ -168,12 +153,12 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         @Override
         public void setSelectedItem(Object anItem) {
             if(anItem == null){
-                getModelItem().setConnectionParams(null);
+                getModelItem().setConnection(null);
                 fireContentsChanged(this, -1, -1);
             }
             else {
-                ConnectionParams newParams = ((ConnectionComboItem) anItem).getObject();
-                getModelItem().setConnectionParams(newParams);
+                Connection newParams = ((ConnectionComboItem) anItem).getObject();
+                getModelItem().setConnection(newParams);
                 fireContentsChanged(this, -1, -1);
                 if(!newParams.isLegacy() && items.get(items.size() - 1).getObject().isLegacy()){
                     items.remove(items.size() - 1);
@@ -184,8 +169,8 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         @Override
         public Object getSelectedItem() {
-            if(getModelItem().getConnectionParams() == null) return null;
-            return new ConnectionComboItem(getModelItem().getConnectionParams());
+            if(getModelItem().getConnection() == null) return null;
+            return new ConnectionComboItem(getModelItem().getConnection());
         }
 
         @Override
@@ -203,23 +188,27 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             return items.get(index);
         }
 
-        public void selectionChanged(ConnectionParams newValue) {
+        public void selectionChanged(Connection newValue) {
 
         }
     }
 
-    static abstract class ReadOnlyValueModelConverter<SrcType> extends AbstractValueModel {
+    public interface Converter<SrcType>{
+        Object convert(SrcType srcValue);
+    }
+
+    public static class ReadOnlyValueModel<SrcType> extends AbstractValueModel {
         private ValueModel source;
-        public ReadOnlyValueModelConverter(ValueModel source){
+        private Converter<SrcType> converter;
+        public ReadOnlyValueModel(ValueModel source, Converter<SrcType> converter){
             this.source = source;
+            this.converter = converter;
             source.addValueChangeListener(new SubjectValueChangeHandler());
         }
 
-        protected abstract Object convert(SrcType srcValue);
-
         @Override
         public Object getValue(){
-            return convert((SrcType) source.getValue());
+            return converter.convert((SrcType) source.getValue());
         }
 
         @Override
@@ -229,7 +218,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
-                fireValueChange(convert((SrcType)evt.getOldValue()), convert((SrcType)evt.getNewValue()) , true);
+                fireValueChange(converter.convert((SrcType) evt.getOldValue()), converter.convert((SrcType) evt.getNewValue()) , true);
             }
         }
     }
@@ -243,7 +232,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         form.addButtonWithoutLabelToTheRight("Configure Connections...", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                ConfigureConnectionsDialog.showDialog(getModelItem());
             }
         });
 
@@ -278,12 +267,12 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         });
         form.append("Password (optional)", passwordPanel);
 
-        ReadOnlyValueModelConverter<ConnectionParams> legacyModeAdapter = new ReadOnlyValueModelConverter<ConnectionParams>(pm.getModel("connectionParams")) {
+        ReadOnlyValueModel<Connection> legacyModeAdapter = new ReadOnlyValueModel<>(pm.getModel("connection"), new Converter<Connection>() {
             @Override
-            protected Object convert(ConnectionParams srcValue) {
+            public Object convert(Connection srcValue) {
                 return srcValue != null && srcValue.isLegacy();
             }
-        };
+        });
         Bindings.bind(serverEdit, "enabled", legacyModeAdapter);
         Bindings.bind(clientIdEdit, "enabled", legacyModeAdapter);
         Bindings.bind(loginEdit, "enabled", legacyModeAdapter);
@@ -429,8 +418,8 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         super.propertyChange(evt);
-        if(Utils.areStringsEqual(evt.getPropertyName(), "connectionParams")){
-            if(connectionsModel != null) connectionsModel.setSelectedItem(new ConnectionComboItem((ConnectionParams)evt.getNewValue()));
+        if(Utils.areStringsEqual(evt.getPropertyName(), "connection")){
+            if(connectionsModel != null) connectionsModel.setSelectedItem(new ConnectionComboItem((Connection)evt.getNewValue()));
         }
     }
 

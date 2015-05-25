@@ -19,7 +19,7 @@ import java.util.Objects;
 import static com.smartbear.mqttsupport.Utils.*;
 
 public class Connection implements PropertyChangeNotifier {
-    private final static boolean ARE_NAMES_CASE_INSENSITIVE = true;
+    final static boolean ARE_NAMES_CASE_INSENSITIVE = true;
 
     private final static String NAME_PROP_NAME = "Name";
     private static final String SERVER_URI_PROP_NAME = "ServerURI";
@@ -37,6 +37,12 @@ public class Connection implements PropertyChangeNotifier {
     private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
     public Connection(){
+    }
+
+    public Connection(String name, ConnectionParams params){
+        this();
+        this.name = name;
+        setParams(params);
     }
 
 
@@ -87,30 +93,6 @@ public class Connection implements PropertyChangeNotifier {
         }
         this.originalServerUri = serverUri;
         if(!Utils.areStringsEqual(oldServerUri, this.originalServerUri)) notifyPropertyChanged("serverUri", oldServerUri, this.originalServerUri);
-    }
-
-    public String getActualServerUri(){
-        URI uri = null;
-        try {
-            uri = new URI(originalServerUri);
-            if (uri.getAuthority() == null) {
-                uri = new URI("tcp://" + originalServerUri);
-            }
-            if (uri.getPort() == -1) {
-                if ("tcp".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
-                    uri = new URI("tcp", uri.getUserInfo(), uri.getHost(), PluginConfig.DEFAULT_TCP_PORT, uri.getPath(), uri.getQuery(), uri.getFragment());
-                } else if ("ssl".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
-                    uri = new URI("ssl", uri.getUserInfo(), uri.getHost(), PluginConfig.DEFAULT_SSL_PORT, uri.getPath(), uri.getQuery(), uri.getFragment());
-                }
-            }
-            return uri.toString();
-        } catch (URISyntaxException e) {
-            return this.originalServerUri;
-        }
-    }
-
-    public String getNormalizedServerUri(){
-        return getActualServerUri().toLowerCase(Locale.ENGLISH);
     }
 
     public String getName(){return name;}
@@ -172,46 +154,19 @@ public class Connection implements PropertyChangeNotifier {
         }
     }
 
-//    public String getName(){
-//        if(hasGeneratedId()) {
-//            if (!hasCredentials()) return "Default (without authentication)"; else return String.format("Login as %s", login);
-//        }
-//        else {
-//            if (!hasCredentials()) return String.format("Client ID is %s", fixedId); else return String.format("Client ID: %s; Login: %s");
-//        }
-//    }
+    public void setParams(ConnectionParams params){
+        setServerUri(params.getServerUri());
+        setFixedId(params.fixedId);
+        setCredentials(params.login, params.password);
+    }
 
-    public Connection expand(PropertyExpansionContext context){
-        Connection result = new Connection();
-        result.setName(getName());
+    public ConnectionParams expand(PropertyExpansionContext context){
+        ConnectionParams result = new ConnectionParams();
         result.setServerUri(context.expand(getServerUri()));
-        result.setFixedId(context.expand(getFixedId()));
+        result.fixedId = context.expand(getFixedId());
         result.setCredentials(context.expand(getLogin()), context.expand(getPassword()));
         return result;
     }
-
-
-    @Override
-    public boolean equals(Object arg){
-        if(arg == null || !(arg instanceof Connection))return false;
-        Connection params2 = (Connection)arg;
-        //if(Utils.areStringsEqual(name, params2.name, ARE_NAMES_CASE_INSENSITIVE, true) && name != null && name.length() != 0) return true;
-        return Utils.areStringsEqual(getNormalizedServerUri(),  params2.getNormalizedServerUri())
-            && Utils.areStringsEqual(fixedId, params2.fixedId, false, true)
-            && Utils.areStringsEqual(login, params2.login, false, true)
-            && (login == null || login.length() == 0 || Utils.areStringsEqual(password, params2.password, false, true));
-    }
-
-    @Override
-    public int hashCode(){
-        if(name == null || name.length() == 0) {
-            return String.format("%s\n%s\n%s\n%s", getNormalizedServerUri(), fixedId, login, password).hashCode();
-        }
-        else {
-            return name.toLowerCase().hashCode();
-        }
-    }
-
 
     public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
         try {
