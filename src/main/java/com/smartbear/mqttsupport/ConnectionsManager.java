@@ -33,19 +33,21 @@ class ConnectionsManager  {
         Project project = ModelSupport.getModelItemProject(modelItem);
         if(project == null) throw new IllegalArgumentException();
         ArrayList<Connection> projectConnections = getInstance().connections.get(project);
-        if(projectConnections == null && !connections.containsKey(project)){
-            if(project.isOpen()){
-                projectConnections = grabConnections(project);
-                if(projectConnections == null && ensureListCreated) projectConnections = new ArrayList<>();
-                getInstance().connections.put(project, projectConnections);
+        if(projectConnections == null){
+            if(!connections.containsKey(project)){
+                if(project.isOpen()){
+                    projectConnections = grabConnections(project);
+                    if(projectConnections == null && ensureListCreated) projectConnections = new ArrayList<>();
+                    getInstance().connections.put(project, projectConnections);
+                }
+                else if(ensureListCreated) {
+                    throw new IllegalStateException("Attempt to access to MQTT connections of the project which is not open.");
+                }
             }
             else if(ensureListCreated) {
-                throw new IllegalStateException("Attempt to access to MQTT connections of the project which is not open.");
+                projectConnections = new ArrayList<>();
+                connections.put(project, projectConnections);
             }
-        }
-        else if(ensureListCreated){
-            projectConnections = new ArrayList<>();
-            connections.put(project, projectConnections);
         }
         return projectConnections;
     }

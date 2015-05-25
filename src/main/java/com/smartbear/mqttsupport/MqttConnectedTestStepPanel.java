@@ -1,5 +1,8 @@
 package com.smartbear.mqttsupport;
 
+import com.eviware.soapui.SoapUI;
+import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
@@ -9,9 +12,12 @@ import com.jgoodies.binding.list.SelectionInList;
 import com.jgoodies.binding.value.AbstractValueModel;
 import com.jgoodies.binding.value.ValueModel;
 
+import javax.swing.AbstractAction;
 import javax.swing.AbstractListModel;
+import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.ComboBoxModel;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -31,78 +37,26 @@ import java.util.List;
 public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep>{
 
     private final static String LEGACY_CONNECTION_NAME = "Individual (legacy) connection";
+    private final static String NEW_CONNECTION_ITEM = "<New Connection...>";
+    private JButton configureConnectionButton;
+    private char passwordChar;
+    private ConnectionsComboBoxModel connectionsModel;
 
     public interface UIOption{
         String getTitle();
     }
 
-//    private static class CaseComboItem{
-//        public TestCase testCase;
-//        public TestSuite testSuite;
-//
-//        public CaseComboItem(TestCase testCase, TestSuite testSuite){
-//            this.testCase = testCase;
-//            this.testSuite = testSuite;
-//        }
-//
-//        @Override
-//        public String toString(){
-//            return String.format("%s [%s]", testCase.getName(), testSuite.getName());
-//        }
-//    }
-//
-//    private static class StepComboItem{
-//        public MqttConnectedTestStep testStep;
-//        public StepComboItem(MqttConnectedTestStep testStep){
-//            this.testStep = testStep;
-//        }
-//        @Override
-//        public String toString(){
-//            return testStep.getName();
-//        }
-//    }
+    class ConfigureConnectionsAction extends AbstractAction{
+        public ConfigureConnectionsAction() {
+            putValue(Action.SHORT_DESCRIPTION, "Configure MQTT Connections of the Project");
+            putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/smartbear/mqttsupport/edit_connections.png"));
+        }
 
-    private char passwordChar;
-    private ConnectionsComboBoxModel connectionsModel;
-
-    public MqttConnectedTestStepPanel(MqttTestStep modelItem) {
-        super(modelItem);
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            ConfigureConnectionsDialog.showDialog(getModelItem());
+        }
     }
-
-//    private ArrayList<CaseComboItem> formCaseList(TestStep excludedTestStep){
-//        List<? extends TestSuite> testSuites = getModelItem().getOwningProject().getTestSuiteList();
-//        ArrayList<CaseComboItem> allowedTestCases = new ArrayList<CaseComboItem>();
-//        if(testSuites != null) {
-//            for (TestSuite testSuite : testSuites) {
-//                List<? extends TestCase> allTestCases = testSuite.getTestCaseList();
-//                if(allTestCases != null) {
-//                    for (TestCase testCase : allTestCases) {
-//                        List<TestStep> allTestSteps = testCase.getTestStepList();
-//                        if(allTestSteps != null) {
-//                            for (TestStep testStep : allTestSteps) {
-//                                if(testStep instanceof MqttConnectedTestStep && testStep != excludedTestStep){
-//                                    allowedTestCases.add(new CaseComboItem(testCase, testSuite));
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        return allowedTestCases;
-//    }
-//
-//    private ArrayList<StepComboItem> formStepList(TestCase testCase, TestStep excludedTestStep){
-//        ArrayList<StepComboItem> result = new ArrayList<>();
-//        List<TestStep> testSteps = testCase.getTestStepList();
-//        for(TestStep testStep : testSteps){
-//            if(testStep instanceof MqttConnectedTestStep && testStep != excludedTestStep){
-//                result.add(new StepComboItem((MqttConnectedTestStep)testStep));
-//            }
-//        }
-//        return result;
-//    }
 
     static class ConnectionComboItem{
         private Connection obj;
@@ -128,6 +82,19 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
+    static class NewConnectionComboItem extends ConnectionComboItem{
+        private final static NewConnectionComboItem instance = new NewConnectionComboItem();
+        public static NewConnectionComboItem getInstance(){return instance;}
+        private NewConnectionComboItem(){
+            super(null);
+        }
+
+        @Override
+        public String toString() {
+            return NEW_CONNECTION_ITEM;
+        }
+    }
+
     class ConnectionsComboBoxModel extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener{
 
         private ArrayList<ConnectionComboItem> items = new ArrayList<>();
@@ -143,9 +110,10 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
                     items.add(new ConnectionComboItem(curParams));
                 }
             }
-            if(getModelItem().getConnection() != null && getModelItem().getConnection().isLegacy()){
-                items.add(new ConnectionComboItem(getModelItem().getConnection()));
+            if(getModelItem().getLegacyConnection() != null){
+                items.add(new ConnectionComboItem(getModelItem().getLegacyConnection()));
             }
+            items.add(NewConnectionComboItem.getInstance());
             fireContentsChanged(this, -1, -1);
         }
 
@@ -154,15 +122,32 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         public void setSelectedItem(Object anItem) {
             if(anItem == null){
                 getModelItem().setConnection(null);
-                fireContentsChanged(this, -1, -1);
+                //fireContentsChanged(this, -1, -1);
             }
             else {
-                Connection newParams = ((ConnectionComboItem) anItem).getObject();
-                getModelItem().setConnection(newParams);
-                fireContentsChanged(this, -1, -1);
-                if(!newParams.isLegacy() && items.get(items.size() - 1).getObject().isLegacy()){
-                    items.remove(items.size() - 1);
-                    fireIntervalRemoved(this, items.size(), items.size());
+                if(anItem instanceof NewConnectionComboItem){
+                    final Connection oldConnection = getModelItem().getConnection();
+                    UISupport.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            EditConnectionDialog.Result dialogResult = EditConnectionDialog.showDialog(null, null, getModelItem());
+                            if(dialogResult == null) {
+                                //setSelectedItem(new ConnectionComboItem(oldConnection));
+                                fireContentsChanged(ConnectionsComboBoxModel.this, -1, -1);
+                            }
+                            else {
+                                Connection newConnection = new Connection(dialogResult.connectionName, dialogResult.connectionParams);
+                                ConnectionsManager.addConnection(getModelItem(), newConnection);
+                                getModelItem().setConnection(newConnection);
+                            }
+
+                        }
+                    });
+                }
+                else {
+                    Connection newParams = ((ConnectionComboItem) anItem).getObject();
+                    getModelItem().setConnection(newParams);
+                    fireContentsChanged(this, -1, -1);
                 }
             }
         }
@@ -188,9 +173,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             return items.get(index);
         }
 
-        public void selectionChanged(Connection newValue) {
-
-        }
     }
 
     public interface Converter<SrcType>{
@@ -223,18 +205,34 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
+    public MqttConnectedTestStepPanel(MqttTestStep modelItem) {
+        super(modelItem);
+    }
+
     protected void buildConnectionSection(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm) {
         connectionsModel = new ConnectionsComboBoxModel();
         ConnectionsManager.addConnectionsListener(getModelItem(), connectionsModel);
 
         form.appendHeading("Connection to MQTT Server");
         form.appendComboBox("Connection", connectionsModel, "Choose one of pre-configured connections");
-        form.addButtonWithoutLabelToTheRight("Configure Connections...", new ActionListener() {
+        configureConnectionButton = form.appendButtonWithoutLabel("Configure...", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ConfigureConnectionsDialog.showDialog(getModelItem());
+                Connection connection = getModelItem().getConnection();
+                EditConnectionDialog.Result dialogResult = EditConnectionDialog.showDialog(connection.getName(), new ConnectionParams(connection.getServerUri(), connection.getFixedId(), connection.getLogin(), connection.getPassword()), getModelItem());
+                if(dialogResult != null){
+                    connection.setName(dialogResult.connectionName);
+                    connection.setParams(dialogResult.connectionParams);
+                }
             }
         });
+        configureConnectionButton.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/options.png"));
+//        form.addButtonWithoutLabelToTheRight("Configure Connections...", new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                ConfigureConnectionsDialog.showDialog(getModelItem());
+//            }
+//        });
 
         JTextField serverEdit = form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
         JTextField clientIdEdit = form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
@@ -415,11 +413,18 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     }
 
+    protected void addConnectionActionsToToolbar(JXToolBar toolBar){
+        Action configureConnectionsAction = new ConfigureConnectionsAction();
+        JButton button = UISupport.createActionButton(configureConnectionsAction, configureConnectionsAction.isEnabled());
+        toolBar.add(button);
+    }
+
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         super.propertyChange(evt);
         if(Utils.areStringsEqual(evt.getPropertyName(), "connection")){
             if(connectionsModel != null) connectionsModel.setSelectedItem(new ConnectionComboItem((Connection)evt.getNewValue()));
+            configureConnectionButton.setEnabled(evt.getNewValue() != null);
         }
     }
 
@@ -428,4 +433,5 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         if(connectionsModel != null) ConnectionsManager.removeConnectionsListener(getModelItem(), connectionsModel);
         return super.release();
     }
+
 }

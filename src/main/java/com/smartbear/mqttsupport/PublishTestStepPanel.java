@@ -165,6 +165,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         toolBar.add(submitButton);
         submitButton.setMnemonic(KeyEvent.VK_ENTER);
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), startAction.getCorrespondingStopAction().isEnabled()));
+        addConnectionActionsToToolbar(toolBar);
         return toolBar;
     }
 

@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties implements PropertyChangeListener {
     private Connection connection;
+    private Connection legacyConnection;
 
     final static String SERVER_URI_PROP_NAME = "ServerURI";
     final static String CLIENT_ID_PROP_NAME = "ClientID";
@@ -112,6 +113,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             connection.setFixedId(reader.readString(CLIENT_ID_PROP_NAME, ""));
             connection.setLogin(reader.readString(LOGIN_PROP_NAME, ""));
             connection.setPassword(reader.readString(PASSWORD_PROP_NAME, ""));
+            legacyConnection = connection;
         }
         else{
             String connectionName = reader.readString(CONNECTION_NAME_PROP_NAME, "");
@@ -195,6 +197,8 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         if(!Utils.areStringsEqual(newLogin, oldLogin, false, true)) firePropertyValueChanged(LOGIN_PROP_NAME, oldLogin, newLogin);
         if(!Utils.areStringsEqual(newPassword, oldPassword, false, true)) firePropertyValueChanged(PASSWORD_PROP_NAME, oldPassword, newPassword);
     }
+
+    public Connection getLegacyConnection(){return legacyConnection;}
 
     public String getServerUri() {
         return connection == null ? null: connection.getServerUri();
