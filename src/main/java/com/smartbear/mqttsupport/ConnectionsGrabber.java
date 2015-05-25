@@ -4,6 +4,7 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.environment.Environment;
 import com.eviware.soapui.model.iface.Interface;
+import com.eviware.soapui.model.load.LoadTestModelItem;
 import com.eviware.soapui.model.mock.MockService;
 import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.project.ProjectListener;
@@ -65,6 +66,16 @@ public class ConnectionsGrabber implements ProjectListener {
 
     @Override
     public void mockServiceRemoved(MockService mockService) {
+
+    }
+
+    @Override
+    public void loadUITestAdded(LoadTestModelItem loadUiTest) {
+
+    }
+
+    @Override
+    public void loadUITestRemoved(LoadTestModelItem loadUiTest) {
 
     }
 

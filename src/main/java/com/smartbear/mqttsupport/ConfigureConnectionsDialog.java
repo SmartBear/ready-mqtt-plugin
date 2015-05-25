@@ -361,10 +361,10 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
 
         private List<String> getAffectedModelItems(int[] rows, int maxRowCount){
             ArrayList<String> result = new ArrayList<>();
-            List<TestSuite> testSuites = connectionsTargetItem.getTestSuiteList();
+            List<? extends TestSuite> testSuites = connectionsTargetItem.getTestSuiteList();
             if(testSuites != null) {
                 for (TestSuite testSuite: testSuites) {
-                    List<TestCase> testCases = testSuite.getTestCaseList();
+                    List<? extends TestCase> testCases = testSuite.getTestCaseList();
                     if(testCases == null) continue;
                     for (TestCase testCase : testCases){
                         List<TestStep> testSteps = testCase.getTestStepList();
