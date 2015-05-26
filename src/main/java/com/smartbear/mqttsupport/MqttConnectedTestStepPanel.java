@@ -170,6 +170,18 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
 
         @Override
+        public void connectionChanged(Connection connection, String propertyName, Object oldPropertyValue, Object newPropertyValue) {
+            if(Utils.areStringsEqual(propertyName, "name")){
+                for(int i = 0; i <items.size(); ++i){
+                    if(items.get(i).getObject() == connection){
+                        fireContentsChanged(connection, i, i);
+                        break;
+                    }
+                }
+            }
+        }
+
+        @Override
         public int getSize() {
             return items.size();
         }

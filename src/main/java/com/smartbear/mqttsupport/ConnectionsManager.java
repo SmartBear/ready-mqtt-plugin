@@ -9,11 +9,14 @@ import com.eviware.soapui.support.StringUtils;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-class ConnectionsManager  {
+class ConnectionsManager implements PropertyChangeListener {
     private final static String CONNECTIONS_SETTING_NAME = "MQTTConnections";
     private final static String CONNECTION_SECTION_NAME = "Connection";
 
@@ -37,6 +40,11 @@ class ConnectionsManager  {
             if(!connections.containsKey(project)){
                 if(project.isOpen()){
                     projectConnections = grabConnections(project);
+                    if(projectConnections != null){
+                        for(Connection connection: projectConnections){
+                            connection.addPropertyChangeListener(this);
+                        }
+                    }
                     if(projectConnections == null && ensureListCreated) projectConnections = new ArrayList<>();
                     getInstance().connections.put(project, projectConnections);
                 }
@@ -81,6 +89,7 @@ class ConnectionsManager  {
         }
         if(!alreadyAdded){
             projectConnections.add(connection);
+            connection.addPropertyChangeListener(getInstance());
             fireConnectionsListChangedEvent(project);
         }
     };
@@ -93,6 +102,7 @@ class ConnectionsManager  {
         for(int i = 0; i < projectConnections.size(); ++i){
             if(projectConnections.get(i) == connection) {
                 projectConnections.remove(i);
+                connection.removePropertyChangeListener(getInstance());
                 fireConnectionsListChangedEvent(project);
                 return;
             }
@@ -129,6 +139,11 @@ class ConnectionsManager  {
     static void onProjectLoaded(Project project){
         if(instance == null) return;
         ArrayList<Connection> projectConnections = grabConnections(project);
+        if(projectConnections != null){
+            for(Connection connection: projectConnections){
+                connection.addPropertyChangeListener(getInstance());
+            }
+        }
         getInstance().connections.put(project, projectConnections);
         fireConnectionsListChangedEvent(project);
     }
@@ -136,6 +151,16 @@ class ConnectionsManager  {
     static void beforeProjectSaved(Project project){
         //if(instance == null) return;
         saveConnections(project, getInstance().connections.get(project));
+    }
+
+    static void onProjectClosed(Project project){
+        if(instance == null) return;
+        ArrayList<Connection> closedConnections = getInstance().connections.remove(project);
+        if(closedConnections != null){
+            for(Connection connection: closedConnections){
+                connection.removePropertyChangeListener(getInstance());
+            }
+        }
     }
 
     private static ArrayList<Connection> grabConnections(Project project){
@@ -186,6 +211,40 @@ class ConnectionsManager  {
                     SoapUI.logError(e);
                 }
             }
+        }
+    }
+
+    private static void fireConnectionChangedEvent(Project project, Connection connection, String propertyName, Object oldValue, Object newValue){
+        ArrayList<ConnectionsListener> listenersForProject = getInstance().listeners.get(project);
+        if(listenersForProject != null){
+            for(ConnectionsListener listener: listenersForProject){
+                try {
+                    listener.connectionChanged(connection, propertyName, oldValue, newValue);
+                }
+                catch (Throwable e){
+                    SoapUI.logError(e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if(evt.getSource() instanceof Connection){
+            Connection srcConnection = (Connection)evt.getSource();
+            Project project = null;
+            for(Map.Entry<Project, ArrayList<Connection>> entry: connections.entrySet()){
+                for(Connection curConnection: entry.getValue()){
+                    if(srcConnection == curConnection){
+                        project = entry.getKey();
+                    }
+                }
+            }
+            if(project == null){
+                assert false;
+                return;
+            }
+            fireConnectionChangedEvent(project, srcConnection, evt.getPropertyName(), evt.getOldValue(), evt.getNewValue());
         }
     }
 }

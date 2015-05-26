@@ -280,7 +280,7 @@ public class EditConnectionDialog extends SimpleDialog {
             return false;
         }
         result = new Result();
-        result.connectionName = nameEdit.getText();
+        if(nameEdit != null && !legacy) result.connectionName = nameEdit.getText();
         result.connectionParams.setServerUri(serverUriEdit.getText());
         result.connectionParams.fixedId = clientIDEdit.getText();
         if(authRequiredCheckBox.isSelected()) {

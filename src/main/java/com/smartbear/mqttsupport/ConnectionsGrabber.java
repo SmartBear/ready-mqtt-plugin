@@ -9,6 +9,8 @@ import com.eviware.soapui.model.mock.MockService;
 import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.project.ProjectListener;
 import com.eviware.soapui.model.testsuite.TestSuite;
+import com.eviware.soapui.model.workspace.Workspace;
+import com.eviware.soapui.model.workspace.WorkspaceListener;
 import com.eviware.soapui.plugins.ListenerConfiguration;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -21,11 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ListenerConfiguration
-public class ConnectionsGrabber implements ProjectListener {
+public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
 
 
     public ConnectionsGrabber(){
-
     }
 
 
@@ -107,6 +108,41 @@ public class ConnectionsGrabber implements ProjectListener {
 
     @Override
     public void environmentRenamed(Environment environment, String s, String s1) {
+
+    }
+
+    @Override
+    public void projectAdded(Project project) {
+
+    }
+
+    @Override
+    public void projectRemoved(Project project) {
+
+    }
+
+    @Override
+    public void projectChanged(Project project) {
+
+    }
+
+    @Override
+    public void projectOpened(Project project) {
+
+    }
+
+    @Override
+    public void projectClosed(Project project) {
+        ConnectionsManager.onProjectClosed(project);
+    }
+
+    @Override
+    public void workspaceSwitching(Workspace workspace) {
+
+    }
+
+    @Override
+    public void workspaceSwitched(Workspace workspace) {
 
     }
 }
