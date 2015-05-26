@@ -150,7 +150,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         buildTimeoutSpinEdit(form, pm, "Timeout");
 
         JPanel result = new JPanel(new BorderLayout(0, 0));
-        result.add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
+        result.add(new JScrollPane(form.getPanel(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
         result.add(buildToolbar(), BorderLayout.NORTH);
 
         propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));

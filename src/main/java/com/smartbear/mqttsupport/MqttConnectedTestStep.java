@@ -168,14 +168,14 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     public void setConnection(Connection value){
         if(connection == value) return;
         String oldServerUri = null, oldClientId = null, oldLogin = null, oldPassword = null;
-        if(connection != null){
-            oldServerUri = connection.getServerUri();
-            oldClientId = connection.getFixedId();
-            oldLogin = connection.getLogin();
-            oldPassword = connection.getPassword();
-            connection.removePropertyChangeListener(this);
+        Connection oldConnection = connection;
+        if(oldConnection != null){
+            oldServerUri = oldConnection.getServerUri();
+            oldClientId = oldConnection.getFixedId();
+            oldLogin = oldConnection.getLogin();
+            oldPassword = oldConnection.getPassword();
+            oldConnection.removePropertyChangeListener(this);
         }
-        Connection oldConnection = null;
         connection = value;
         String newServerUri = null, newClientId = null, newLogin = null, newPassword = null;
         if(value != null){

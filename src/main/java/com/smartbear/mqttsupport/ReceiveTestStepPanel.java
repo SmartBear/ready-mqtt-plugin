@@ -166,7 +166,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
         mainPanel.add(buildToolbar(), BorderLayout.NORTH);
-        mainPanel.add(new JScrollPane(form.getPanel()), BorderLayout.CENTER);
+        mainPanel.add(new JScrollPane(form.getPanel(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
         return mainPanel;
     }
 

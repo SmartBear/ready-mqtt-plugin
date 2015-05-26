@@ -2,6 +2,8 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.project.Project;
+import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoableTextField;
@@ -14,17 +16,16 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import java.awt.Component;
-import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class EditConnectionDialog extends SimpleDialog {
-
-    private JCheckBox hidePasswordCheckBox;
 
     public class Result{
         public String connectionName;
@@ -35,6 +36,7 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
+    private boolean legacy;
     private JTextField nameEdit;
     private final static Insets defaultInsets = new Insets(4, 4, 4, 4);
     private JUndoableTextField serverUriEdit;
@@ -42,39 +44,84 @@ public class EditConnectionDialog extends SimpleDialog {
     private JCheckBox authRequiredCheckBox;
     private JUndoableTextField loginEdit;
     private JPasswordField passwordEdit;
+    private JCheckBox hidePasswordCheckBox;
 
     private char passwordChar;
 
     private ModelItem modelItemOfConnection;
     private String initialName;
     private ConnectionParams initialParams;
+    private List<String> presentNames;
     private Result result = null;
 
 
-    protected EditConnectionDialog(String title, ModelItem modelItemOfConnection){
+    protected EditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames){
         super(title, "Please specify the parameters for the connection", null, true);
         this.modelItemOfConnection = modelItemOfConnection;
+        this.legacy = legacy;
+        this.presentNames = alreadyPresentNames;
+        this.initialName = initialConnectionName;
+        this.initialParams = initialConnectionParams;
     }
 
-    public static Result showDialog(String initialConnectionName, ConnectionParams initialConnectionParams, ModelItem modelItemOfConnection){
-        EditConnectionDialog dialog = new EditConnectionDialog("Configure MQTT Server Connection", modelItemOfConnection);
+    public static Result showDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames){
+        EditConnectionDialog dialog = new EditConnectionDialog(title,  modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
         try {
             dialog.setModal(true);
             UISupport.centerDialog(dialog);
-            dialog.initialName = initialConnectionName;
-            dialog.initialParams = initialConnectionParams;
             dialog.setVisible(true);
         }
         finally {
             dialog.dispose();
         }
         return dialog.result;
+
+    }
+
+
+    public static Result editConnection(Connection connection, ModelItem modelItemOfConnection){
+        if(connection.isLegacy()){
+            return showDialog("Configure Connection", modelItemOfConnection, null, connection.getParams(), true, null);
+        }
+        else{
+            Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
+            ArrayList<String> existingNames = new ArrayList<>();
+            List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
+            for(Connection curConnection: connections){
+                if(curConnection != connection) existingNames.add(curConnection.getName());
+            }
+            String title = String.format("Configure %s Connection", connection.getName());
+            return showDialog(title, project, connection.getName(), connection.getParams(), false, existingNames);
+        }
+
+    }
+
+    public static Result createConnection(ModelItem modelItemOfConnection){
+        Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
+        ArrayList<String> existingNames = new ArrayList<>();
+        List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
+        for(Connection curConnection: connections){
+            existingNames.add(curConnection.getName());
+        }
+        return showDialog("Create New Connection", project, null, null, false, existingNames);
+
+    }
+
+    public static Result convertLegacyConnection(ConnectionParams srcParams, ModelItem modelItemOfConnection){
+        Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
+        ArrayList<String> existingNames = new ArrayList<>();
+        List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
+        for(Connection curConnection: connections){
+            existingNames.add(curConnection.getName());
+        }
+        return showDialog("Convert Legacy Connection", project, null, srcParams, false, existingNames);
+
     }
 
     @Override
     protected void beforeShow() {
         super.beforeShow();
-        nameEdit.setText(initialName);
+        if(nameEdit != null) nameEdit.setText(initialName);
         if(initialParams == null) {
             loginEdit.setEnabled(false);
             passwordEdit.setEnabled(false);
@@ -129,11 +176,13 @@ public class EditConnectionDialog extends SimpleDialog {
 
         JPanel mainPanel = new JPanel(new GridBagLayout());
 
-        nameEdit = new JUndoableTextField(defEditCharCount);
-        nameEdit.setToolTipText("The unique connection name to identify it.");
-        mainPanel.add(nameEdit, componentPlace(row));
-        mainPanel.add(createLabel("Name:", nameEdit, 0), labelPlace(row));
-        ++row;
+        if(!legacy) {
+            nameEdit = new JUndoableTextField(defEditCharCount);
+            nameEdit.setToolTipText("The unique connection name to identify it.");
+            mainPanel.add(nameEdit, componentPlace(row));
+            mainPanel.add(createLabel("Name:", nameEdit, 0), labelPlace(row));
+            ++row;
+        }
 
         serverUriEdit = new JUndoableTextField(defEditCharCount);
         serverUriEdit.setToolTipText("The MQTT server URI");
@@ -199,10 +248,26 @@ public class EditConnectionDialog extends SimpleDialog {
 
     @Override
     protected boolean handleOk() {
-        if(StringUtils.isNullOrEmpty(nameEdit.getText())){
-            nameEdit.grabFocus();
-            UISupport.showErrorMessage("Please specify a name for the connection.");
-            return false;
+        if(!legacy) {
+            if (StringUtils.isNullOrEmpty(nameEdit.getText())) {
+                nameEdit.grabFocus();
+                UISupport.showErrorMessage("Please specify a name for the connection.");
+                return false;
+            }
+            if(presentNames != null && !Utils.areStringsEqual(initialName, nameEdit.getText(), Connection.ARE_NAMES_CASE_INSENSITIVE)){
+                boolean alreadyExists = false;
+                for(String name: presentNames){
+                    if(Utils.areStringsEqual(nameEdit.getText(), name, Connection.ARE_NAMES_CASE_INSENSITIVE)){
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+                if(alreadyExists) {
+                    nameEdit.grabFocus();
+                    UISupport.showErrorMessage(String.format("The connection with \"%s\" name already exists. Please specify another name.", nameEdit.getText()));
+                    return false;
+                }
+            }
         }
         if(StringUtils.isNullOrEmpty(serverUriEdit.getText())){
             serverUriEdit.grabFocus();

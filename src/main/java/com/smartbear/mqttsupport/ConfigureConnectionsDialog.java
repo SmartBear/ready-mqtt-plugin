@@ -119,11 +119,17 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
 
     public static boolean showDialog(ModelItem modelItem){
         ConfigureConnectionsDialog dialog = new ConfigureConnectionsDialog(modelItem);
-        dialog.setModal(true);
-        UISupport.centerDialog(dialog);
-        dialog.setVisible(true);
-        return true;
+        try {
+            dialog.setModal(true);
+            UISupport.centerDialog(dialog);
+            dialog.setVisible(true);
+            return true;
+        }
+        finally {
+            dialog.dispose();
+        }
     }
+
 
     public Dimension getPreferredSize() {
         return new Dimension(650, 450);
@@ -296,7 +302,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            EditConnectionDialog.Result result = EditConnectionDialog.showDialog(null, null, connectionsTargetItem);
+            EditConnectionDialog.Result result = EditConnectionDialog.showDialog("Create Connection", connectionsTargetItem, null, null, false, null);
             if(result != null){
                 tableModel.addItem(result.connectionName, result.connectionParams);
             }
@@ -405,7 +411,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
             int rowNo = grid.getSelectionModel().getLeadSelectionIndex();
             if(rowNo < 0) return;
             ConnectionRecord focusedRecord = tableModel.getItem(rowNo);
-            EditConnectionDialog.Result result = EditConnectionDialog.showDialog(focusedRecord.name, focusedRecord.params, connectionsTargetItem);
+            EditConnectionDialog.Result result = EditConnectionDialog.showDialog(String.format("Edit %s Connection", focusedRecord.name), connectionsTargetItem, focusedRecord.name, focusedRecord.params, false, null);
             if(result != null){
                 tableModel.updateItem(rowNo, result.connectionName, result.connectionParams);
             }

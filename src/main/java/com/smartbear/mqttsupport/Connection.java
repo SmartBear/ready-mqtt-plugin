@@ -154,6 +154,10 @@ public class Connection implements PropertyChangeNotifier {
         }
     }
 
+    public ConnectionParams getParams(){
+        return new ConnectionParams(getServerUri(), getFixedId(), getLogin(), getPassword());
+    }
+
     public void setParams(ConnectionParams params){
         setServerUri(params.getServerUri());
         setFixedId(params.fixedId);
