@@ -36,6 +36,7 @@ import java.awt.event.ActionEvent;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class ConfigureConnectionsDialog extends SimpleDialog {
@@ -114,13 +115,45 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
             }
         });
         tableModel.setData(ConnectionsManager.getAvailableConnections(connectionsTargetItem));
+        tableModel.setUsageData(formUsageData());
+
         return new JScrollPane(grid);
+    }
+
+    private HashMap<Connection, List<TestStep>> formUsageData(){
+        HashMap<Connection, List<TestStep>> usageData = new HashMap<>();
+        List<? extends TestSuite> testSuites = connectionsTargetItem.getTestSuiteList();
+        if(testSuites != null) {
+            for (TestSuite testSuite : testSuites) {
+                List<? extends TestCase> testCases = testSuite.getTestCaseList();
+                if (testCases == null) continue;
+                for (TestCase testCase : testCases) {
+                    List<TestStep> testSteps = testCase.getTestStepList();
+                    if (testSteps == null) continue;
+                    for (TestStep testStep : testSteps) {
+                        if (testStep instanceof MqttConnectedTestStep) {
+                            Connection testStepConnection = ((MqttConnectedTestStep) testStep).getConnection();
+                            if (testStepConnection != null && !testStepConnection.isLegacy()) {
+                                List<TestStep> usingItems = usageData.get(testStepConnection);
+                                if (usingItems == null) {
+                                    usingItems = new ArrayList<>();
+                                    usageData.put(testStepConnection, usingItems);
+                                }
+                                usingItems.add(testStep);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return usageData;
     }
 
     public static boolean showDialog(ModelItem modelItem){
         ConfigureConnectionsDialog dialog = new ConfigureConnectionsDialog(modelItem);
         try {
             dialog.setModal(true);
+            UISupport.centerDialog(dialog);
             UISupport.centerDialog(dialog);
             dialog.setVisible(true);
             return true;
@@ -163,6 +196,12 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
         }
         if(tableModel.getRemovedConnections() != null){
             for(Connection connection: tableModel.getRemovedConnections()){
+                List<TestStep> usingTestSteps = tableModel.getUsageData().get(connection);
+                if(usingTestSteps != null && usingTestSteps.size() != 0){
+                    for(TestStep testStep: usingTestSteps){
+                        ((MqttConnectedTestStep)testStep).setConnection(null);
+                    }
+                }
                 ConnectionsManager.removeConnection(this.connectionsTargetItem, connection);
             }
         }
@@ -188,7 +227,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
 
     private static class ConnectionsTableModel extends AbstractTableModel{
         public enum Column {
-            Name("Name"), ServerUri("MQTT Server URI"), ClientId("Client ID"), Login("Login");
+            Name("Name"), ServerUri("MQTT Server URI"), ClientId("Client ID"), Login("Login"), Used("Used by Test Steps");
             private final String caption;
 
             Column(String caption){this.caption = caption;}
@@ -197,6 +236,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
 
         private ArrayList<ConnectionRecord> data;
         private ArrayList<Connection> removedConnections;
+        private HashMap<Connection, List<TestStep>> usageData;
 
         public void setData(List<Connection> data){
             this.data = new ArrayList<>(data == null ? 5 : data.size() + 5);
@@ -211,6 +251,12 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
                 }
             }
             fireTableDataChanged();
+        }
+
+        public HashMap<Connection, List<TestStep>> getUsageData(){return usageData;}
+
+        public void setUsageData(HashMap<Connection, List<TestStep>> usageData){
+            this.usageData = usageData;
         }
 
         @Override
@@ -239,6 +285,11 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
                     return data.get(rowIndex).params.fixedId;
                 case Login:
                     return data.get(rowIndex).params.login;
+                case Used:
+                    Connection connection = data.get(rowIndex).originalConnection;
+                    if(connection == null) return false;
+                    List<TestStep> involvingTestSteps = usageData.get(connection);
+                    return involvingTestSteps != null && involvingTestSteps.size() > 0;
             }
             return null;
         }
@@ -265,6 +316,11 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             Column column =  Column.values()[columnIndex];
             return column == Column.Name || column == Column.ServerUri || column == Column.ClientId || column == Column.Login;
+        }
+
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            if(Column.values()[columnIndex] == Column.Used) return Boolean.class; else return super.getColumnClass(columnIndex);
         }
 
         public int addItem(String name, ConnectionParams params){

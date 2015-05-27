@@ -137,15 +137,15 @@ class ConnectionsManager implements PropertyChangeListener {
 
 
     static void onProjectLoaded(Project project){
-        if(instance == null) return;
-        ArrayList<Connection> projectConnections = grabConnections(project);
-        if(projectConnections != null){
-            for(Connection connection: projectConnections){
-                connection.addPropertyChangeListener(getInstance());
-            }
-        }
-        getInstance().connections.put(project, projectConnections);
-        fireConnectionsListChangedEvent(project);
+//        if(instance == null) return;
+//        ArrayList<Connection> projectConnections = grabConnections(project);
+//        if(projectConnections != null){
+//            for(Connection connection: projectConnections){
+//                connection.addPropertyChangeListener(getInstance());
+//            }
+//        }
+//        getInstance().connections.put(project, projectConnections);
+//        fireConnectionsListChangedEvent(project);
     }
 
     static void beforeProjectSaved(Project project){

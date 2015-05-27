@@ -87,8 +87,10 @@ public class EditConnectionDialog extends SimpleDialog {
             Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
             ArrayList<String> existingNames = new ArrayList<>();
             List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-            for(Connection curConnection: connections){
-                if(curConnection != connection) existingNames.add(curConnection.getName());
+            if(connections != null) {
+                for (Connection curConnection : connections) {
+                    if (curConnection != connection) existingNames.add(curConnection.getName());
+                }
             }
             String title = String.format("Configure %s Connection", connection.getName());
             return showDialog(title, project, connection.getName(), connection.getParams(), false, existingNames);
@@ -100,8 +102,10 @@ public class EditConnectionDialog extends SimpleDialog {
         Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
         ArrayList<String> existingNames = new ArrayList<>();
         List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-        for(Connection curConnection: connections){
-            existingNames.add(curConnection.getName());
+        if(connections != null) {
+            for (Connection curConnection : connections) {
+                existingNames.add(curConnection.getName());
+            }
         }
         return showDialog("Create New Connection", project, null, null, false, existingNames);
 
@@ -111,8 +115,10 @@ public class EditConnectionDialog extends SimpleDialog {
         Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
         ArrayList<String> existingNames = new ArrayList<>();
         List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-        for(Connection curConnection: connections){
-            existingNames.add(curConnection.getName());
+        if(connections != null) {
+            for (Connection curConnection : connections) {
+                existingNames.add(curConnection.getName());
+            }
         }
         return showDialog("Convert Legacy Connection", project, null, srcParams, false, existingNames);
 
