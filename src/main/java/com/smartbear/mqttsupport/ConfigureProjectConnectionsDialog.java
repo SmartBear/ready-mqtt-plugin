@@ -9,17 +9,12 @@ import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.action.swing.DefaultActionList;
-import com.eviware.soapui.support.components.JButtonBar;
 import com.eviware.soapui.support.components.JXToolBar;
-import hermes.impl.ConnectionManager;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -28,18 +23,15 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class ConfigureConnectionsDialog extends SimpleDialog {
+public class ConfigureProjectConnectionsDialog extends SimpleDialog {
 
     private JTable grid;
     private Project connectionsTargetItem;
@@ -47,7 +39,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
     private Action editAction;
     private Action removeAction;
 
-    protected ConfigureConnectionsDialog(ModelItem modelItem){
+    protected ConfigureProjectConnectionsDialog(ModelItem modelItem){
         super("Configure Connections to MQTT Servers", "Add, remove or edit connections to MQTT servers needed for the project", null, true);
         if(modelItem instanceof Project) {
             this.connectionsTargetItem = (Project) modelItem;
@@ -150,7 +142,7 @@ public class ConfigureConnectionsDialog extends SimpleDialog {
     }
 
     public static boolean showDialog(ModelItem modelItem){
-        ConfigureConnectionsDialog dialog = new ConfigureConnectionsDialog(modelItem);
+        ConfigureProjectConnectionsDialog dialog = new ConfigureProjectConnectionsDialog(modelItem);
         try {
             dialog.setModal(true);
             UISupport.centerDialog(dialog);

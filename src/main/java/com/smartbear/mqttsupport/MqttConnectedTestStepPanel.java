@@ -1,11 +1,8 @@
 package com.smartbear.mqttsupport;
 
-import com.eviware.soapui.SoapUI;
-import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
-import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
@@ -19,16 +16,12 @@ import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.ComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -59,7 +52,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            ConfigureConnectionsDialog.showDialog(getModelItem());
+            ConfigureProjectConnectionsDialog.showDialog(getModelItem());
         }
     }
 
