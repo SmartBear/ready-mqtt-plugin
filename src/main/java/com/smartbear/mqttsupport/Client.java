@@ -65,11 +65,24 @@ public class Client implements MqttCallback {
     }
 
     public ArrayList<String> getCachedSubscriptions(){
+        if(connectionToken == null && connectionOptions.isCleanSession()) subscribedTopics = new ArrayList<>();
         return subscribedTopics;
     }
 
 
     public MessageQueue getMessageQueue(){return messageQueue;}
+
+
+    public void disconnect(boolean sendDisconnectMessage, long timeout) throws MqttException{
+        messageQueue = new MessageQueue();
+        if(sendDisconnectMessage){
+            clientObj.disconnectForcibly(1, timeout);
+        }
+        else{
+            clientObj.disconnectForcibly(0, 1);
+        }
+
+    }
 
     public void dispose(){
             if(!connectionOptions.isCleanSession()){
@@ -84,7 +97,7 @@ public class Client implements MqttCallback {
                 }
             }
         try {
-            if(getClientObject().isConnected()) getClientObject().disconnect();
+            if(getClientObject().isConnected()) getClientObject().disconnectForcibly();
         } catch (MqttException e) {
         }
 
