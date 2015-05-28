@@ -185,6 +185,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             newPassword = value.getPassword();
             newLogin = value.getLogin();
         }
+        updateData();
         notifyPropertyChanged("connection", oldConnection, value);
         if(!Utils.areStringsEqual(newServerUri, oldServerUri, false, true)){
             notifyPropertyChanged("serverUri", oldServerUri, newServerUri);
