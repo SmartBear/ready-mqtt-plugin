@@ -115,6 +115,9 @@ public class ClientCache {
                 connectOptions.setUserName(connectionParams.login);
                 connectOptions.setPassword(connectionParams.password.toCharArray());
             }
+            if(connectionParams.willTopic != null && connectionParams.willTopic.length() != 0) {
+                connectOptions.setWill(connectionParams.willTopic, null, connectionParams.willQos, connectionParams.willRetained);
+            }
         }
         return connectOptions;
     }

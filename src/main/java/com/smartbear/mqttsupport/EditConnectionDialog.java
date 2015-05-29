@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -10,6 +11,7 @@ import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -39,6 +41,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private boolean legacy;
     private JTextField nameEdit;
     private final static Insets defaultInsets = new Insets(4, 4, 4, 4);
+    private final static Insets defaultInsetsWithIndent = new Insets(defaultInsets.top, defaultInsets.left + 12, defaultInsets.bottom, defaultInsets.right);
     private JUndoableTextField serverUriEdit;
     private JUndoableTextField clientIDEdit;
     private JCheckBox authRequiredCheckBox;
@@ -155,6 +158,10 @@ public class EditConnectionDialog extends SimpleDialog {
         return new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsets, 0, 0);
     }
 
+    private GridBagConstraints labelPlaceWithIndent(int row){
+        return new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsetsWithIndent, 0, 0);
+    }
+
     private GridBagConstraints componentPlace(int row, int col){
         return new GridBagConstraints(col, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL, defaultInsets, 0, 0);
     }
@@ -222,13 +229,13 @@ public class EditConnectionDialog extends SimpleDialog {
         loginEdit = new JUndoableTextField(defEditCharCount);
         loginEdit.setToolTipText("Login for MQTT server");
         mainPanel.add(loginEdit, componentPlace(row));
-        mainPanel.add(createLabel("Login:", loginEdit, 0), labelPlace(row));
+        mainPanel.add(createLabel("Login:", loginEdit, 0), labelPlaceWithIndent(row));
         ++row;
 
         passwordEdit = new JPasswordField(defEditCharCount);
         passwordEdit.setToolTipText("Password for MQTT server");
         mainPanel.add(passwordEdit, componentPlace(row));
-        mainPanel.add(createLabel("Password:", passwordEdit, 0), labelPlace(row));
+        mainPanel.add(createLabel("Password:", passwordEdit, 0), labelPlaceWithIndent(row));
         hidePasswordCheckBox = new JCheckBox("Hide", true);
         hidePasswordCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -244,10 +251,28 @@ public class EditConnectionDialog extends SimpleDialog {
         mainPanel.add(hidePasswordCheckBox, componentPlace(row, 2));
         ++row;
 
+        JCheckBox willCheckBox = new JCheckBox("Store Will Message on server");
+        willCheckBox.setToolTipText("Set up the message which is published by the server if the connection to the client is terminated unexpectedly.");
+        mainPanel.add(willCheckBox, componentPlace(row));
+        mainPanel.add(createLabel("Will Message:", willCheckBox, 0), labelPlace(row));
+        ++row;
+
+        JTextField willTopicEdit = new JTextField(defEditCharCount);
+        mainPanel.add(willTopicEdit, componentPlace(row));
+        mainPanel.add(createLabel("Topic:", willTopicEdit, 0), labelPlace(row));
+        ++row;
+
+        JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
+        mainPanel.add(willMessageTypeCombo, componentPlace(row));
+        mainPanel.add(createLabel("Message type:", willMessageTypeCombo, 9), labelPlaceWithIndent(row));
+        ++row;
+
+
         PropertyExpansionPopupListener.enable(serverUriEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(loginEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(passwordEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(clientIDEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(willTopicEdit, modelItemOfConnection);
 
         return mainPanel;
     }

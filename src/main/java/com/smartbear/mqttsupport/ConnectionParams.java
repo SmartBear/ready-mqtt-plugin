@@ -9,7 +9,11 @@ public class ConnectionParams {
     public String fixedId;
     public String login;
     public String password;
-
+    public String willTopic;
+    public PublishedMessageType willMessageType = PublishTestStep.DEFAULT_MESSAGE_TYPE;
+    public String willMessage;
+    public int willQos;
+    public boolean willRetained;
 
     public ConnectionParams(){}
 
@@ -18,6 +22,18 @@ public class ConnectionParams {
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
+    }
+
+    public ConnectionParams(String serverUri, String clientId, String login, String password, String willTopic, PublishedMessageType willMessageType, String willMessage, int willQos, boolean willRetained){
+        this.originalServerUri = serverUri;
+        this.fixedId = clientId;
+        this.login = login;
+        this.password = password;
+        this.willTopic = willTopic;
+        this.willMessageType = willMessageType;
+        this.willMessage = willMessage;
+        this.willQos = willQos;
+        this.willRetained = willRetained;
     }
 
     public String getServerUri(){
@@ -77,7 +93,17 @@ public class ConnectionParams {
         return Utils.areStringsEqual(getNormalizedServerUri(), params2.getNormalizedServerUri())
                 && Utils.areStringsEqual(fixedId, params2.fixedId, false, true)
                 && Utils.areStringsEqual(login, params2.login, false, true)
-                && (login == null || login.length() == 0 || Utils.areStringsEqual(password, params2.password, false, true));
+                && (login == null || login.length() == 0 || Utils.areStringsEqual(password, params2.password, false, true))
+                && Utils.areStringsEqual(willTopic, params2.willTopic, false, true)
+                && (willTopic == null || willTopic.length() == 0 ||
+                        (
+                            willMessageType == params2.willMessageType
+                            && Utils.areStringsEqual(willMessage, params2.willMessage, false, true)
+                            && willRetained == params2.willRetained
+                            && willQos == params2.willQos
+                        )
+                   );
+
     }
 
     @Override

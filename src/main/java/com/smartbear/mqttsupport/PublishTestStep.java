@@ -2,47 +2,35 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
-import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
-import com.eviware.soapui.model.mock.MockRunner;import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
-import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
+import com.eviware.soapui.model.mock.MockRunner;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
-import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
-import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestCase;
+import com.eviware.soapui.model.testsuite.LoadTestRunner;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
-import com.eviware.soapui.model.testsuite.TestRunContext;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.security.boundary.IntegerBoundary;
-import com.eviware.soapui.support.SoapUITools;
+import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.xml.XmlObjectConfigurationBuilder;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 
 import com.google.common.base.Charsets;
 import org.apache.log4j.Logger;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
-import javax.xml.transform.Result;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
@@ -53,32 +41,14 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     private final static String QOS_PROP_NAME = "QoS";
     private final static String RETAINED_PROP_NAME = "Retained";
     private final static Logger log = Logger.getLogger(PluginConfig.LOGGER_NAME);
+    public final static PublishedMessageType DEFAULT_MESSAGE_TYPE = PublishedMessageType.Json;
+    public final static int DEFAULT_QOS = 0;
 
-    enum MessageType{
-        Json ("JSON"), Xml ("XML"), Utf8Text("Text (UTF-8)"), Utf16Text("Text (UTF-16)"), BinaryFile("Content of file"), IntegerValue("Integer (4 bytes)"), LongValue("Long (8 bytes)"), FloatValue("Float"), DoubleValue("Double");
-        private String name;
-        private MessageType(String name){this.name = name;}
-        @Override
-        public String toString(){
-            return name;
-        }
-        public static MessageType fromString(String s){
-            if(s == null) return null;
-            for (MessageType m : MessageType.values()) {
-                if (m.toString().equals(s)) {
-                    return m;
-                }
-            }
-            return null;
-
-        }
-    }
-
-    private MessageType messageKind = MessageType.Json;
+    private PublishedMessageType messageKind = DEFAULT_MESSAGE_TYPE;
     private String message;
     private String topic;
 
-    private int qos;
+    private int qos = DEFAULT_QOS;
     private boolean retained;
 
     private static boolean actionGroupAdded = false;
@@ -107,7 +77,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
             @Override
             public void setValue(DefaultTestStepProperty property, String value) {
-                MessageType messageType = MessageType.fromString(value);
+                PublishedMessageType messageType = PublishedMessageType.fromString(value);
                 if(messageType != null) setMessageKind(messageType);
             }
         }, this));
@@ -176,7 +146,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         super.release();
     }
 
-    private boolean checkProperties(WsdlTestStepResult result, String topicToCheck, MessageType messageTypeToCheck, String messageToCheck) {
+    private boolean checkProperties(WsdlTestStepResult result, String topicToCheck, PublishedMessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
         if(StringUtils.isNullOrEmpty(topicToCheck)){
             result.addMessage("The topic of message is not specified");
@@ -186,8 +156,8 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             result.addMessage("The message format is not specified.");
             ok = false;
         }
-        if(StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != MessageType.Utf16Text) && (messageTypeToCheck != MessageType.Utf8Text)){
-            if(messageTypeToCheck == MessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
+        if(StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != PublishedMessageType.Utf16Text) && (messageTypeToCheck != PublishedMessageType.Utf8Text)){
+            if(messageTypeToCheck == PublishedMessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
             ok = false;
         }
 
@@ -195,7 +165,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     }
 
 
-    private byte[] formPayload(WsdlTestStepResult errorsStorage, MessageType messageType, String msg){
+    private byte[] formPayload(WsdlTestStepResult errorsStorage, PublishedMessageType messageType, String msg){
         byte[] buf;
         switch(messageType){
             case Utf8Text: case Json: case Xml:
@@ -404,10 +374,10 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         executionListeners.remove(listener);
     }
 
-    public MessageType getMessageKind(){return messageKind;}
-    public void setMessageKind(MessageType newValue){
+    public PublishedMessageType getMessageKind(){return messageKind;}
+    public void setMessageKind(PublishedMessageType newValue){
         if(messageKind == newValue) return;
-        MessageType old = messageKind;
+        PublishedMessageType old = messageKind;
         messageKind = newValue;
         updateData();
         notifyPropertyChanged("messageKind", old, newValue);
@@ -484,13 +454,13 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     protected void readData(XmlObjectConfigurationReader reader){
         super.readData(reader);
         try{
-            messageKind = MessageType.valueOf(reader.readString(MESSAGE_KIND_PROP_NAME, MessageType.Json.name()));
+            messageKind = PublishedMessageType.valueOf(reader.readString(MESSAGE_KIND_PROP_NAME, DEFAULT_MESSAGE_TYPE.name()));
         } catch (IllegalArgumentException | NullPointerException e){
-            messageKind = MessageType.Json;
+            messageKind = DEFAULT_MESSAGE_TYPE;
         }
         topic = reader.readString(TOPIC_PROP_NAME, "");
         message = reader.readString(MESSAGE_PROP_NAME, "");
-        qos = reader.readInt(QOS_PROP_NAME, 0);
+        qos = reader.readInt(QOS_PROP_NAME, DEFAULT_QOS);
         retained = reader.readBoolean(RETAINED_PROP_NAME, false);
     }
 

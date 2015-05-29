@@ -1,21 +1,14 @@
 package com.smartbear.mqttsupport;
 
 
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
-import com.eviware.soapui.model.ModelItem;
-
-import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
-import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.components.SimpleBindingForm;
-import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
-import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
@@ -25,7 +18,6 @@ import com.jgoodies.binding.adapter.Bindings;
 
 import javax.swing.AbstractAction;
 
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -39,7 +31,6 @@ import javax.swing.ScrollPaneConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
@@ -99,7 +90,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         form.appendHeading("Published Message");
         JTextField topicEdit = form.appendTextField("topic", "Topic", "Message Topic");
         PropertyExpansionPopupListener.enable(topicEdit, getModelItem());
-        form.appendComboBox("messageKind", "Message type", PublishTestStep.MessageType.values(), "");
+        form.appendComboBox("messageKind", "Message type", PublishedMessageType.values(), "");
         numberEdit = form.appendTextField("message", "Message", "The number which will be published.");
         textMemo = form.appendTextArea("message", "Message", "The text which will be published.");
         PropertyExpansionPopupListener.enable(textMemo, getModelItem());
@@ -187,10 +178,10 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         super.propertyChange(evt);
 
         if (evt.getPropertyName().equals("messageKind")) {
-            PublishTestStep.MessageType newMessageType = (PublishTestStep.MessageType)evt.getNewValue();
-            boolean isNumber = newMessageType == PublishTestStep.MessageType.DoubleValue || newMessageType == PublishTestStep.MessageType.FloatValue || newMessageType == PublishTestStep.MessageType.IntegerValue || newMessageType == PublishTestStep.MessageType.LongValue;
-            boolean isFile = newMessageType == PublishTestStep.MessageType.BinaryFile;
-            boolean isText = newMessageType == PublishTestStep.MessageType.Utf8Text || newMessageType == PublishTestStep.MessageType.Utf16Text;
+            PublishedMessageType newMessageType = (PublishedMessageType)evt.getNewValue();
+            boolean isNumber = newMessageType == PublishedMessageType.DoubleValue || newMessageType == PublishedMessageType.FloatValue || newMessageType == PublishedMessageType.IntegerValue || newMessageType == PublishedMessageType.LongValue;
+            boolean isFile = newMessageType == PublishedMessageType.BinaryFile;
+            boolean isText = newMessageType == PublishedMessageType.Utf8Text || newMessageType == PublishedMessageType.Utf16Text;
             numberEdit.setVisible(isNumber);
             textMemo.setVisible(isText);
             if(textMemo.getParent() instanceof JScrollPane) {
@@ -201,8 +192,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
             }
             fileNameEdit.setVisible(isFile);
             chooseFileButton.setVisible(isFile);
-            jsonEditor.setVisible(newMessageType == PublishTestStep.MessageType.Json);
-            xmlEditor.setVisible(newMessageType == PublishTestStep.MessageType.Xml);
+            jsonEditor.setVisible(newMessageType == PublishedMessageType.Json);
+            xmlEditor.setVisible(newMessageType == PublishedMessageType.Xml);
         }
     }
 
