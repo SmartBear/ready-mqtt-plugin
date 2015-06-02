@@ -2,6 +2,7 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
+import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.PropertyChangeNotifier;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -245,14 +246,15 @@ public class Connection implements PropertyChangeNotifier {
         }
     }
 
-    public ConnectionParams expand(PropertyExpansionContext context){
-        ConnectionParams result = new ConnectionParams();
+    public ExpandedConnectionParams expand(PropertyExpansionContext context){
+        ExpandedConnectionParams result = new ExpandedConnectionParams();
         result.setServerUri(context.expand(getServerUri()));
         result.fixedId = context.expand(getFixedId());
         result.setCredentials(context.expand(getLogin()), context.expand(getPassword()));
         result.willTopic = context.expand(getWillTopic());
-        result.willMessageType = getWillMessageType();
-        result.willMessage = context.expand(getWillMessage());
+        String willMessageStr = context.expand(getWillMessage());
+        if(getWillMessageType() == null) throw new IllegalArgumentException("The message type is not specified.");
+        result.willMessage = getWillMessageType().toPayload(willMessageStr, ModelSupport.getModelItemProject(context.getModelItem()));
         result.willQos = getWillQos();
         result.willRetained = isWillRetained();
 

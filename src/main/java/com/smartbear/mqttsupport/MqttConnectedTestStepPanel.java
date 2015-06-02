@@ -32,6 +32,8 @@ import java.util.List;
 
 public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep>{
 
+    public final static String[] QOS_NAMES = {"At most once (0)", "At least once (1)", "Exactly once (2)"};
+
     private final static String LEGACY_CONNECTION_NAME = "Individual (legacy) connection";
     private final static String NEW_CONNECTION_ITEM = "<New Connection...>";
     private final static String CONVERT_BUTTON_CAPTION = "Convert Connection";
@@ -319,13 +321,11 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     protected void buildQosRadioButtons(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm){
         JPanel qosPanel = new JPanel();
         qosPanel.setLayout(new BoxLayout(qosPanel, BoxLayout.X_AXIS));
-        JRadioButton qos0Radio = new JRadioButton("At most once (0)"), qos1Radio = new JRadioButton("At least once (1)"), qos2Radio = new JRadioButton("Exactly once (2)");
-        Bindings.bind(qos0Radio, pm.getModel("qos"), 0);
-        Bindings.bind(qos1Radio, pm.getModel("qos"), 1);
-        Bindings.bind(qos2Radio, pm.getModel("qos"), 2);
-        qosPanel.add(qos0Radio);
-        qosPanel.add(qos1Radio);
-        qosPanel.add(qos2Radio);
+        for(int i = 0; i < QOS_NAMES.length; ++i) {
+            JRadioButton qosRadio = new JRadioButton(QOS_NAMES[i]);
+            Bindings.bind(qosRadio, pm.getModel("qos"), i);
+            qosPanel.add(qosRadio);
+        }
         form.append("Quality of service", qosPanel);
 
     }

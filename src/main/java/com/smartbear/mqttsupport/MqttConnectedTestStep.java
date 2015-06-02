@@ -488,9 +488,15 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             log.setStatus(TestStepResult.TestStepStatus.FAILED);
             return null;
         }
-        ConnectionParams actualConnectionParams;
+        ExpandedConnectionParams actualConnectionParams;
         if(connection.isLegacy()){
-            actualConnectionParams = connection.expand(runContext);
+            try {
+                actualConnectionParams = connection.expand(runContext);
+            } catch (Exception e) {
+                log.addMessage(e.getMessage());
+                log.setStatus(TestStepResult.TestStepStatus.FAILED);
+                return null;
+            }
             if(!checkConnectionParams(actualConnectionParams, log)) return null;
             try {
                 return getCache(runContext).getLegacy(actualConnectionParams);
@@ -505,7 +511,13 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             ClientCache cache = getCache(runContext);
             Client result = cache.get(connection.getName());
             if(result == null){
-                actualConnectionParams = connection.expand(runContext);
+                try {
+                    actualConnectionParams = connection.expand(runContext);
+                } catch (Exception e) {
+                    log.addMessage(e.getMessage());
+                    log.setStatus(TestStepResult.TestStepStatus.FAILED);
+                    return null;
+                }
                 if(!checkConnectionParams(actualConnectionParams, log)) return null;
                 try {
                     result = cache.add(connection.getName(), actualConnectionParams);
@@ -520,7 +532,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
     }
 
-    private boolean checkConnectionParams(ConnectionParams connectionParams, WsdlTestStepResult log) {
+    private boolean checkConnectionParams(ExpandedConnectionParams connectionParams, WsdlTestStepResult log) {
         String uriCheckResult = Utils.checkServerUri(connectionParams.getServerUri());
         if (uriCheckResult == null) return true;
         log.addMessage(uriCheckResult);

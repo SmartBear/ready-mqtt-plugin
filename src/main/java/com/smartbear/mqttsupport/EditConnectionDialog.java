@@ -9,21 +9,37 @@ import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
+import com.eviware.soapui.support.xml.SyntaxEditorUtil;
+import com.jgoodies.binding.adapter.Bindings;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -48,6 +64,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private JUndoableTextField loginEdit;
     private JPasswordField passwordEdit;
     private JCheckBox hidePasswordCheckBox;
+    private HashMap<JComponent, JLabel> componentLabelsMap = new HashMap<>();
 
     private char passwordChar;
 
@@ -162,17 +179,18 @@ public class EditConnectionDialog extends SimpleDialog {
         return new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsetsWithIndent, 0, 0);
     }
 
-    private GridBagConstraints componentPlace(int row, int col){
-        return new GridBagConstraints(col, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL, defaultInsets, 0, 0);
+    private GridBagConstraints extraComponentPlace(int row, boolean fill){
+        return new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, fill ? GridBagConstraints.HORIZONTAL : GridBagConstraints.NONE, defaultInsets, 0, 0);
     }
 
     private GridBagConstraints componentPlace(int row){
-        return componentPlace(row, 1);
+        return new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL, defaultInsets, 0, 0);
     }
 
     private JLabel createLabel(String text, JComponent targetComponent, int hitCharNo){
         JLabel label = new JLabel(text);
         label.setLabelFor(targetComponent);
+        if(targetComponent != null) componentLabelsMap.put(targetComponent, label);
         if(hitCharNo >= 0) {
             label.setDisplayedMnemonic(text.charAt(hitCharNo));
             label.setDisplayedMnemonicIndex(hitCharNo);
@@ -184,6 +202,7 @@ public class EditConnectionDialog extends SimpleDialog {
     protected Component buildContent() {
         JLabel label;
         final int defEditCharCount = 15;
+        final int defMemoRows = 5;
 
         int row = 0;
 
@@ -248,10 +267,10 @@ public class EditConnectionDialog extends SimpleDialog {
                 }
             }
         });
-        mainPanel.add(hidePasswordCheckBox, componentPlace(row, 2));
+        mainPanel.add(hidePasswordCheckBox, extraComponentPlace(row, false));
         ++row;
 
-        JCheckBox willCheckBox = new JCheckBox("Store Will Message on server");
+        JCheckBox willCheckBox = new JCheckBox("Store Will Message on the server");
         willCheckBox.setToolTipText("Set up the message which is published by the server if the connection to the client is terminated unexpectedly.");
         mainPanel.add(willCheckBox, componentPlace(row));
         mainPanel.add(createLabel("Will Message:", willCheckBox, 0), labelPlace(row));
@@ -262,11 +281,104 @@ public class EditConnectionDialog extends SimpleDialog {
         mainPanel.add(createLabel("Topic:", willTopicEdit, 0), labelPlace(row));
         ++row;
 
-        JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
+        final JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
         mainPanel.add(willMessageTypeCombo, componentPlace(row));
         mainPanel.add(createLabel("Message type:", willMessageTypeCombo, 9), labelPlaceWithIndent(row));
         ++row;
 
+        final JTextField willNumberEdit = new JTextField(defEditCharCount);
+        mainPanel.add(willNumberEdit, componentPlace(row));
+        PropertyExpansionPopupListener.enable(willNumberEdit, modelItemOfConnection);
+        mainPanel.add(createLabel("Message:", willNumberEdit, 0), labelPlace(row));
+        ++row;
+
+        final JTextArea willTextMemo = new JTextArea(defEditCharCount, defMemoRows);
+        PropertyExpansionPopupListener.enable(willTextMemo, modelItemOfConnection);
+        mainPanel.add(new JScrollPane(willTextMemo), componentPlace(row));
+        mainPanel.add(createLabel("Message:", willTextMemo, 0), labelPlace(row));
+        ++row;
+
+        final JTextField willFileNameEdit = new JTextField(defEditCharCount);
+        willFileNameEdit.setToolTipText("The file which content will be used as a payload of Will Message");
+        PropertyExpansionPopupListener.enable(willFileNameEdit, modelItemOfConnection);
+        final JButton chooseFileButton = new JButton(new SelectFileAction(willFileNameEdit));
+        mainPanel.add(willFileNameEdit, componentPlace(row));
+        mainPanel.add(chooseFileButton, extraComponentPlace(row, false));
+        mainPanel.add(createLabel("File with message:", willFileNameEdit, 0), labelPlace(row));
+        ++row;
+
+        final JTabbedPane willJson = new JTabbedPane();
+        RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
+        syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+        PropertyExpansionPopupListener.enable(syntaxTextArea, modelItemOfConnection);
+        willJson.addTab("Text", new RTextScrollPane(syntaxTextArea));
+
+        Utils.JsonTreeEditor jsonTreeEditor = new Utils.JsonTreeEditor(true, modelItemOfConnection);
+        JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        willJson.addTab("Tree View", scrollPane);
+
+        willJson.setPreferredSize(new Dimension(450, 350));
+        mainPanel.add(willJson, new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, defaultInsets, 0, 0));
+        mainPanel.add(createLabel("Message:", willJson, 0), labelPlace(row));
+        ++row;
+
+        final JTabbedPane willXml = new JTabbedPane();
+
+        syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
+        PropertyExpansionPopupListener.enable(syntaxTextArea, modelItemOfConnection);
+        willXml.addTab("Text", new RTextScrollPane(syntaxTextArea));
+
+        Utils.XmlTreeEditor xmlTreeEditor = new Utils.XmlTreeEditor(true, modelItemOfConnection);
+        scrollPane = new JScrollPane(xmlTreeEditor);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        willXml.addTab("Tree View", scrollPane);
+
+        willXml.setPreferredSize(new Dimension(450, 350));
+        mainPanel.add(willXml, new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, defaultInsets, 0, 0));
+        mainPanel.add(createLabel("Message:", willXml, 0), labelPlace(row));
+        ++row;
+
+        willMessageTypeCombo.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                PublishedMessageType messageType = (PublishedMessageType)willMessageTypeCombo.getSelectedItem();
+                boolean isNumber = messageType == PublishedMessageType.DoubleValue || messageType == PublishedMessageType.FloatValue || messageType == PublishedMessageType.IntegerValue || messageType == PublishedMessageType.LongValue;
+                boolean isFile = messageType == PublishedMessageType.BinaryFile;
+                boolean isText = messageType == PublishedMessageType.Utf8Text || messageType == PublishedMessageType.Utf16Text;
+                willNumberEdit.setVisible(isNumber);
+                componentLabelsMap.get(willNumberEdit).setVisible(isNumber);
+                willTextMemo.setVisible(isText);
+                componentLabelsMap.get(willTextMemo).setVisible(isText);
+                if(willTextMemo.getParent() instanceof JScrollPane) {
+                    willTextMemo.getParent().setVisible(isText);
+                }
+                else if(willTextMemo.getParent().getParent() instanceof JScrollPane){
+                    willTextMemo.getParent().getParent().setVisible(isText);
+                }
+                willFileNameEdit.setVisible(isFile);
+                chooseFileButton.setVisible(isFile);
+                componentLabelsMap.get(willFileNameEdit).setVisible(isFile);
+                willJson.setVisible(messageType == PublishedMessageType.Json);
+                componentLabelsMap.get(willJson).setVisible(messageType == PublishedMessageType.Json);
+                willXml.setVisible(messageType == PublishedMessageType.Xml);
+                componentLabelsMap.get(willTextMemo).setVisible(messageType == PublishedMessageType.Xml);
+
+            }
+        });
+
+
+        JComboBox<String> willQos = new JComboBox<String>(MqttConnectedTestStepPanel.QOS_NAMES);
+        mainPanel.add(willQos, componentPlace(row));
+        mainPanel.add(createLabel("Quality of Service:", willQos, 0), labelPlace(row));
+        ++row;
+
+        JCheckBox willRetained = new JCheckBox("Store Will Message as retained");
+        mainPanel.add(willRetained, componentPlace(row));
+        mainPanel.add(createLabel("Retained:", willRetained, 0));
+        ++row;
 
         PropertyExpansionPopupListener.enable(serverUriEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(loginEdit, modelItemOfConnection);
@@ -274,7 +386,7 @@ public class EditConnectionDialog extends SimpleDialog {
         PropertyExpansionPopupListener.enable(clientIDEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(willTopicEdit, modelItemOfConnection);
 
-        return mainPanel;
+        return new JScrollPane(mainPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     }
 
     @Override
@@ -319,4 +431,26 @@ public class EditConnectionDialog extends SimpleDialog {
         }
         return true;
     }
+
+    public class SelectFileAction extends AbstractAction {
+        private JFileChooser fileChooser;
+        private JTextField fileNameEdit;
+
+        public SelectFileAction(JTextField fileNameEdit) {
+            super("Browse...");
+            this.fileNameEdit = fileNameEdit;
+        }
+
+        public void actionPerformed(ActionEvent arg0) {
+            if (fileChooser == null) {
+                fileChooser = new JFileChooser();
+            }
+
+            int returnVal = fileChooser.showOpenDialog(UISupport.getMainFrame());
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                fileNameEdit.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            }
+        }
+    }
+
 }

@@ -165,102 +165,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     }
 
 
-    private byte[] formPayload(WsdlTestStepResult errorsStorage, PublishedMessageType messageType, String msg){
-        byte[] buf;
-        switch(messageType){
-            case Utf8Text: case Json: case Xml:
-                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_8);
-            case Utf16Text:
-                if(msg == null) return new byte[0]; else return msg.getBytes(Charsets.UTF_16LE);
-            case IntegerValue:
-                int iv;
-                try{
-                    iv = Integer.parseInt(msg);
-                }
-                catch (NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as an integer value.", msg));
-                    return null;
-                }
-                buf = new byte[4];
-                for(int i = 0; i < 4; ++i){
-                    buf[i] = (byte)((iv >> ((3 - i) * 8)) & 0xff);
-                }
-                return buf;
-            case LongValue:
-                long lv;
-                try{
-                    lv = Long.parseLong(msg);
-                }
-                catch (NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a long value.", msg));
-                    return null;
-                }
-                buf = new byte[8];
-                for(int i = 0; i < 8; ++i){
-                    buf[i] = (byte)((lv >> ((7 - i) * 8)) & 0xff);
-                }
-                return buf;
-            case DoubleValue :
-                buf = new byte[8];
-                double dv;
-                try{
-                    dv = Double.parseDouble(msg);
-                }
-                catch(NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a double value.", msg));
-                    return null;
-                }
-                long rawD = Double.doubleToLongBits(dv);
-                for(int i = 0; i < 8; ++i){
-                    buf[i] = (byte)((rawD >> ((7 - i) * 8)) & 0xff);
-                }
-                return buf;
-
-            case FloatValue:
-                buf = new byte[4];
-                float fv;
-                try{
-                    fv = Float.parseFloat(msg);
-                }
-                catch(NumberFormatException e){
-                    errorsStorage.addMessage(String.format("The specified text (\"%s\") cannot be published as a float value.", msg));
-                    return null;
-                }
-                int rawF = Float.floatToIntBits(fv);
-                for(int i = 0; i < 4; ++i){
-                    buf[i] = (byte)((rawF >> ((3 - i) * 8)) & 0xff);
-                }
-                return buf;
-            case BinaryFile:
-                File file = null;
-                try {
-                    file = new File(msg);
-                    if (!file.isAbsolute()) {
-                        file = new File(new File(getProject().getPath()).getParent(), file.getPath());
-                    }
-                    if (!file.exists()) {
-                        errorsStorage.addMessage(String.format("Unable to find \"%s\" file which contains a published message", file.getPath()));
-                        return null;
-                    }
-                    int fileLen = (int) file.length();
-                    buf = new byte[fileLen];
-                    FileInputStream stream = new FileInputStream(file);
-                    stream.read(buf);
-                    return buf;
-                }
-                catch(RuntimeException | IOException e){
-                    errorsStorage.addMessage(String.format("Attempt of access to \"%s\" file with a published message has failed.", file.getPath()));
-                    errorsStorage.setError(e);
-                    return null;
-                }
-
-        }
-        errorsStorage.addMessage("The format of the published message is not specified or unknown."); //We won't be here
-        return null;
-
-    }
-
-
     @Override
     public TestStepResult run(final TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
         return doExecute(testRunContext, new CancellationToken() {
@@ -296,8 +200,12 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                 long starTime = System.nanoTime();
                 long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long)getTimeout() * 1000 * 1000;
 
-                byte[] payload = formPayload(result, messageKind, expandedMessage);
-                if(payload == null){
+                byte[] payload = null;
+                try {
+                    payload = messageKind.toPayload(expandedMessage, getProject());
+                }
+                catch(RuntimeException e) {
+                    result.addMessage(e.getMessage());
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }

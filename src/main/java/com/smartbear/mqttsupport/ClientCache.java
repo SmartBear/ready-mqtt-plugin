@@ -15,15 +15,15 @@ public class ClientCache {
     private static final int FIRST_UNTITLED_CLIENT = 0;
 
     private static class CacheKey{
-        public ConnectionParams params;
+        public ExpandedConnectionParams params;
         public int generatedClientNo;
 
-        public CacheKey(ConnectionParams params, int generatedClientNo){
+        public CacheKey(ExpandedConnectionParams params, int generatedClientNo){
             this.params = params;
             this.generatedClientNo = generatedClientNo;
         }
 
-        public CacheKey(ConnectionParams params){
+        public CacheKey(ExpandedConnectionParams params){
             this(params, LEGACY_UNTITLED_CLIENT);
         }
 
@@ -56,7 +56,7 @@ public class ClientCache {
     }
 
 
-    public Client getLegacy(ConnectionParams connectionParams) throws MqttException {
+    public Client getLegacy(ExpandedConnectionParams connectionParams) throws MqttException {
         Client result = map.get(new CacheKey(connectionParams, LEGACY_UNTITLED_CLIENT));
         if(result == null){
             result = register(connectionParams, LEGACY_UNTITLED_CLIENT);
@@ -70,7 +70,7 @@ public class ClientCache {
         return map.get(key);
     }
 
-    public Client add(String connectionName, ConnectionParams params) throws MqttException{
+    public Client add(String connectionName, ExpandedConnectionParams params) throws MqttException{
         Client result = get(connectionName);
         if(result == null){
             if(!params.isGeneratedId()){
@@ -89,7 +89,7 @@ public class ClientCache {
         return result;
     }
 
-    private Client register(ConnectionParams connectionParams, int generatedClientNo) throws MqttException {
+    private Client register(ExpandedConnectionParams connectionParams, int generatedClientNo) throws MqttException {
         CacheKey cacheKey = new CacheKey(connectionParams, generatedClientNo);
         String clientId;
         if (connectionParams.isGeneratedId()) {
@@ -105,7 +105,7 @@ public class ClientCache {
         return newClient;
     }
 
-    private MqttConnectOptions createConnectionOptions(ConnectionParams connectionParams) {
+    private MqttConnectOptions createConnectionOptions(ExpandedConnectionParams connectionParams) {
         MqttConnectOptions connectOptions;
         if (connectionParams == null) {
             connectOptions = getDefaultConnectOptions();
@@ -116,7 +116,7 @@ public class ClientCache {
                 connectOptions.setPassword(connectionParams.password.toCharArray());
             }
             if(connectionParams.willTopic != null && connectionParams.willTopic.length() != 0) {
-                connectOptions.setWill(connectionParams.willTopic, null, connectionParams.willQos, connectionParams.willRetained);
+                connectOptions.setWill(connectionParams.willTopic, connectionParams.willMessage, connectionParams.willQos, connectionParams.willRetained);
             }
         }
         return connectOptions;
