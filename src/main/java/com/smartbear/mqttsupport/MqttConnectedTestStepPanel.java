@@ -188,36 +188,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     }
 
-    public interface Converter<SrcType>{
-        Object convert(SrcType srcValue);
-    }
-
-    public static class ReadOnlyValueModel<SrcType> extends AbstractValueModel {
-        private ValueModel source;
-        private Converter<SrcType> converter;
-        public ReadOnlyValueModel(ValueModel source, Converter<SrcType> converter){
-            this.source = source;
-            this.converter = converter;
-            source.addValueChangeListener(new SubjectValueChangeHandler());
-        }
-
-        @Override
-        public Object getValue(){
-            return converter.convert((SrcType) source.getValue());
-        }
-
-        @Override
-        public void setValue(Object newValue){}
-
-        private final class SubjectValueChangeHandler implements PropertyChangeListener {
-
-            @Override
-            public void propertyChange(PropertyChangeEvent evt) {
-                fireValueChange(converter.convert((SrcType) evt.getOldValue()), converter.convert((SrcType) evt.getNewValue()) , true);
-            }
-        }
-    }
-
     public MqttConnectedTestStepPanel(MqttTestStep modelItem) {
         super(modelItem);
     }
@@ -298,7 +268,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 //        });
 //        form.append("Password (optional)", passwordPanel);
 
-        ReadOnlyValueModel<Connection> legacyModeAdapter = new ReadOnlyValueModel<>(pm.getModel("connection"), new Converter<Connection>() {
+        ReadOnlyValueModel<Connection> legacyModeAdapter = new ReadOnlyValueModel<>(pm.getModel("connection"), new ReadOnlyValueModel.Converter<Connection>() {
             @Override
             public Object convert(Connection srcValue) {
                 return srcValue != null && srcValue.isLegacy();

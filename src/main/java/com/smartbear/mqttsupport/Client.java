@@ -23,13 +23,13 @@ public class Client implements MqttCallback {
     }
 
 
-    private MqttAsyncClient clientObj;
+    private MqttAsyncClientEx clientObj;
     private IMqttToken connectionToken;
     private MqttConnectOptions connectionOptions;
     private ArrayList<String> subscribedTopics = new ArrayList<String>();
     private MessageQueue messageQueue = new MessageQueue();
 
-    public Client(MqttAsyncClient client, MqttConnectOptions connectionOptions){
+    public Client(MqttAsyncClientEx client, MqttConnectOptions connectionOptions){
         this.clientObj = client;
         this.connectionOptions = connectionOptions;
         client.setCallback(this);
@@ -37,6 +37,7 @@ public class Client implements MqttCallback {
 
     public boolean isConnected(){
         return clientObj.isConnected();
+        //return connectionToken != null && connectionToken.isComplete() && connectionToken.getException() == null;
     }
 
     public IMqttToken getConnectingStatus() throws MqttException {
@@ -49,6 +50,10 @@ public class Client implements MqttCallback {
 
 
     public void connectionLost(Throwable throwable){
+        onDisconnected();
+    }
+
+    private void onDisconnected(){
         connectionToken = null;
     }
 
@@ -73,31 +78,33 @@ public class Client implements MqttCallback {
     public MessageQueue getMessageQueue(){return messageQueue;}
 
 
-    public void disconnect(boolean sendDisconnectMessage, long timeout) throws MqttException{
+    public void disconnect(boolean sendDisconnectMessage) throws MqttException{
         messageQueue = new MessageQueue();
         if(sendDisconnectMessage){
-            clientObj.disconnectForcibly(1, timeout);
+            clientObj.disconnectForcibly();
         }
         else{
-            clientObj.disconnectForcibly(0, 1);
+            clientObj.closeConnection();
         }
-
+        onDisconnected(); //we may not receive connectionLost notification (especially if sendDisconnectMessage = false)
     }
 
     public void dispose(){
-            if(!connectionOptions.isCleanSession()){
-                ArrayList<String> topicList = subscribedTopics;
-                String[] topics = new String[topicList.size()];
-                topicList.toArray(topics);
-                if(getClientObject().isConnected()) {
-                    try{
-                        getClientObject().unsubscribe(topics);
-                    } catch (MqttException e) {
-                    }
+        if(!connectionOptions.isCleanSession()){
+            ArrayList<String> topicList = subscribedTopics;
+            String[] topics = new String[topicList.size()];
+            topicList.toArray(topics);
+            if(getClientObject().isConnected()) {
+                try{
+                    getClientObject().unsubscribe(topics);
+                } catch (MqttException e) {
                 }
             }
+        }
         try {
-            if(getClientObject().isConnected()) getClientObject().disconnectForcibly();
+            if(getClientObject().isConnected()) clientObj.disconnectForcibly();
+            clientObj.close();
+
         } catch (MqttException e) {
         }
 

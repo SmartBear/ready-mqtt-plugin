@@ -238,7 +238,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
                     ConnectionRecord record = new ConnectionRecord();
                     record.name = connection.getName();
                     record.originalConnection = connection;
-                    record.params = new ConnectionParams(connection.getServerUri(), connection.getFixedId(), connection.getLogin(), connection.getPassword());
+                    record.params = connection.getParams();
                     this.data.add(record);
                 }
             }

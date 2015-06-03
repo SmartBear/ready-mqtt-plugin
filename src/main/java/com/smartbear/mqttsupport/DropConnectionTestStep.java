@@ -138,10 +138,10 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
                 try {
                     switch (dropMethod) {
                         case SendDisconnect:
-                            client.disconnect(true, getTimeout());
+                            client.disconnect(true);
                             break;
                         case Drop:
-                            client.disconnect(false, getTimeout());
+                            client.disconnect(false);
                             break;
                     }
                 }
@@ -151,7 +151,8 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
                 }
             }
             else{
-                result.addMessage("Already disconnected");
+                result.addMessage("Already disconnected from the MQTT server");
+                result.setStatus(TestStepResult.TestStepStatus.FAILED);
             }
 
             return result;

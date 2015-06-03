@@ -99,7 +99,7 @@ public class ClientCache {
             clientId = connectionParams.fixedId;
         }
 
-        MqttAsyncClient clientObj = new MqttAsyncClient(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
+        MqttAsyncClientEx clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
         Client newClient = new Client(clientObj, createConnectionOptions(connectionParams));
         map.put(cacheKey, newClient);
         return newClient;

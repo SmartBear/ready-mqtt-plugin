@@ -88,8 +88,8 @@ public class ExpandedConnectionParams {
 
     @Override
     public boolean equals(Object arg){
-        if(arg == null || !(arg instanceof ConnectionParams))return false;
-        ConnectionParams params2 = (ConnectionParams)arg;
+        if(arg == null || !(arg instanceof ExpandedConnectionParams))return false;
+        ExpandedConnectionParams params2 = (ExpandedConnectionParams)arg;
         return Utils.areStringsEqual(getNormalizedServerUri(), params2.getNormalizedServerUri())
                 && Utils.areStringsEqual(fixedId, params2.fixedId, false, true)
                 && Utils.areStringsEqual(login, params2.login, false, true)

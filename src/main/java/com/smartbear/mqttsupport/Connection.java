@@ -73,7 +73,7 @@ public class Connection implements PropertyChangeNotifier {
             }
         }
         willTopic = reader.readString(WILL_TOPIC_SETTING_NAME, null);
-        if(willTopic == null || willTopic.length() == 0){
+        if(willTopic != null && willTopic.length() != 0){
             willMessageType = PublishedMessageType.fromString(reader.readString(WILL_MESSAGE_TYPE_SETTING_NAME, null));
             if(willMessageType == null) willMessageType = PublishTestStep.DEFAULT_MESSAGE_TYPE;
             willMessage = reader.readString(WILL_MESSAGE_SETTING_NAME, null);
@@ -134,14 +134,15 @@ public class Connection implements PropertyChangeNotifier {
     }
 
 
+    public final static String CLIENT_ID_BEAN_PROP = "fixedId";
     public String getFixedId(){return fixedId;}
     public void setFixedId(String value) {
         String oldId = getFixedId();
         if(!Utils.areStringsEqual(oldId, value, false, true)){
             boolean oldGeneratedId = isGeneratedId();
             fixedId = value;
-            notifyPropertyChanged("fixedId", oldId,  value);
-            if(isGeneratedId() != oldGeneratedId) notifyPropertyChanged("fixedId", oldGeneratedId, value);
+            notifyPropertyChanged(CLIENT_ID_BEAN_PROP, oldId,  value);
+            if(isGeneratedId() != oldGeneratedId) notifyPropertyChanged(CLIENT_ID_BEAN_PROP, oldGeneratedId, value);
         }
     }
     public boolean isGeneratedId(){return fixedId == null || fixedId.equals("");}
@@ -149,18 +150,22 @@ public class Connection implements PropertyChangeNotifier {
 
     public String getLogin(){return login;}
     public String getPassword(){return password;}
+
+    public final static String LOGIN_BEAN_PROP = "login";
     public void setLogin(String newValue){
         String old = getLogin();
         if(!Utils.areStringsEqual(old, newValue, false, true)){
             login = newValue;
-            notifyPropertyChanged("login", old, newValue);
+            notifyPropertyChanged(LOGIN_BEAN_PROP, old, newValue);
         }
     }
+
+    public final static String PASSWORD_BEAN_PROP = "password";
     public void setPassword(String newValue){
         String old = getPassword();
         if(!Utils.areStringsEqual(old, newValue, false, true)){
             password = newValue;
-            notifyPropertyChanged("password", old, newValue);
+            notifyPropertyChanged(PASSWORD_BEAN_PROP, old, newValue);
         }
     }
 
