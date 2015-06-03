@@ -1,5 +1,6 @@
 package com.smartbear.mqttsupport;
 
+import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
@@ -8,17 +9,25 @@ import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
 import com.jgoodies.binding.adapter.SpinnerToValueModelConnector;
 import com.jgoodies.binding.value.ValueModel;
+import org.fife.ui.rtextarea.RTextArea;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import java.awt.Component;
 import java.awt.event.FocusEvent;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 class Utils {
+
+    public static final String TREE_VIEW_IS_UNAVAILABLE = "The Tree View is available in Ready!API only.";
 
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty){
         if(dontDistinctNullAndEmpty) {
@@ -115,71 +124,84 @@ class Utils {
         return result;
     }
 
-
-
-    public static class JsonTreeEditor extends JsonObjectTree {
-        private String prevValue = null;
-        private boolean isCurValueNull = false;
-
-        public JsonTreeEditor(boolean editable, ModelItem modelItem){
-            super(editable, modelItem);
+    public static boolean isXmlTreeEditorAvailable(){
+        try{
+            Class.forName("com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree");
+            return true;
         }
-
-        public void setText(String text){
-            isCurValueNull = text == null;
-            if(isCurValueNull) text = "";
-            setContent(text);
-            detectChange();
+        catch (ClassNotFoundException e){
+            return false;
         }
-
-        public String getText(){
-            String result = getXml();
-            return "".equals(result) && isCurValueNull ? null : result;
-        }
-
-        @Override
-        protected void processFocusEvent(FocusEvent event){
-            super.processFocusEvent(event);
-            if(!event.isTemporary()) detectChange();
-        }
-
-        private void detectChange(){
-            String newValue = getText();
-            if(!Utils.areStringsEqual(prevValue, newValue)){
-                firePropertyChange("text", prevValue, newValue);
-                prevValue = newValue;
-            }
-        }
-
     }
 
-    public static class XmlTreeEditor extends XmlObjectTree {
-        private String prevValue = null;
-
-        public XmlTreeEditor(boolean editable, ModelItem modelItem){
-            super(editable, modelItem);
+    public static boolean isJsonTreeEditorAvailable(){
+        try{
+            Class.forName("com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree");
+            return true;
         }
-
-        public void setText(String text){
-            setContent(text);
-            detectChange(text);
+        catch (ClassNotFoundException e){
+            return false;
         }
+    }
 
-        public String getText(){return getXml();}
-
-        @Override
-        protected void processFocusEvent(FocusEvent event){
-            super.processFocusEvent(event);
-            if(!event.isTemporary()) detectChange(getText());
+    public static JComponent createJsonTreeEditor(boolean editable, ModelItem modelItem){
+        Class clazz;
+        try{
+            clazz = Class.forName("com.smartbear.mqttsupport.JsonTreeEditor");
         }
+        catch (ClassNotFoundException e){
+            return null;
+        }
+        try {
+            return (JComponent) clazz.getConstructor(boolean.class, ModelItem.class).newInstance(editable, modelItem);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            SoapUI.logError(e);
+            return null;
+        }
+    }
 
-        private void detectChange(String newValue){
-            if(!Utils.areStringsEqual(prevValue, newValue)){
-                firePropertyChange("text", prevValue, newValue);
-                prevValue = newValue;
+    public static JComponent createXmlTreeEditor(boolean editable, ModelItem modelItem){
+        Class clazz;
+        try{
+            clazz = Class.forName("com.smartbear.mqttsupport.XmlTreeEditor");
+        }
+        catch (ClassNotFoundException e){
+            return null;
+        }
+        try {
+            return (JComponent) clazz.getConstructor(boolean.class, ModelItem.class).newInstance(editable, modelItem);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            SoapUI.logError(e);
+            return null;
+        }
+    }
+
+    public static void releaseTreeEditor(JComponent treeEditor){
+        try {
+            treeEditor.getClass().getMethod("release").invoke(treeEditor);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            SoapUI.logError(e);
+        }
+    }
+
+    public static RTextScrollPane createRTextScrollPane(RTextArea textArea){
+        Constructor[] ctors = RTextScrollPane.class.getConstructors();
+        Constructor ctor = null;
+        for(Constructor tmpCtor : ctors){
+            Class[] paramClasses = tmpCtor.getParameterTypes();
+            if(paramClasses != null && paramClasses.length == 1 && paramClasses[0].isAssignableFrom(RTextArea.class)){
+                ctor = tmpCtor;
+                break;
             }
         }
-
+        try {
+            return (RTextScrollPane) ctor.newInstance(textArea);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            SoapUI.logError(e);
+            return null;
+        }
     }
+
+
 
 }

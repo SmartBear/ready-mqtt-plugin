@@ -202,7 +202,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
                 byte[] payload = null;
                 try {
-                    payload = messageKind.toPayload(expandedMessage, getProject());
+                    payload = messageKind.toPayload(expandedMessage, getOwningProject());
                 }
                 catch(RuntimeException e) {
                     result.addMessage(e.getMessage());

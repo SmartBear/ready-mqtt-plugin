@@ -35,6 +35,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -57,6 +58,8 @@ import java.util.List;
 public class EditConnectionDialog extends SimpleDialog {
 
     private JCheckBox willCheckBox;
+    private JComponent jsonTreeEditor;
+    private JComponent xmlTreeEditor;
 
     public class Result{
         public String connectionName;
@@ -446,15 +449,21 @@ public class EditConnectionDialog extends SimpleDialog {
             Bindings.bind(syntaxTextArea, "enabled", isWillOn);
             syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
             PropertyExpansionPopupListener.enable(syntaxTextArea, modelItemOfConnection);
-            willJson.addTab("Text", new RTextScrollPane(syntaxTextArea));
+            willJson.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-            Utils.JsonTreeEditor jsonTreeEditor = new Utils.JsonTreeEditor(true, modelItemOfConnection);
-            Bindings.bind(jsonTreeEditor, "text", pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            Bindings.bind(jsonTreeEditor, "enabled", isWillOn);
-            JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
-            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            willJson.addTab("Tree View", scrollPane);
+            jsonTreeEditor = Utils.createJsonTreeEditor(true, modelItemOfConnection);
+            if(jsonTreeEditor == null){
+                JLabel stubLabel = new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER);
+                willJson.addTab("Tree View", stubLabel);
+            }
+            else {
+                Bindings.bind(jsonTreeEditor, "text", pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
+                Bindings.bind(jsonTreeEditor, "enabled", isWillOn);
+                JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
+                scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+                scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                willJson.addTab("Tree View", scrollPane);
+            }
 
             Bindings.bind(willJson, "visible", isMsgType(pm, PublishedMessageType.Json));
             Bindings.bind(willJson, "enabled", isWillOn);
@@ -469,15 +478,21 @@ public class EditConnectionDialog extends SimpleDialog {
             Bindings.bind(syntaxTextArea, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
             Bindings.bind(syntaxTextArea, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(syntaxTextArea, modelItemOfConnection);
-            willXml.addTab("Text", new RTextScrollPane(syntaxTextArea));
+            willXml.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-            Utils.XmlTreeEditor xmlTreeEditor = new Utils.XmlTreeEditor(true, modelItemOfConnection);
-            scrollPane = new JScrollPane(xmlTreeEditor);
-            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            Bindings.bind(xmlTreeEditor, "text", pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            Bindings.bind(jsonTreeEditor, "enabled", isWillOn);
-            willXml.addTab("Tree View", scrollPane);
+            xmlTreeEditor = Utils.createXmlTreeEditor(true, modelItemOfConnection);
+            if(xmlTreeEditor == null){
+                JLabel stubLabel = new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER);
+                willXml.addTab("Tree View", stubLabel);
+            }
+            else {
+                JScrollPane scrollPane = new JScrollPane(xmlTreeEditor);
+                scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+                scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                Bindings.bind(xmlTreeEditor, "text", pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
+                Bindings.bind(jsonTreeEditor, "enabled", isWillOn);
+                willXml.addTab("Tree View", scrollPane);
+            }
 
             willXml.setPreferredSize(minMemoSize);
             Bindings.bind(willXml, "visible", isMsgType(pm, PublishedMessageType.Xml));
@@ -556,6 +571,13 @@ public class EditConnectionDialog extends SimpleDialog {
             result.connectionParams.setCredentials(null, null);
         }
         return true;
+    }
+
+    @Override
+    public void dispose() {
+        if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
+        if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
+        super.dispose();
     }
 
     public class SelectFileAction extends AbstractAction {

@@ -21,6 +21,7 @@ import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -28,6 +29,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -46,9 +48,9 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JTextField fileNameEdit;
     private JButton chooseFileButton;
     private JTabbedPane jsonEditor;
-    private Utils.JsonTreeEditor jsonTreeEditor;
+    private JComponent jsonTreeEditor;
     private JTabbedPane xmlEditor;
-    private Utils.XmlTreeEditor xmlTreeEditor;
+    private JComponent xmlTreeEditor;
 
     private JInspectorPanel inspectorPanel;
     private JComponentInspector<JComponent> logInspector;
@@ -82,6 +84,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     }
 
     private JComponent buildMainPanel() {
+
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         SimpleBindingForm form = new SimpleBindingForm(pm);
         buildConnectionSection(form, pm);
@@ -98,20 +101,26 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         PropertyExpansionPopupListener.enable(fileNameEdit, getModelItem());
         chooseFileButton = form.addRightButton(new SelectFileAction());
 
-        jsonEditor = new JTabbedPane();
+        JScrollPane scrollPane;
 
+        jsonEditor = new JTabbedPane();
         RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
         syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
         PropertyExpansionPopupListener.enable(syntaxTextArea, getModelItem());
-        jsonEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-        jsonTreeEditor = new Utils.JsonTreeEditor(true, getModelItem());
-        JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
-        jsonEditor.addTab("Tree View", scrollPane);
+        jsonTreeEditor = Utils.createJsonTreeEditor(true, getModelItem());
+        if(jsonTreeEditor != null){
+            scrollPane = new JScrollPane(jsonTreeEditor);
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
+            jsonEditor.addTab("Tree View", scrollPane);
+        }
+        else{
+            jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
+        }
 
         jsonEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", jsonEditor);
@@ -121,14 +130,19 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
         Bindings.bind(syntaxTextArea, pm.getModel("message"), true);
         PropertyExpansionPopupListener.enable(syntaxTextArea, getModelItem());
-        xmlEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-        xmlTreeEditor = new Utils.XmlTreeEditor(true, getModelItem());
-        scrollPane = new JScrollPane(xmlTreeEditor);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
-        xmlEditor.addTab("Tree View", scrollPane);
+        xmlTreeEditor = Utils.createXmlTreeEditor(true, getModelItem());
+        if(xmlTreeEditor != null) {
+            scrollPane = new JScrollPane(xmlTreeEditor);
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
+            xmlEditor.addTab("Tree View", scrollPane);
+        }
+        else{
+            xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
+        }
 
         xmlEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", xmlEditor);
@@ -201,8 +215,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     protected boolean release() {
         getModelItem().removeExecutionListener(this);
         inspectorPanel.release();
-        jsonTreeEditor.release();
-        xmlTreeEditor.release();
+        if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
+        if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
         return super.release();
     }
 

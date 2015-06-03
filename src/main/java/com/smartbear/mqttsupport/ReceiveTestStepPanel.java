@@ -29,6 +29,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -36,6 +37,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
@@ -51,9 +53,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private AssertionsPanel assertionsPanel;
     private JTextArea recMessageMemo;
     private JTabbedPane jsonEditor;
-    private Utils.JsonTreeEditor jsonTreeEditor;
+    private JComponent jsonTreeEditor;
     private JTabbedPane xmlEditor;
-    private Utils.XmlTreeEditor xmlTreeEditor;
+    private JComponent xmlTreeEditor;
 
     private JComponentInspector<JComponent> logInspector;
     private JLogList logArea;
@@ -135,14 +137,19 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         Bindings.bind(syntaxTextArea, pm.getModel("receivedMessage"), true);
         syntaxTextArea.setEditable(false);
-        jsonEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-        jsonTreeEditor = new Utils.JsonTreeEditor(false, getModelItem());
-        JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        Bindings.bind(jsonTreeEditor, "text", pm.getModel("receivedMessage"));
-        jsonEditor.addTab("Tree View", scrollPane);
+        jsonTreeEditor = Utils.createJsonTreeEditor(false, getModelItem());
+        if(jsonTreeEditor == null){
+            jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
+        }
+        else {
+            JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            Bindings.bind(jsonTreeEditor, "text", pm.getModel("receivedMessage"));
+            jsonEditor.addTab("Tree View", scrollPane);
+        }
 
         jsonEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", jsonEditor);
@@ -152,14 +159,19 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
         syntaxTextArea.setEditable(false);
         Bindings.bind(syntaxTextArea, pm.getModel("receivedMessage"), true);
-        xmlEditor.addTab("Text", new RTextScrollPane(syntaxTextArea));
+        xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
-        xmlTreeEditor = new Utils.XmlTreeEditor(false, getModelItem());
-        scrollPane = new JScrollPane(xmlTreeEditor);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        Bindings.bind(xmlTreeEditor, "text", pm.getModel("receivedMessage"));
-        xmlEditor.addTab("Tree View", scrollPane);
+        xmlTreeEditor = Utils.createXmlTreeEditor(false, getModelItem());
+        if(xmlTreeEditor == null){
+            xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
+        }
+        else {
+            JScrollPane scrollPane = new JScrollPane(xmlTreeEditor);
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            Bindings.bind(xmlTreeEditor, "text", pm.getModel("receivedMessage"));
+            xmlEditor.addTab("Tree View", scrollPane);
+        }
 
         xmlEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", xmlEditor);
@@ -257,8 +269,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             getModelItem().removeAssertionsListener(this);
             assertionsPanel.release();
             inspectorPanel.release();
-            jsonTreeEditor.release();
-            xmlTreeEditor.release();
+            if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
+            if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
             return true;
         }
 
