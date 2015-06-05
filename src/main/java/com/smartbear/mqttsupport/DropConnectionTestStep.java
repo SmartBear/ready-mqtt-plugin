@@ -22,7 +22,7 @@ import org.jfree.chart.title.Title;
 
 import javax.swing.ImageIcon;
 
-@PluginTestStep(typeName = "MQTTDropConnectionTestStep", name = "Drop MQTT Connection", description = "Disconnects from the MQTT server", iconPath = "com/smartbear/mqttsupport/publish_step.png")
+@PluginTestStep(typeName = "MQTTDropConnectionTestStep", name = "Drop MQTT Connection", description = "Disconnects from the MQTT server", iconPath = "com/smartbear/mqttsupport/drop_step.png")
 public class DropConnectionTestStep extends MqttConnectedTestStep implements TestMonitorListener {
     private static final String DROP_METHOD_SETTING_NAME = "DropMethod";
 
@@ -79,10 +79,10 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     }
 
     protected void initIcons() {
-        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_publish_step.png");
-        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_publish_step.png");
+        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_drop_step.png");
+        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_drop_step.png");
 
-        iconAnimator =  new IconAnimator<DropConnectionTestStep>(this, "com/smartbear/mqttsupport/unknown_publish_step.png", "com/smartbear/mqttsupport/publish_step.png", 5);
+        iconAnimator =  new IconAnimator<DropConnectionTestStep>(this, "com/smartbear/mqttsupport/unknown_drop_step.png", "com/smartbear/mqttsupport/drop_step.png", 5);
     }
 
     @Override
