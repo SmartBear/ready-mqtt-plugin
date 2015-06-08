@@ -506,7 +506,7 @@ public class EditConnectionDialog extends SimpleDialog {
             Bindings.bind(willXml, "visible", isMsgType(pm, PublishedMessageType.Xml));
             Bindings.bind(willXml, "enabled", isWillOn);
             mainPanel.add(willXml, largePlace(row));
-            mainPanel.add(createLabel("Message:", willXml, 0), labelPlace(row));
+            mainPanel.add(createLabel("Message:", willXml, 0), labelPlaceWithIndent(row));
             ++row;
 
             JComboBox<String> willQos = new JComboBox<String>();
