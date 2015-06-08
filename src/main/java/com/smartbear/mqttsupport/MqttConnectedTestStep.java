@@ -36,6 +36,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     protected final static String TIMEOUT_PROP_NAME = "Timeout";
     private final static String TIMEOUT_MEASURE_PROP_NAME = "TimeoutMeasure";
 
+    private final static String TIMEOUT_EXPIRED_MSG = "The test step's timeout has expired.";
 
     public enum TimeMeasure{
         Milliseconds("milliseconds"), Seconds("seconds");
@@ -427,15 +428,15 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 notifyPropertyChanged("serverUri", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(SERVER_URI_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), "fixedId")){
+            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)){
                 notifyPropertyChanged("clientId", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(CLIENT_ID_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), "login")){
+            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)){
                 notifyPropertyChanged("login", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(LOGIN_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), "password")){
+            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)){
                 notifyPropertyChanged("password", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(PASSWORD_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
@@ -457,7 +458,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                     testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
                 }
                 else{
-                    testStepResult.addMessage("The test step's timeout has expired.");
+                    testStepResult.addMessage(TIMEOUT_EXPIRED_MSG);
                     testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
 
                 }
@@ -547,7 +548,19 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     protected boolean waitForMqttConnection(Client client, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
-        return waitForMqttOperation(client.getConnectingStatus(), cancellationToken, testStepResult, maxTime, "Unable connect to the MQTT broker.");
+        long timeout;
+        if(maxTime == Long.MAX_VALUE){
+            timeout = 0;
+        }
+        else {
+            timeout = maxTime - System.nanoTime();
+            if(timeout <= 0){
+                testStepResult.addMessage(TIMEOUT_EXPIRED_MSG);
+                testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
+                return false;
+            }
+        }
+        return waitForMqttOperation(client.getConnectingStatus(timeout), cancellationToken, testStepResult, maxTime, "Unable connect to the MQTT broker.");
     }
 
 

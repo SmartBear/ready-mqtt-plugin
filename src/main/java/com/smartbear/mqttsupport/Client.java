@@ -1,5 +1,6 @@
 package com.smartbear.mqttsupport;
 
+import com.eviware.soapui.SoapUI;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -46,14 +47,15 @@ public class Client implements MqttCallback, IMqttActionListener {
         //return connectionToken != null && connectionToken.isComplete() && connectionToken.getException() == null;
     }
 
-    public IMqttToken getConnectingStatus() throws MqttException {
+    public IMqttToken getConnectingStatus(long maxTimeout) throws MqttException { // 0 - no timeout
         if(connectionToken == null){
             if(connectionOptions.isCleanSession()) subscribedTopics = new ArrayList<String>();
             if(resetSession){
-
-                connectionToken = new ResetSessionToken();
+                connectionToken = new ResetSessionToken(maxTimeout);
             }
             else {
+                final int unitsPerSecond = 1000 * 1000 * 1000;
+                connectionOptions.setConnectionTimeout((int)((maxTimeout + unitsPerSecond - 1)/ unitsPerSecond));
                 connectionToken = clientObj.connect(connectionOptions, null, this);
 
             }
@@ -82,7 +84,6 @@ public class Client implements MqttCallback, IMqttActionListener {
 
     @Override
     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-
     }
 
 
@@ -147,16 +148,18 @@ public class Client implements MqttCallback, IMqttActionListener {
         private IMqttToken connect1Token;
         private IMqttToken disconnectToken, connect2Token;
         private MqttException initiationException = null;
+        private long maxTime;
 
 
-        public ResetSessionToken() throws MqttException{
+        public ResetSessionToken(long maxTimeout) throws MqttException{
+            if(maxTimeout == 0) maxTime = Long.MAX_VALUE; else maxTime = System.nanoTime() + maxTimeout;
             MqttConnectOptions resetConnectionOptions = new MqttConnectOptions();
             if(connectionOptions.getUserName() == null || connectionOptions.getUserName().length() == 0) {
                 resetConnectionOptions.setUserName(connectionOptions.getUserName());
                 resetConnectionOptions.setPassword(connectionOptions.getPassword());
             }
             resetConnectionOptions.setCleanSession(true);
-            resetConnectionOptions.setConnectionTimeout(0);
+            resetConnectionOptions.setConnectionTimeout(getTimeout());
             this.connect1Token = clientObj.connect(resetConnectionOptions);
         }
 
@@ -164,6 +167,14 @@ public class Client implements MqttCallback, IMqttActionListener {
         public boolean isComplete() {
             return getState().completed;
         }
+
+        private int getTimeout() throws MqttException {
+            final int unitsPerSecond = 1000 * 1000 * 1000;
+            if(maxTime == Long.MAX_VALUE) return 0;
+            long timeout = maxTime - System.nanoTime();
+            if(timeout <= 0) throw new MqttException(MqttException.REASON_CODE_CLIENT_TIMEOUT); else return (int)((timeout + unitsPerSecond - 1) / unitsPerSecond);
+        }
+
         private TokenState getState(){
             if(initiationException != null) return new TokenState(initiationException);
             if(connect2Token != null) return new TokenState(connect2Token);
@@ -171,6 +182,7 @@ public class Client implements MqttCallback, IMqttActionListener {
                 if(disconnectToken.isComplete()) {
                     if (disconnectToken.getException() == null) {
                         try {
+                            connectionOptions.setConnectionTimeout(getTimeout());
                             connect2Token = clientObj.connect(connectionOptions);
                             return new TokenState(connect2Token);
                         } catch (MqttException e) {
@@ -191,7 +203,7 @@ public class Client implements MqttCallback, IMqttActionListener {
                     if(connect1Token.getException() == null){
                         resetSession = false;
                         try {
-                            disconnectToken = clientObj.disconnect();
+                            disconnectToken = clientObj.disconnect(0);
                         }
                         catch (MqttException e){
                             initiationException = e;

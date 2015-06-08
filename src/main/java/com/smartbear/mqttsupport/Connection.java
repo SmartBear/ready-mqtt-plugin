@@ -147,9 +147,11 @@ public class Connection implements PropertyChangeNotifier {
             boolean oldGeneratedId = isGeneratedId();
             fixedId = value;
             notifyPropertyChanged(CLIENT_ID_BEAN_PROP, oldId,  value);
-            if(isGeneratedId() != oldGeneratedId) notifyPropertyChanged(CLIENT_ID_BEAN_PROP, oldGeneratedId, value);
+            if(isGeneratedId() != oldGeneratedId) notifyPropertyChanged(IS_GENERATED_ID_BEAN_PROP, oldGeneratedId, isGeneratedId());
         }
     }
+
+    public final static String IS_GENERATED_ID_BEAN_PROP = "generatedId";
     public boolean isGeneratedId(){return fixedId == null || fixedId.equals("");}
 
 
