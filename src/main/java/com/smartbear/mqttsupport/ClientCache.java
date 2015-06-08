@@ -100,7 +100,7 @@ public class ClientCache {
         }
 
         MqttAsyncClientEx clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
-        Client newClient = new Client(clientObj, createConnectionOptions(connectionParams));
+        Client newClient = new Client(clientObj, createConnectionOptions(connectionParams), !connectionParams.cleanSession && !connectionParams.isGeneratedId());
         map.put(cacheKey, newClient);
         return newClient;
     }
@@ -111,6 +111,7 @@ public class ClientCache {
             connectOptions = getDefaultConnectOptions();
         } else {
             connectOptions = new MqttConnectOptions();
+            connectOptions.setCleanSession(connectionParams.cleanSession);
             if (connectionParams.hasCredentials()) {
                 connectOptions.setUserName(connectionParams.login);
                 connectOptions.setPassword(connectionParams.password.toCharArray());

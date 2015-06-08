@@ -11,6 +11,7 @@ public class ExpandedConnectionParams {
     public String fixedId;
     public String login;
     public String password;
+    public boolean cleanSession;
     public String willTopic;
     public byte[] willMessage;
     public int willQos;
@@ -18,18 +19,20 @@ public class ExpandedConnectionParams {
 
     public ExpandedConnectionParams(){}
 
-    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password){
+    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession){
         this.originalServerUri = serverUri;
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
+        this.cleanSession = cleanSession;
     }
 
-    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, String willTopic, byte[] willMessage, int willQos, boolean willRetained){
+    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession, String willTopic, byte[] willMessage, int willQos, boolean willRetained){
         this.originalServerUri = serverUri;
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
+        this.cleanSession = cleanSession;
         this.willTopic = willTopic;
         this.willMessage = willMessage;
         this.willQos = willQos;

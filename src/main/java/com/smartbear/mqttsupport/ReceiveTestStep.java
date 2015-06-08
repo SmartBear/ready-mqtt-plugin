@@ -706,12 +706,13 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult){
         if(SwingUtilities.isEventDispatchThread()){
-            for(ExecutionListener listener: executionListeners){
-                try{
-                    listener.afterExecution(this, stepRunResult);
-                }
-                catch (Throwable e){
-                    SoapUI.logError(e);
+            if(executionListeners != null) {
+                for (ExecutionListener listener : executionListeners) {
+                    try {
+                        listener.afterExecution(this, stepRunResult);
+                    } catch (Throwable e) {
+                        SoapUI.logError(e);
+                    }
                 }
             }
         }

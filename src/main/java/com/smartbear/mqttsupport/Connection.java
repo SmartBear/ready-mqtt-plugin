@@ -24,6 +24,7 @@ public class Connection implements PropertyChangeNotifier {
     private static final String CLIENT_ID_SETTING_NAME = "ClientID";
     private static final String LOGIN_SETTING_NAME = "Login";
     private static final String ENCR_PASSWORD_SETTING_NAME = "EncrPassword";
+    private static final String CLEAN_SESSION_SETTING_NAME = "CleanSession";
     private static final String WILL_TOPIC_SETTING_NAME = "WillTopic";
     private static final String WILL_MESSAGE_TYPE_SETTING_NAME = "WillMessageType";
     private static final String WILL_MESSAGE_SETTING_NAME = "WillMessage";
@@ -37,6 +38,7 @@ public class Connection implements PropertyChangeNotifier {
     private String fixedId;
     private String login;
     private String password;
+    private boolean cleanSession;
     private String willTopic;
     private PublishedMessageType willMessageType = PublishTestStep.DEFAULT_MESSAGE_TYPE;
     private String willMessage;
@@ -72,6 +74,8 @@ public class Connection implements PropertyChangeNotifier {
                 SoapUI.logError(e);
             }
         }
+
+        cleanSession = reader.readBoolean(CLEAN_SESSION_SETTING_NAME, false);
         willTopic = reader.readString(WILL_TOPIC_SETTING_NAME, null);
         if(willTopic != null && willTopic.length() != 0){
             willMessageType = PublishedMessageType.fromString(reader.readString(WILL_MESSAGE_TYPE_SETTING_NAME, null));
@@ -86,6 +90,7 @@ public class Connection implements PropertyChangeNotifier {
         builder.add(NAME_PROP_NAME, name);
         builder.add(SERVER_URI_SETTING_NAME, originalServerUri);
         builder.add(CLIENT_ID_SETTING_NAME, fixedId);
+        builder.add(CLEAN_SESSION_SETTING_NAME, cleanSession);
         if(login != null) {
             builder.add(LOGIN_SETTING_NAME, login);
             if (password != null && password.length() != 0) {
@@ -182,6 +187,20 @@ public class Connection implements PropertyChangeNotifier {
         }
     }
 
+
+    public boolean isCleanSession(){
+        return cleanSession;
+    }
+
+    public final static String CLEAN_SESSION_BEAN_PROP = "cleanSession";
+    public void setCleanSession(boolean newValue){
+        boolean old = isCleanSession();
+        if(old != newValue){
+            cleanSession = newValue;
+            notifyPropertyChanged(CLEAN_SESSION_BEAN_PROP, old, newValue);
+        }
+    }
+
     public final static String WILL_TOPIC_BEAN_PROP = "willTopic";
     public String getWillTopic(){return willTopic;}
     public void setWillTopic(String newValue){
@@ -235,7 +254,7 @@ public class Connection implements PropertyChangeNotifier {
 
 
     public ConnectionParams getParams(){
-        return new ConnectionParams(getServerUri(), getFixedId(), getLogin(), getPassword(), getWillTopic(), getWillMessageType(), getWillMessage(), getWillQos(), isWillRetained());
+        return new ConnectionParams(getServerUri(), getFixedId(), getLogin(), getPassword(), isCleanSession(), getWillTopic(), getWillMessageType(), getWillMessage(), getWillQos(), isWillRetained());
     }
 
     public void setParams(ConnectionParams params){
@@ -243,6 +262,7 @@ public class Connection implements PropertyChangeNotifier {
         setFixedId(params.fixedId);
         setCredentials(params.login, params.password);
         setWillTopic(params.willTopic);
+        setCleanSession(params.cleanSession);
         if(params.willTopic != null && params.willTopic.length() != 0){
             setWillMessageType(params.willMessageType);
             setWillMessage(params.willMessage);
@@ -256,6 +276,7 @@ public class Connection implements PropertyChangeNotifier {
         result.setServerUri(context.expand(getServerUri()));
         result.fixedId = context.expand(getFixedId());
         result.setCredentials(context.expand(getLogin()), context.expand(getPassword()));
+        result.cleanSession = isCleanSession();
         result.willTopic = context.expand(getWillTopic());
         String willMessageStr = context.expand(getWillMessage());
         if(getWillMessageType() == null) throw new IllegalArgumentException("The message type is not specified.");

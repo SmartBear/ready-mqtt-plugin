@@ -9,6 +9,7 @@ public class ConnectionParams {
     public String fixedId;
     public String login;
     public String password;
+    public boolean cleanSession;
     public String willTopic;
     public PublishedMessageType willMessageType = PublishTestStep.DEFAULT_MESSAGE_TYPE;
     public String willMessage;
@@ -17,18 +18,20 @@ public class ConnectionParams {
 
     public ConnectionParams(){}
 
-    public ConnectionParams(String serverUri, String clientId, String login, String password){
+    public ConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession){
         this.originalServerUri = serverUri;
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
+        this.cleanSession = cleanSession;
     }
 
-    public ConnectionParams(String serverUri, String clientId, String login, String password, String willTopic, PublishedMessageType willMessageType, String willMessage, int willQos, boolean willRetained){
+    public ConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession, String willTopic, PublishedMessageType willMessageType, String willMessage, int willQos, boolean willRetained){
         this.originalServerUri = serverUri;
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
+        this.cleanSession = cleanSession;
         this.willTopic = willTopic;
         this.willMessageType = willMessageType;
         this.willMessage = willMessage;
@@ -93,6 +96,7 @@ public class ConnectionParams {
         return Utils.areStringsEqual(getNormalizedServerUri(), params2.getNormalizedServerUri())
                 && Utils.areStringsEqual(fixedId, params2.fixedId, false, true)
                 && Utils.areStringsEqual(login, params2.login, false, true)
+                && cleanSession == params2.cleanSession
                 && (login == null || login.length() == 0 || Utils.areStringsEqual(password, params2.password, false, true))
                 && Utils.areStringsEqual(willTopic, params2.willTopic, false, true)
                 && (willTopic == null || willTopic.length() == 0 ||
@@ -101,6 +105,7 @@ public class ConnectionParams {
                             && Utils.areStringsEqual(willMessage, params2.willMessage, false, true)
                             && willRetained == params2.willRetained
                             && willQos == params2.willQos
+
                         )
                    );
 

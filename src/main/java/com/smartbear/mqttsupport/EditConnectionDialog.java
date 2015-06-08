@@ -319,6 +319,14 @@ public class EditConnectionDialog extends SimpleDialog {
         mainPanel.add(createLabel("Client ID (optional):", clientIDEdit, 0), labelPlace(row));
         ++row;
 
+        if(!legacy) {
+            JCheckBox cleanSessionCheckBox = new JCheckBox("Start clean session on reconnection");
+            Bindings.bind(cleanSessionCheckBox, pm.getModel(Connection.CLEAN_SESSION_BEAN_PROP));
+            mainPanel.add(cleanSessionCheckBox, largePlace(row));
+            mainPanel.add(createLabel("Clean session:", cleanSessionCheckBox, 6), labelPlace(row));
+            ++row;
+        }
+
         JPanel indent = new JPanel();
         indent.setPreferredSize(new Dimension(1, indentSize));
         mainPanel.add(indent, componentPlace(row));

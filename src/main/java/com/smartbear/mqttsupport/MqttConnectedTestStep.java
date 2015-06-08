@@ -113,6 +113,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             connection.setFixedId(reader.readString(CLIENT_ID_PROP_NAME, ""));
             connection.setLogin(reader.readString(LOGIN_PROP_NAME, ""));
             connection.setPassword(reader.readString(PASSWORD_PROP_NAME, ""));
+            connection.setCleanSession(true);
             legacyConnection = connection;
         }
         else{
@@ -461,6 +462,11 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
                 }
                 return false;
+            }
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
         if (token.getException() != null) {
