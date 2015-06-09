@@ -351,13 +351,19 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             updateData();
         }
         final Object oldValue = old;
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                notifyPropertyChanged(propName, oldValue, value);
-                if(publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
-            }
-        });
+        if(SwingUtilities.isEventDispatchThread()){
+            notifyPropertyChanged(propName, oldValue, value);
+            if(publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+        }
+        else {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    notifyPropertyChanged(propName, oldValue, value);
+                    if (publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+                }
+            });
+        };
         return true;
     }
 
