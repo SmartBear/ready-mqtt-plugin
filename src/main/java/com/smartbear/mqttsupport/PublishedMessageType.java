@@ -44,7 +44,7 @@ enum PublishedMessageType {
                 }
                 buf = new byte[4];
                 for(int i = 0; i < 4; ++i){
-                    buf[i] = (byte)((iv >> ((3 - i) * 8)) & 0xff);
+                    buf[i] = (byte)((iv >> (i * 8)) & 0xff);
                 }
                 return buf;
             case LongValue:
@@ -57,7 +57,7 @@ enum PublishedMessageType {
                 }
                 buf = new byte[8];
                 for(int i = 0; i < 8; ++i){
-                    buf[i] = (byte)((lv >> ((7 - i) * 8)) & 0xff);
+                    buf[i] = (byte)((lv >> (i * 8)) & 0xff);
                 }
                 return buf;
             case DoubleValue :
