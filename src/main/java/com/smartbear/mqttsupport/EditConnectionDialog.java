@@ -48,8 +48,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +59,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private JComponent jsonTreeEditor;
     private JComponent xmlTreeEditor;
     private JCheckBox cleanSessionCheckBox;
+    private JTextField willTopicEdit;
 
     public class Result{
         public String connectionName;
@@ -169,10 +168,6 @@ public class EditConnectionDialog extends SimpleDialog {
 
     @Override
     protected void beforeShow() {
-//        super.beforeShow();
-//        if(nameEdit != null) nameEdit.setText(connection.getName());
-//        serverUriEdit.setText(initialParams.getServerUri());
-//        clientIDEdit.setText(initialParams.fixedId);
         if(StringUtils.isNullOrEmpty(connection.getLogin())) {
             loginEdit.setEnabled(false);
             passwordEdit.setEnabled(false);
@@ -181,8 +176,6 @@ public class EditConnectionDialog extends SimpleDialog {
         }
         else{
             authRequiredCheckBox.setSelected(true);
-//            loginEdit.setText(initialParams.login);
-//            passwordEdit.setText(initialParams.password);
         }
         if(!legacy){
             willCheckBox.setSelected(StringUtils.hasContent(connection.getWillTopic()));
@@ -208,11 +201,6 @@ public class EditConnectionDialog extends SimpleDialog {
     private GridBagConstraints largePlace(int row){
         return new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL, defaultInsets, 0, 0);
     }
-
-//    public static class IsEnabledValueModel extends PropertyAdapter<JComponent>{
-//        public IsEnabledValueModel(JComponent component){ super(component, "enabled", true);}
-//    }
-
 
     public static class IsVisibleValueModel extends AbstractValueModel{
         private JComponent component;
@@ -389,7 +377,7 @@ public class EditConnectionDialog extends SimpleDialog {
             ++row;
             ValueModel isWillOn = new IsCheckedValueModel(willCheckBox);
 
-            JTextField willTopicEdit = new JTextField(defEditCharCount);
+            willTopicEdit = new JTextField(defEditCharCount);
             Bindings.bind(willTopicEdit, pm.getModel(Connection.WILL_TOPIC_BEAN_PROP));
             Bindings.bind(willTopicEdit, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willTopicEdit, modelItemOfConnection);
@@ -564,6 +552,13 @@ public class EditConnectionDialog extends SimpleDialog {
             loginEdit.grabFocus();
             UISupport.showErrorMessage("Please specify a login or uncheck \"Authentication required\" check-box if the authentication is not required for this MQTT server.");
             return false;
+        }
+        if(!legacy && willCheckBox.isSelected()){
+            if(StringUtils.isNullOrEmpty(willTopicEdit.getText())){
+                willTopicEdit.grabFocus();
+                UISupport.showErrorMessage("Please specify a topic for the Will Message.");
+                return false;
+            }
         }
         result = new Result();
         if(nameEdit != null && !legacy) result.connectionName = nameEdit.getText();
