@@ -49,30 +49,6 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
         }
     }
 
-
-//    private void buildUI(){
-//        getRootPane().add(UISupport.buildDescription("Configure MQTT Server Connections", "Specify MQTT servers required for the test project and customize connections to them", null), BorderLayout.NORTH);
-//
-//        JPanel mainPanel = new JPanel(new BorderLayout());
-//        JComponent toolBar = buildToolbar();
-//        mainPanel.add(toolBar, BorderLayout.NORTH);
-//        mainPanel.add(buildGrid(), BorderLayout.CENTER);
-//        getRootPane().add(mainPanel, BorderLayout.CENTER);
-//
-//        DefaultActionList actions = new DefaultActionList();
-//        actions.addAction(new OkAction(), true);
-//        JButtonBar buttons = UISupport.initDialogActions(actions, this);
-//        buttons
-//                .setBorder(BorderFactory.createCompoundBorder(BorderFactory.createCompoundBorder(
-//                        BorderFactory.createMatteBorder(1, 0, 0, 0, Color.GRAY),
-//                        BorderFactory.createMatteBorder(1, 0, 0, 0, Color.WHITE)), BorderFactory.createEmptyBorder(3, 5,
-//                        3, 5)));
-//
-//        getContentPane().add(buttons, BorderLayout.SOUTH);
-//
-//    }
-//
-
     @Override
     protected Component buildContent() {
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -108,7 +84,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
         });
         tableModel.setData(ConnectionsManager.getAvailableConnections(connectionsTargetItem));
         tableModel.setUsageData(formUsageData());
-
+        grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
         return new JScrollPane(grid);
     }
 
