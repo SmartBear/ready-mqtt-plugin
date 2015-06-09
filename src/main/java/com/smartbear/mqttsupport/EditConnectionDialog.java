@@ -60,6 +60,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private JCheckBox willCheckBox;
     private JComponent jsonTreeEditor;
     private JComponent xmlTreeEditor;
+    private JCheckBox cleanSessionCheckBox;
 
     public class Result{
         public String connectionName;
@@ -320,7 +321,7 @@ public class EditConnectionDialog extends SimpleDialog {
         ++row;
 
         if(!legacy) {
-            JCheckBox cleanSessionCheckBox = new JCheckBox("Start clean session on reconnection");
+            cleanSessionCheckBox = new JCheckBox("Start clean session on reconnection");
             Bindings.bind(cleanSessionCheckBox, pm.getModel(Connection.CLEAN_SESSION_BEAN_PROP));
             mainPanel.add(cleanSessionCheckBox, largePlace(row));
             mainPanel.add(createLabel("Clean session:", cleanSessionCheckBox, 6), labelPlace(row));
@@ -572,6 +573,7 @@ public class EditConnectionDialog extends SimpleDialog {
         }
         result.connectionParams.setServerUri(serverUriEdit.getText());
         result.connectionParams.fixedId = clientIDEdit.getText();
+        result.connectionParams.cleanSession = cleanSessionCheckBox == null || cleanSessionCheckBox.isSelected();
         if(authRequiredCheckBox.isSelected()) {
             result.connectionParams.setCredentials(loginEdit.getText(), new String(passwordEdit.getPassword()));
         }
