@@ -39,7 +39,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     private final static String CONVERT_BUTTON_CAPTION = "Convert Connection";
     private final static String LEGACY_WARNING = "This test step was created by the old version of the plugin. The current version uses another management model for MQTT connections which allows manage them centrally and share between test steps of a project. Click " + CONVERT_BUTTON_CAPTION + " button to create a new style connection and assign it to the test step.";
     private JButton configureConnectionButton;
-    private char passwordChar;
     private ConnectionsComboBoxModel connectionsModel;
 
     public interface UIOption{
@@ -211,12 +210,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         });
         configureConnectionButton.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/options.png"));
         configureConnectionButton.setEnabled(getModelItem().getConnection() != null);
-//        form.addButtonWithoutLabelToTheRight("Configure Connections...", new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                ConfigureConnectionsDialog.showDialog(getModelItem());
-//            }
-//        });
 
         JTextArea legacyInfoLabel = new JTextArea(LEGACY_WARNING, 0, form.getDefaultTextAreaColumns());
         legacyInfoLabel.setEnabled(false);
@@ -237,36 +230,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             }
         });
 
-//        JTextField serverEdit = form.appendTextField("serverUri", "MQTT Server URI", "The MQTT server URI");
-//        JTextField clientIdEdit = form.appendTextField("clientId", "Client ID (optional)", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
-//        JTextField loginEdit = form.appendTextField("login", "Login (optional)", "Login to MQTT server. Fill this if the server requires authentication.");
-//
-//        final String PASSWORD_TOOLTIP = "Password to MQTT server. Fill this if the server requires authentication.";
-//
-//
-//        final JPanel passwordPanel = new JPanel();
-//        passwordPanel.setLayout(new BoxLayout(passwordPanel, BoxLayout.X_AXIS));
-//        final JPasswordField passwordEdit = new JPasswordField(loginEdit.getColumns());
-//        passwordEdit.setToolTipText(PASSWORD_TOOLTIP);
-//        passwordEdit.getAccessibleContext().setAccessibleDescription(PASSWORD_TOOLTIP);
-//        Bindings.bind(passwordEdit, pm.getModel("password"));
-//        passwordPanel.add(passwordEdit);
-//        final JCheckBox hidePasswordCheckBox = new JCheckBox("Hide");
-//        hidePasswordCheckBox.setSelected(true);
-//        passwordPanel.add(hidePasswordCheckBox);
-//        hidePasswordCheckBox.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                if(hidePasswordCheckBox.isSelected()){
-//                    passwordEdit.setEchoChar(passwordChar);
-//                }
-//                else{
-//                    passwordChar = passwordEdit.getEchoChar();
-//                    passwordEdit.setEchoChar('\0');
-//                }
-//            }
-//        });
-//        form.append("Password (optional)", passwordPanel);
 
         ReadOnlyValueModel<Connection> legacyModeAdapter = new ReadOnlyValueModel<>(pm.getModel("connection"), new ReadOnlyValueModel.Converter<Connection>() {
             @Override
@@ -274,17 +237,8 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
                 return srcValue != null && srcValue.isLegacy();
             }
         });
-//        Bindings.bind(serverEdit, "enabled", legacyModeAdapter);
-//        Bindings.bind(clientIdEdit, "enabled", legacyModeAdapter);
-//        Bindings.bind(loginEdit, "enabled", legacyModeAdapter);
-//        Bindings.bind(passwordPanel, "visible", legacyModeAdapter);
         Bindings.bind(convertConnectionButton, "visible", legacyModeAdapter);
         Bindings.bind(legacyInfoLabel, "visible", legacyModeAdapter);
-
-//        PropertyExpansionPopupListener.enable(serverEdit, getModelItem());
-//        PropertyExpansionPopupListener.enable(loginEdit, getModelItem());
-//        PropertyExpansionPopupListener.enable(passwordEdit, getModelItem());
-//        PropertyExpansionPopupListener.enable(clientIdEdit, getModelItem());
 
     }
 
