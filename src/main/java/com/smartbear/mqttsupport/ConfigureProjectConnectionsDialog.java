@@ -13,19 +13,23 @@ import com.eviware.soapui.support.components.JXToolBar;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -73,6 +77,9 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
     private JComponent buildGrid(){
         tableModel = new ConnectionsTableModel();
         grid = new JTable(tableModel);
+        for(int i = 0; i < ConnectionsTableModel.Column.values().length; ++i){
+            grid.getColumnModel().getColumn(i).setIdentifier(ConnectionsTableModel.Column.values()[i]);
+        }
         grid.setRowSelectionAllowed(true);
         grid.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         grid.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -85,6 +92,9 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
         tableModel.setData(ConnectionsManager.getAvailableConnections(connectionsTargetItem));
         tableModel.setUsageData(formUsageData());
         grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        JPasswordField pswEdit = new JPasswordField();
+        grid.getColumn(ConnectionsTableModel.Column.Password).setCellRenderer(new PasswordRenderer(pswEdit.getEchoChar()));
+        grid.getColumn(ConnectionsTableModel.Column.Password).setCellEditor(new DefaultCellEditor(pswEdit));
         return new JScrollPane(grid);
     }
 
@@ -195,7 +205,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
 
     private static class ConnectionsTableModel extends AbstractTableModel{
         public enum Column {
-            Name("Name"), ServerUri("MQTT Server URI"), ClientId("Client ID"), Login("Login"), Used("Used by Test Steps");
+            Name("Name"), ServerUri("MQTT Server URI"), ClientId("Client ID"), Login("Login"), Password("Password"), Used("Used by Test Steps");
             private final String caption;
 
             Column(String caption){this.caption = caption;}
@@ -253,6 +263,8 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
                     return data.get(rowIndex).params.fixedId;
                 case Login:
                     return data.get(rowIndex).params.login;
+                case Password:
+                    return data.get(rowIndex).params.password;
                 case Used:
                     Connection connection = data.get(rowIndex).originalConnection;
                     if(connection == null) return false;
@@ -277,13 +289,16 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
                 case Login:
                     data.get(rowIndex).params.login = (String)aValue;
                     break;
+                case Password :
+                    data.get(rowIndex).params.password = (String)aValue;
+                    break;
             }
         }
 
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             Column column =  Column.values()[columnIndex];
-            return column == Column.Name || column == Column.ServerUri || column == Column.ClientId || column == Column.Login;
+            return column == Column.Name || column == Column.ServerUri || column == Column.ClientId || column == Column.Login || column == Column.Password;
         }
 
         @Override
@@ -316,6 +331,22 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
         }
 
         public List<Connection> getRemovedConnections(){return removedConnections;}
+    }
+
+    private static class PasswordRenderer extends DefaultTableCellRenderer {
+        private char passwordChar;
+        public PasswordRenderer(char passwordChar) { super(); this.passwordChar = passwordChar;}
+
+        public void setValue(Object value) {
+            if(value == null || value.toString() == null) {
+                setText("");
+            }
+            else {
+                char[] arr = new char[value.toString().length()];
+                Arrays.fill(arr, passwordChar);
+                setText(new String(arr));
+            }
+        }
     }
 
     private class AddConnectionAction extends AbstractAction {
