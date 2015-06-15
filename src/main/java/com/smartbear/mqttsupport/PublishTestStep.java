@@ -35,7 +35,13 @@ import java.util.ArrayList;
 
 @PluginTestStep(typeName = "MQTTPublishTestStep", name = "Publish using MQTT", description = "Publishes a specified message through MQTT protocol.", iconPath = "com/smartbear/mqttsupport/publish_step.png")
 public class PublishTestStep extends MqttConnectedTestStep implements TestMonitorListener, ExecutableTestStep {
-    private final static String MESSAGE_KIND_PROP_NAME = "MessageType";
+    private final static String MESSAGE_KIND_SETTING_NAME = "MessageKind";
+    private final static String TOPIC_SETTING_NAME = "Topic";
+    private final static String MESSAGE_SETTING_NAME = "Message";
+    private final static String QOS_SETTING_NAME = "QoS";
+    private final static String RETAINED_SETTING_NAME = "Retained";
+
+    private final static String MESSAGE_TYPE_PROP_NAME = "MessageType";
     private final static String TOPIC_PROP_NAME = "Topic";
     private final static String MESSAGE_PROP_NAME = "Message";
     private final static String QOS_PROP_NAME = "QoS";
@@ -69,7 +75,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             readData(reader);
         }
 
-        addProperty(new DefaultTestStepProperty(MESSAGE_KIND_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+        addProperty(new DefaultTestStepProperty(MESSAGE_TYPE_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty property) {
                 return messageKind.toString();
@@ -290,7 +296,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         messageKind = newValue;
         updateData();
         notifyPropertyChanged("messageKind", old, newValue);
-        firePropertyValueChanged(MESSAGE_KIND_PROP_NAME, old.toString(), newValue.toString());
+        firePropertyValueChanged(MESSAGE_TYPE_PROP_NAME, old.toString(), newValue.toString());
         String oldMessage = getMessage();
         if(oldMessage == null) oldMessage = "";
         try {
@@ -363,25 +369,25 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     protected void readData(XmlObjectConfigurationReader reader){
         super.readData(reader);
         try{
-            messageKind = PublishedMessageType.valueOf(reader.readString(MESSAGE_KIND_PROP_NAME, DEFAULT_MESSAGE_TYPE.name()));
+            messageKind = PublishedMessageType.valueOf(reader.readString(MESSAGE_KIND_SETTING_NAME, DEFAULT_MESSAGE_TYPE.name()));
         } catch (IllegalArgumentException | NullPointerException e){
             messageKind = DEFAULT_MESSAGE_TYPE;
         }
-        topic = reader.readString(TOPIC_PROP_NAME, "");
-        message = reader.readString(MESSAGE_PROP_NAME, "");
-        qos = reader.readInt(QOS_PROP_NAME, DEFAULT_QOS);
-        retained = reader.readBoolean(RETAINED_PROP_NAME, false);
+        topic = reader.readString(TOPIC_SETTING_NAME, "");
+        message = reader.readString(MESSAGE_SETTING_NAME, "");
+        qos = reader.readInt(QOS_SETTING_NAME, DEFAULT_QOS);
+        retained = reader.readBoolean(RETAINED_SETTING_NAME, false);
     }
 
 
     @Override
     protected void writeData(XmlObjectBuilder builder){
         super.writeData(builder);
-        if(messageKind != null) builder.add(MESSAGE_KIND_PROP_NAME, messageKind.name());
-        builder.add(TOPIC_PROP_NAME, topic);
-        builder.add(MESSAGE_PROP_NAME, message);
-        builder.add(QOS_PROP_NAME, qos);
-        builder.add(RETAINED_PROP_NAME, retained);
+        if(messageKind != null) builder.add(MESSAGE_KIND_SETTING_NAME, messageKind.name());
+        builder.add(TOPIC_SETTING_NAME, topic);
+        builder.add(MESSAGE_SETTING_NAME, message);
+        builder.add(QOS_SETTING_NAME, qos);
+        builder.add(RETAINED_SETTING_NAME, retained);
     }
 
     private void updateState() {
