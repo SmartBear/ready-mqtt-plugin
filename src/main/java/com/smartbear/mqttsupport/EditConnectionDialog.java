@@ -563,7 +563,7 @@ public class EditConnectionDialog extends SimpleDialog {
         result = new Result();
         if(nameEdit != null && !legacy) result.connectionName = nameEdit.getText();
 
-        if(willCheckBox.isSelected()) {
+        if(willCheckBox != null && willCheckBox.isSelected()) {
             result.connectionParams = connection.getParams();
         }
         result.connectionParams.setServerUri(serverUriEdit.getText());
