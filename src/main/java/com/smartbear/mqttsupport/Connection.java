@@ -19,7 +19,7 @@ import static com.smartbear.mqttsupport.Utils.*;
 public class Connection implements PropertyChangeNotifier {
     final static boolean ARE_NAMES_CASE_INSENSITIVE = true;
 
-    private final static String NAME_PROP_NAME = "Name";
+    private final static String NAME_SETTING_NAME = "Name";
     private static final String SERVER_URI_SETTING_NAME = "ServerURI";
     private static final String CLIENT_ID_SETTING_NAME = "ClientID";
     private static final String LOGIN_SETTING_NAME = "Login";
@@ -59,7 +59,7 @@ public class Connection implements PropertyChangeNotifier {
 
     public void load(XmlObject xml){
         XmlObjectConfigurationReader reader = new XmlObjectConfigurationReader(xml);
-        name = reader.readString(NAME_PROP_NAME, null);
+        name = reader.readString(NAME_SETTING_NAME, null);
         originalServerUri = reader.readString(SERVER_URI_SETTING_NAME, null);
         fixedId = reader.readString(CLIENT_ID_SETTING_NAME, null);
         login = reader.readString(LOGIN_SETTING_NAME, null);
@@ -87,7 +87,7 @@ public class Connection implements PropertyChangeNotifier {
     }
     public XmlObject save(){
         XmlObjectBuilder builder = new XmlObjectBuilder();
-        builder.add(NAME_PROP_NAME, name);
+        builder.add(NAME_SETTING_NAME, name);
         builder.add(SERVER_URI_SETTING_NAME, originalServerUri);
         builder.add(CLIENT_ID_SETTING_NAME, fixedId);
         builder.add(CLEAN_SESSION_SETTING_NAME, cleanSession);
@@ -123,13 +123,14 @@ public class Connection implements PropertyChangeNotifier {
         if(!Utils.areStringsEqual(oldServerUri, this.originalServerUri)) notifyPropertyChanged("serverUri", oldServerUri, this.originalServerUri);
     }
 
+    public final static String NAME_BEAN_PROP = "name";
     public String getName(){return name;}
     public void setName(String newName){
         String oldName = name;
         if(!Utils.areStringsEqual(oldName, newName, ARE_NAMES_CASE_INSENSITIVE, true)){
             boolean oldLegacy = isLegacy();
             name = newName;
-            notifyPropertyChanged("name", oldName,  newName);
+            notifyPropertyChanged(NAME_BEAN_PROP, oldName,  newName);
             if(isLegacy() != oldLegacy) notifyPropertyChanged("legacy", oldLegacy, isLegacy());
         }
     }

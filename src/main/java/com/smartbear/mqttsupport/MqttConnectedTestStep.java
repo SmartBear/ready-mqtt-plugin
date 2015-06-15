@@ -115,6 +115,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             connection.setLogin(reader.readString(LOGIN_PROP_NAME, ""));
             connection.setPassword(reader.readString(PASSWORD_PROP_NAME, ""));
             connection.setCleanSession(true);
+            connection.addPropertyChangeListener(this);
             legacyConnection = connection;
         }
         else{
@@ -431,20 +432,27 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     public void propertyChange(PropertyChangeEvent evt) {
         if(evt.getSource() == connection){
             if(Utils.areStringsEqual(evt.getPropertyName(), "serverUri")){
+                if(connection.isLegacy()) updateData();
                 notifyPropertyChanged("serverUri", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(SERVER_URI_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
             else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)){
+                if(connection.isLegacy()) updateData();
                 notifyPropertyChanged("clientId", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(CLIENT_ID_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
             else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)){
+                if(connection.isLegacy()) updateData();
                 notifyPropertyChanged("login", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(LOGIN_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
             }
             else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)){
+                if(connection.isLegacy()) updateData();
                 notifyPropertyChanged("password", (String)evt.getOldValue(), (String)evt.getNewValue());
                 firePropertyValueChanged(PASSWORD_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
+            }
+            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.NAME_BEAN_PROP)){
+                updateData();
             }
         }
 
