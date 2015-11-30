@@ -8,7 +8,12 @@
     <version>1.5.0</version>
     <repositories>
 
-        <repository>
+      <repository>
+        <id>Paho</id>
+        <name>Eclipse Paho Repository</name>
+        <url>https://repo.eclipse.org/content/repositories/paho-releases/</url>
+      </repository>
+      <repository>
             <id>eviware</id>
             <name>Eviware Maven2 Repository</name>
             <url>http://www.eviware.com/repository/maven2</url>
