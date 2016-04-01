@@ -265,12 +265,23 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     @Override
     public boolean onClose(boolean canCancel) {
         if (super.onClose(canCancel)) {
-            getModelItem().removeExecutionListener(this);
-            getModelItem().removeAssertionsListener(this);
-            assertionsPanel.release();
-            inspectorPanel.release();
-            if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
-            if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
+            ReceiveTestStep testStep = getModelItem();
+            if (testStep != null) {
+                testStep.removeExecutionListener(this);
+                testStep.removeAssertionsListener(this);
+            }
+            if (assertionsPanel != null) {
+                assertionsPanel.release();
+            }
+            if (inspectorPanel != null) {
+                inspectorPanel.release();
+            }
+            if(jsonTreeEditor != null) {
+                Utils.releaseTreeEditor(jsonTreeEditor);
+            }
+            if(xmlTreeEditor != null) {
+                Utils.releaseTreeEditor(xmlTreeEditor);
+            }
             return true;
         }
 
