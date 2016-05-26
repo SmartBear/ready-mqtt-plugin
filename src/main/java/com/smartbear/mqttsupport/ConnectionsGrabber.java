@@ -38,6 +38,10 @@ public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
 
     }
 
+    public void projectMoved(Project project, int ix, int offset){
+
+    }
+
     @Override
     public void testSuiteAdded(TestSuite testSuite) {
 
