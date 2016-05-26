@@ -1,7 +1,5 @@
 package com.smartbear.mqttsupport;
 
-import com.eviware.soapui.SoapUI;
-import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.environment.Environment;
 import com.eviware.soapui.model.iface.Interface;
 import com.eviware.soapui.model.load.LoadTestModelItem;
@@ -12,21 +10,12 @@ import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.model.workspace.Workspace;
 import com.eviware.soapui.model.workspace.WorkspaceListener;
 import com.eviware.soapui.plugins.ListenerConfiguration;
-import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
-import org.apache.xmlbeans.XmlException;
-import org.apache.xmlbeans.XmlObject;
-
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
 @ListenerConfiguration
 public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
 
 
-    public ConnectionsGrabber(){
+    public ConnectionsGrabber() {
     }
 
 
@@ -42,6 +31,10 @@ public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
 
     @Override
     public void interfaceUpdated(Interface anInterface) {
+
+    }
+
+    public void interfaceMoved(Interface iface, int index, int offset) {
 
     }
 
