@@ -303,7 +303,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     }
 
     @Override
-    public void assertionMoved(TestAssertion assertion, int ix, int offset) {
+    public void assertionMoved(TestAssertion assertion, int ix) {
         assertionListChanged();
     }
 
