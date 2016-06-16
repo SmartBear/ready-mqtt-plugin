@@ -1,18 +1,18 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStep;
-import com.eviware.soapui.plugins.recipe.PluginRecipeConfigParser;
-import com.eviware.soapui.plugins.recipe.RecipeConfigParser;
+import com.eviware.soapui.plugins.recipe.PluginTestStepConfigurator;
+import com.eviware.soapui.plugins.recipe.TestStepConfigurator;
 
 import java.util.Map;
 
-@PluginRecipeConfigParser(typeName = "MQTTPublishTestStep", description = "")
-public class MqttTestStepRecipeConfigParser implements RecipeConfigParser {
+@PluginTestStepConfigurator(typeName = "MQTTPublishTestStep", description = "")
+public class MqttTestStepRecipeConfigParser implements TestStepConfigurator {
     @Override
-    public void parseConfig(WsdlTestStep wsdlTestStep, Map<String, String> map) {
+    public void applyConfig(WsdlTestStep wsdlTestStep, Map<String, Object> map) {
         MqttConnectedTestStep mqttConnectedTestStep = (MqttConnectedTestStep) wsdlTestStep;
         mqttConnectedTestStep.setConnection(new Connection("Local", new ConnectionParams()));
-        mqttConnectedTestStep.setServerUri(map.get(MqttConnectedTestStep.SERVER_URI_PROP_NAME));
-        mqttConnectedTestStep.setClientId(map.get(MqttConnectedTestStep.CLIENT_ID_PROP_NAME));
+        mqttConnectedTestStep.setServerUri((String) map.get(MqttConnectedTestStep.SERVER_URI_PROP_NAME));
+        mqttConnectedTestStep.setClientId((String) map.get(MqttConnectedTestStep.CLIENT_ID_PROP_NAME));
     }
 }
