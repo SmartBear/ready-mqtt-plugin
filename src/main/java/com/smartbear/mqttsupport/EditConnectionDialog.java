@@ -295,10 +295,10 @@ public class EditConnectionDialog extends SimpleDialog {
         }
 
         serverUriEdit = new JUndoableTextField(defEditCharCount);
-        serverUriEdit.setToolTipText("The MQTT server URI");
+        serverUriEdit.setToolTipText("The MQTT server URL");
         Bindings.bind(serverUriEdit, pm.getModel("serverUri"));
         mainPanel.add(serverUriEdit, componentPlace(row));
-        mainPanel.add(createLabel("Server URI:", serverUriEdit, 0), labelPlace(row));
+        mainPanel.add(createLabel("Server URL:", serverUriEdit, 0), labelPlace(row));
         ++row;
 
         clientIDEdit = new JUndoableTextField(defEditCharCount);
