@@ -1,6 +1,5 @@
 package com.smartbear.mqttsupport;
 
-
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.UISupport;
@@ -12,12 +11,12 @@ import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
-
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.AbstractAction;
-
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -37,10 +36,6 @@ import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
-
 public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTestStep> implements ExecutionListener {
 
     private JTextField numberEdit;
@@ -57,26 +52,21 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JLogList logArea;
     private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
 
-
-
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
         buildUI();
         modelItem.addExecutionListener(this);
     }
 
-
-    private void buildUI(){
+    private void buildUI() {
         JComponent mainPanel = buildMainPanel();
         inspectorPanel = JInspectorPanelFactory.build(mainPanel);
-
 
         logInspector = new JComponentInspector<JComponent>(buildLogPanel(), String.format(LOG_TAB_TITLE, 0), "Log of the test step executions", true);
         inspectorPanel.addInspector(logInspector);
 
         inspectorPanel.setDefaultDividerLocation(0.6F);
 //        inspectorPanel.setCurrentInspector("Assertions");
-
 
         add(inspectorPanel.getComponent());
         setPreferredSize(new Dimension(500, 300));
@@ -111,14 +101,13 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         jsonTreeEditor = Utils.createJsonTreeEditor(true, getModelItem());
-        if(jsonTreeEditor != null){
+        if (jsonTreeEditor != null) {
             scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
             jsonEditor.addTab("Tree View", scrollPane);
-        }
-        else{
+        } else {
             jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
         }
 
@@ -133,20 +122,18 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         xmlTreeEditor = Utils.createXmlTreeEditor(true, getModelItem());
-        if(xmlTreeEditor != null) {
+        if (xmlTreeEditor != null) {
             scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
             xmlEditor.addTab("Tree View", scrollPane);
-        }
-        else{
+        } else {
             xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
         }
 
         xmlEditor.setPreferredSize(new Dimension(450, 350));
         form.append("Message", xmlEditor);
-
 
         form.appendSeparator();
         form.appendHeading("Message Delivering Settings");
@@ -163,7 +150,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         return result;
     }
 
-    private JComponent buildToolbar(){
+    private JComponent buildToolbar() {
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
         JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
@@ -192,16 +179,15 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         super.propertyChange(evt);
 
         if (evt.getPropertyName().equals("messageKind")) {
-            PublishedMessageType newMessageType = (PublishedMessageType)evt.getNewValue();
+            PublishedMessageType newMessageType = (PublishedMessageType) evt.getNewValue();
             boolean isNumber = newMessageType == PublishedMessageType.DoubleValue || newMessageType == PublishedMessageType.FloatValue || newMessageType == PublishedMessageType.IntegerValue || newMessageType == PublishedMessageType.LongValue;
             boolean isFile = newMessageType == PublishedMessageType.BinaryFile;
             boolean isText = newMessageType == PublishedMessageType.Utf8Text || newMessageType == PublishedMessageType.Utf16Text;
             numberEdit.setVisible(isNumber);
             textMemo.setVisible(isText);
-            if(textMemo.getParent() instanceof JScrollPane) {
+            if (textMemo.getParent() instanceof JScrollPane) {
                 textMemo.getParent().setVisible(isText);
-            }
-            else if(textMemo.getParent().getParent() instanceof JScrollPane){
+            } else if (textMemo.getParent().getParent() instanceof JScrollPane) {
                 textMemo.getParent().getParent().setVisible(isText);
             }
             fileNameEdit.setVisible(isFile);
@@ -215,8 +201,12 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     protected boolean release() {
         getModelItem().removeExecutionListener(this);
         inspectorPanel.release();
-        if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
-        if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
+        if (jsonTreeEditor != null) {
+            Utils.releaseTreeEditor(jsonTreeEditor);
+        }
+        if (xmlTreeEditor != null) {
+            Utils.releaseTreeEditor(xmlTreeEditor);
+        }
         return super.release();
     }
 

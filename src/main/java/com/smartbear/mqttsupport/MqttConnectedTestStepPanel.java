@@ -7,8 +7,6 @@ import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.list.SelectionInList;
-import com.jgoodies.binding.value.AbstractValueModel;
-import com.jgoodies.binding.value.ValueModel;
 
 import javax.swing.AbstractAction;
 import javax.swing.AbstractListModel;
@@ -26,11 +24,10 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep>{
+public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep> {
 
     public final static String[] QOS_NAMES = {"At most once (0)", "At least once (1)", "Exactly once (2)"};
 
@@ -41,11 +38,11 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     private JButton configureConnectionButton;
     private ConnectionsComboBoxModel connectionsModel;
 
-    public interface UIOption{
+    public interface UIOption {
         String getTitle();
     }
 
-    class ConfigureConnectionsAction extends AbstractAction{
+    class ConfigureConnectionsAction extends AbstractAction {
         public ConfigureConnectionsAction() {
             putValue(Action.SHORT_DESCRIPTION, "Configure MQTT Connections of the Project");
             putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/smartbear/mqttsupport/edit_connections.png"));
@@ -57,34 +54,44 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
-    static class ConnectionComboItem{
+    static class ConnectionComboItem {
         private Connection obj;
-        public ConnectionComboItem(Connection connection){
+
+        public ConnectionComboItem(Connection connection) {
             obj = connection;
         }
 
         @Override
-        public String toString(){
-            if(obj.isLegacy()) return LEGACY_CONNECTION_NAME; else return obj.getName();
+        public String toString() {
+            if (obj.isLegacy()) {
+                return LEGACY_CONNECTION_NAME;
+            } else {
+                return obj.getName();
+            }
         }
 
-        public Connection getObject(){return obj;}
+        public Connection getObject() {
+            return obj;
+        }
 
         @Override
         public boolean equals(Object op) {
-            if(op instanceof ConnectionComboItem){
+            if (op instanceof ConnectionComboItem) {
                 return ((ConnectionComboItem) op).obj == obj;
-            }
-            else{
+            } else {
                 return false;
             }
         }
     }
 
-    static class NewConnectionComboItem extends ConnectionComboItem{
+    static class NewConnectionComboItem extends ConnectionComboItem {
         private final static NewConnectionComboItem instance = new NewConnectionComboItem();
-        public static NewConnectionComboItem getInstance(){return instance;}
-        private NewConnectionComboItem(){
+
+        public static NewConnectionComboItem getInstance() {
+            return instance;
+        }
+
+        private NewConnectionComboItem() {
             super(null);
         }
 
@@ -94,47 +101,45 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
-    class ConnectionsComboBoxModel extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener{
+    class ConnectionsComboBoxModel extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener {
 
         private ArrayList<ConnectionComboItem> items = new ArrayList<>();
         private boolean connectionCreationInProgress = false;
-        public ConnectionsComboBoxModel(){
+
+        public ConnectionsComboBoxModel() {
             updateItems();
         }
 
-        private void updateItems(){
+        private void updateItems() {
             items.clear();
             List<Connection> list = ConnectionsManager.getAvailableConnections(getModelItem());
-            if(list != null){
-                for(Connection curParams: list){
+            if (list != null) {
+                for (Connection curParams : list) {
                     items.add(new ConnectionComboItem(curParams));
                 }
             }
-            if(getModelItem().getLegacyConnection() != null){
+            if (getModelItem().getLegacyConnection() != null) {
                 items.add(new ConnectionComboItem(getModelItem().getLegacyConnection()));
             }
             items.add(NewConnectionComboItem.getInstance());
             fireContentsChanged(this, -1, -1);
         }
 
-
         @Override
         public void setSelectedItem(Object anItem) {
-            if(anItem == null){
+            if (anItem == null) {
                 getModelItem().setConnection(null);
-            }
-            else {
-                if(anItem instanceof NewConnectionComboItem){
+            } else {
+                if (anItem instanceof NewConnectionComboItem) {
                     connectionCreationInProgress = true;
                     UISupport.invokeLater(new Runnable() {
                         @Override
                         public void run() {
                             EditConnectionDialog.Result dialogResult = EditConnectionDialog.createConnection(getModelItem());
                             connectionCreationInProgress = false;
-                            if(dialogResult == null) {
+                            if (dialogResult == null) {
                                 fireContentsChanged(ConnectionsComboBoxModel.this, -1, -1);
-                            }
-                            else {
+                            } else {
                                 Connection newConnection = new Connection(dialogResult.connectionName, dialogResult.connectionParams);
                                 ConnectionsManager.addConnection(getModelItem(), newConnection);
                                 getModelItem().setConnection(newConnection);
@@ -142,8 +147,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
                         }
                     });
-                }
-                else {
+                } else {
                     Connection newParams = ((ConnectionComboItem) anItem).getObject();
                     getModelItem().setConnection(newParams);
                     fireContentsChanged(this, -1, -1);
@@ -153,8 +157,12 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         @Override
         public Object getSelectedItem() {
-            if(connectionCreationInProgress) return NewConnectionComboItem.getInstance();
-            if(getModelItem().getConnection() == null) return null;
+            if (connectionCreationInProgress) {
+                return NewConnectionComboItem.getInstance();
+            }
+            if (getModelItem().getConnection() == null) {
+                return null;
+            }
             return new ConnectionComboItem(getModelItem().getConnection());
         }
 
@@ -165,9 +173,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         @Override
         public void connectionChanged(Connection connection, String propertyName, Object oldPropertyValue, Object newPropertyValue) {
-            if(Utils.areStringsEqual(propertyName, "name")){
-                for(int i = 0; i <items.size(); ++i){
-                    if(items.get(i).getObject() == connection){
+            if (Utils.areStringsEqual(propertyName, "name")) {
+                for (int i = 0; i < items.size(); ++i) {
+                    if (items.get(i).getObject() == connection) {
                         fireContentsChanged(connection, i, i);
                         break;
                     }
@@ -191,7 +199,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         super(modelItem);
     }
 
-    protected void buildConnectionSection(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm) {
+    protected void buildConnectionSection(SimpleBindingForm form, PresentationModel<MqttTestStep> pm) {
         connectionsModel = new ConnectionsComboBoxModel();
         ConnectionsManager.addConnectionsListener(getModelItem(), connectionsModel);
 
@@ -203,7 +211,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
                 Connection connection = getModelItem().getConnection();
                 EditConnectionDialog.Result dialogResult = EditConnectionDialog.editConnection(connection, getModelItem());
                 if (dialogResult != null) {
-                    if(!connection.isLegacy()) connection.setName(dialogResult.connectionName);
+                    if (!connection.isLegacy()) {
+                        connection.setName(dialogResult.connectionName);
+                    }
                     connection.setParams(dialogResult.connectionParams);
                 }
             }
@@ -220,16 +230,15 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JButton convertConnectionButton = form.appendButtonWithoutLabel(CONVERT_BUTTON_CAPTION + "...", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            EditConnectionDialog.Result dialogResult = EditConnectionDialog.convertLegacyConnection(getModelItem().getConnection().getParams(), getModelItem());
-            if(dialogResult != null){
-                Connection newConnection = new Connection(dialogResult.connectionName, dialogResult.connectionParams);
-                ConnectionsManager.addConnection(getModelItem(), newConnection);
-                getModelItem().setConnection(newConnection);
-            }
+                EditConnectionDialog.Result dialogResult = EditConnectionDialog.convertLegacyConnection(getModelItem().getConnection().getParams(), getModelItem());
+                if (dialogResult != null) {
+                    Connection newConnection = new Connection(dialogResult.connectionName, dialogResult.connectionParams);
+                    ConnectionsManager.addConnection(getModelItem(), newConnection);
+                    getModelItem().setConnection(newConnection);
+                }
 
             }
         });
-
 
         ReadOnlyValueModel<Connection> legacyModeAdapter = new ReadOnlyValueModel<>(pm.getModel("connection"), new ReadOnlyValueModel.Converter<Connection>() {
             @Override
@@ -242,10 +251,10 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     }
 
-    protected void buildQosRadioButtons(SimpleBindingForm form,  PresentationModel<MqttTestStep> pm){
+    protected void buildQosRadioButtons(SimpleBindingForm form, PresentationModel<MqttTestStep> pm) {
         JPanel qosPanel = new JPanel();
         qosPanel.setLayout(new BoxLayout(qosPanel, BoxLayout.X_AXIS));
-        for(int i = 0; i < QOS_NAMES.length; ++i) {
+        for (int i = 0; i < QOS_NAMES.length; ++i) {
             JRadioButton qosRadio = new JRadioButton(QOS_NAMES[i]);
             Bindings.bind(qosRadio, pm.getModel("qos"), i);
             qosPanel.add(qosRadio);
@@ -254,12 +263,11 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     }
 
-
     protected void buildRadioButtonsFromEnum(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label, String propertyName, Class propertyType) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
 
-        for(Object option : propertyType.getEnumConstants()){
+        for (Object option : propertyType.getEnumConstants()) {
             UIOption uiOption = (UIOption) option;
             JRadioButton radioButton = new JRadioButton(uiOption.getTitle());
             Bindings.bind(radioButton, pm.getModel(propertyName), option);
@@ -268,7 +276,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         form.append(label, panel);
     }
 
-    protected void buildTimeoutSpinEdit(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label){
+    protected void buildTimeoutSpinEdit(SimpleBindingForm form, PresentationModel<MqttTestStep> pm, String label) {
         JPanel timeoutPanel = new JPanel();
         timeoutPanel.setLayout(new BoxLayout(timeoutPanel, BoxLayout.X_AXIS));
         JSpinner spinEdit = Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1);
@@ -282,7 +290,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
     }
 
-    protected void addConnectionActionsToToolbar(JXToolBar toolBar){
+    protected void addConnectionActionsToToolbar(JXToolBar toolBar) {
         Action configureConnectionsAction = new ConfigureConnectionsAction();
         JButton button = UISupport.createActionButton(configureConnectionsAction, configureConnectionsAction.isEnabled());
         toolBar.add(button);
@@ -291,15 +299,19 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         super.propertyChange(evt);
-        if(Utils.areStringsEqual(evt.getPropertyName(), "connection")){
-            if(connectionsModel != null) connectionsModel.setSelectedItem(new ConnectionComboItem((Connection)evt.getNewValue()));
+        if (Utils.areStringsEqual(evt.getPropertyName(), "connection")) {
+            if (connectionsModel != null) {
+                connectionsModel.setSelectedItem(new ConnectionComboItem((Connection) evt.getNewValue()));
+            }
             configureConnectionButton.setEnabled(evt.getNewValue() != null);
         }
     }
 
     @Override
     protected boolean release() {
-        if(connectionsModel != null) ConnectionsManager.removeConnectionsListener(getModelItem(), connectionsModel);
+        if (connectionsModel != null) {
+            ConnectionsManager.removeConnectionsListener(getModelItem(), connectionsModel);
+        }
         return super.release();
     }
 

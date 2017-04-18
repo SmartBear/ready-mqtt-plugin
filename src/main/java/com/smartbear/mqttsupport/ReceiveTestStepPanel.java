@@ -1,11 +1,9 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
-import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
@@ -20,12 +18,10 @@ import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
-import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -62,7 +58,6 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
 
-
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
         buildUI();
@@ -96,8 +91,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     }
 
-
-    private JComponent buildMainPanel(){
+    private JComponent buildMainPanel() {
         PresentationModel<ReceiveTestStep> pm = new PresentationModel<ReceiveTestStep>(getModelItem());
         SimpleBindingForm form = new SimpleBindingForm(pm);
         buildConnectionSection(form, pm);
@@ -124,6 +118,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
                 recMessageMemo.getCaret().setVisible(true);
 
             }
+
             @Override
             public void focusLost(FocusEvent e) {
 
@@ -140,10 +135,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         jsonTreeEditor = Utils.createJsonTreeEditor(false, getModelItem());
-        if(jsonTreeEditor == null){
+        if (jsonTreeEditor == null) {
             jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
-        }
-        else {
+        } else {
             JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -162,10 +156,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         xmlTreeEditor = Utils.createXmlTreeEditor(false, getModelItem());
-        if(xmlTreeEditor == null){
+        if (xmlTreeEditor == null) {
             xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
-        }
-        else {
+        } else {
             JScrollPane scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -182,7 +175,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return mainPanel;
     }
 
-    private JComponent buildToolbar(){
+    private JComponent buildToolbar() {
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
         JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
@@ -193,7 +186,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return toolBar;
     }
 
-    private AssertionsPanel buildAssertionsPanel(){
+    private AssertionsPanel buildAssertionsPanel() {
         return new AssertionsPanel(getModelItem());
     }
 
@@ -233,27 +226,23 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     @Override
     public void propertyChange(PropertyChangeEvent event) {
         super.propertyChange(event);
-        if(event.getPropertyName().equals("assertionStatus")){
+        if (event.getPropertyName().equals("assertionStatus")) {
             updateStatusIcon();
-        }
-        else if(event.getPropertyName().equals("receivedMessage")){
-            String msg = (String)event.getNewValue();
-            if(StringUtils.isNullOrEmpty(msg)){
+        } else if (event.getPropertyName().equals("receivedMessage")) {
+            String msg = (String) event.getNewValue();
+            if (StringUtils.isNullOrEmpty(msg)) {
                 Utils.showMemo(recMessageMemo, true);
                 jsonEditor.setVisible(false);
                 xmlEditor.setVisible(false);
-            }
-            else if(JsonUtil.seemsToBeJson(msg)) {
+            } else if (JsonUtil.seemsToBeJson(msg)) {
                 Utils.showMemo(recMessageMemo, false);
                 jsonEditor.setVisible(true);
                 xmlEditor.setVisible(false);
-            }
-            else if(XmlUtils.seemsToBeXml(msg)){
+            } else if (XmlUtils.seemsToBeXml(msg)) {
                 Utils.showMemo(recMessageMemo, false);
                 jsonEditor.setVisible(false);
                 xmlEditor.setVisible(true);
-            }
-            else{
+            } else {
                 Utils.showMemo(recMessageMemo, true);
                 jsonEditor.setVisible(false);
                 xmlEditor.setVisible(false);
@@ -276,10 +265,10 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             if (inspectorPanel != null) {
                 inspectorPanel.release();
             }
-            if(jsonTreeEditor != null) {
+            if (jsonTreeEditor != null) {
                 Utils.releaseTreeEditor(jsonTreeEditor);
             }
-            if(xmlTreeEditor != null) {
+            if (xmlTreeEditor != null) {
                 Utils.releaseTreeEditor(xmlTreeEditor);
             }
             return true;
@@ -288,7 +277,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return false;
     }
 
-    private void assertionListChanged(){
+    private void assertionListChanged() {
         assertionInspector.setTitle(String.format("Assertions (%d)", getModelItem().getAssertionCount()));
     }
 
@@ -312,7 +301,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         logArea.addLine(DateUtil.formatFull(new Date(executionResult.getTimeStamp())) + " - " + executionResult.getOutcome());
     }
 
-    private void logMessage(long time, String message){
+    private void logMessage(long time, String message) {
         logArea.addLine(DateUtil.formatFull(new Date(time)) + " - " + message);
     }
 }
