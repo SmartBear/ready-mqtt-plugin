@@ -1,5 +1,6 @@
 package com.smartbear.mqttsupport;
 
+import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.UISupport;
@@ -37,6 +38,8 @@ import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
 public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTestStep> implements ExecutionListener {
+
+    private static final String HELP_LINK = "/soapui/steps/mqtt-publish.html";
 
     private JTextField numberEdit;
     private JTextArea textMemo;
@@ -158,6 +161,10 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         submitButton.setMnemonic(KeyEvent.VK_ENTER);
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), startAction.getCorrespondingStopAction().isEnabled()));
         addConnectionActionsToToolbar(toolBar);
+        ShowOnlineHelpAction showOnlineHelpAction = new ShowOnlineHelpAction(HELP_LINK);
+        JButton help = UISupport.createActionButton(showOnlineHelpAction, showOnlineHelpAction.isEnabled());
+        toolBar.addGlue();
+        toolBar.add(help);
         return toolBar;
     }
 

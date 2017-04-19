@@ -1,5 +1,6 @@
 package com.smartbear.mqttsupport;
 
+import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
@@ -43,6 +44,8 @@ import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
 public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener, ExecutionListener {
+
+    private static final String HELP_LINK = "/soapui/steps/mqtt-receive.html";
 
     private JComponentInspector<JComponent> assertionInspector;
     private JInspectorPanel inspectorPanel;
@@ -183,6 +186,10 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         submitButton.setMnemonic(KeyEvent.VK_ENTER);
         toolBar.add(UISupport.createActionButton(startAction.getCorrespondingStopAction(), startAction.getCorrespondingStopAction().isEnabled()));
         addConnectionActionsToToolbar(toolBar);
+        ShowOnlineHelpAction showOnlineHelpAction = new ShowOnlineHelpAction(HELP_LINK);
+        JButton help = UISupport.createActionButton(showOnlineHelpAction, showOnlineHelpAction.isEnabled());
+        toolBar.addGlue();
+        toolBar.add(help);
         return toolBar;
     }
 
