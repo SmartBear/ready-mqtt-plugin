@@ -28,6 +28,13 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     private Connection legacyConnection;
 
     final static String SERVER_URI_PROP_NAME = "ServerURI";
+
+    final static String CERT_CA_CERT_SETTING_NAME = "CertCAPEM";
+    static final String CERT_CLIENT_CERT_SETTING_NAME = "CertClientPEM";
+    static final String CERT_KEY_SETTING_NAME = "CertKeyPEM";
+    static final String CERT_KEY_PASSWORD_SETTING_NAME = "CertKeyPassword";
+    static final String CERT_SNI_SERVER_SETTING_NAME = "CertSniServer";
+
     final static String CLIENT_ID_PROP_NAME = "ClientID";
     final static String LOGIN_PROP_NAME = "Login";
     final static String PASSWORD_PROP_NAME = "Password";
@@ -64,6 +71,68 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 connection.setServerUri(s);
             }
         }, this));
+
+        addProperty(new DefaultTestStepProperty(CERT_CA_CERT_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
+                if (connection == null) return ""; else return connection.getCaCrtFile();
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
+                if (connection == null) return;
+                connection.setCaCrtFile(s);
+            }
+        }, this));
+        addProperty(new DefaultTestStepProperty(CERT_CLIENT_CERT_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
+                if (connection == null) return ""; else return connection.getCrtFile();
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
+                if (connection == null) return;
+                connection.setCrtFile(s);
+            }
+        }, this));
+        addProperty(new DefaultTestStepProperty(CERT_KEY_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
+                if (connection == null) return ""; else return connection.getKeyFile();
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
+                if (connection == null) return;
+                connection.setKeyFile(s);
+            }
+        }, this));
+        addProperty(new DefaultTestStepProperty(CERT_KEY_PASSWORD_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
+                if (connection == null) return ""; else return connection.getKeysPassword();
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
+                if (connection == null) return;
+                connection.setKeysPassword(s);
+            }
+        }, this));
+        addProperty(new DefaultTestStepProperty(CERT_SNI_SERVER_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
+            @Override
+            public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
+                if (connection == null) return ""; else return connection.getSniHost();
+            }
+
+            @Override
+            public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
+                if (connection == null) return;
+                connection.setSniHost(s);
+            }
+        }, this));
+
         addProperty(new DefaultTestStepProperty(CLIENT_ID_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
@@ -111,6 +180,13 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         if(reader.readBoolean(LEGACY_CONNECTION_PROP_NAME, true)){
             connection = new Connection();
             connection.setServerUri(reader.readString(SERVER_URI_PROP_NAME, ""));
+
+            connection.setCaCrtFile(reader.readString(CERT_CA_CERT_SETTING_NAME, ""));
+            connection.setCrtFile(reader.readString(CERT_CLIENT_CERT_SETTING_NAME, ""));
+            connection.setKeyFile(reader.readString(CERT_KEY_SETTING_NAME, ""));
+            connection.setKeysPassword(reader.readString(CERT_KEY_PASSWORD_SETTING_NAME, ""));
+            connection.setSniHost(reader.readString(CERT_SNI_SERVER_SETTING_NAME, ""));
+
             connection.setFixedId(reader.readString(CLIENT_ID_PROP_NAME, ""));
             connection.setLogin(reader.readString(LOGIN_PROP_NAME, ""));
             connection.setPassword(reader.readString(PASSWORD_PROP_NAME, ""));

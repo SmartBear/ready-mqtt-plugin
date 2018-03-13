@@ -3,11 +3,9 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
-import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.jgoodies.binding.PresentationModel;
@@ -17,9 +15,11 @@ import com.jgoodies.binding.list.SelectionInList;
 import com.jgoodies.binding.value.AbstractValueModel;
 import com.jgoodies.binding.value.ValueHolder;
 import com.jgoodies.binding.value.ValueModel;
+import com.smartbear.ready.ui.style.gradient.GradientLabel;
+import com.smartbear.ready.util.RoundedCornerBorder;
+import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -36,11 +36,11 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -48,12 +48,24 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.smartbear.ready.ui.style.GlobalDesktopPanelStyles.defaultBorderArc;
+import static com.smartbear.ready.ui.style.GlobalStyles.defaultBorderColor;
+import static com.smartbear.ready.ui.style.GlobalStyles.defaultSelectedColor;
+
 
 public class EditConnectionDialog extends SimpleDialog {
+
+    private static final String MAIN_PANEL_TAB = "General";
+    private static final String SSL_PANEL_TAB = "SSL Properties";
+    private static final String AUTH_PANEL_TAB = "Authentication";
+    private static final String WILL_PANEL_TAB = "Will Message";
 
     private JCheckBox willCheckBox;
     private JComponent jsonTreeEditor;
@@ -61,11 +73,16 @@ public class EditConnectionDialog extends SimpleDialog {
     private JCheckBox cleanSessionCheckBox;
     private JTextField willTopicEdit;
 
-    public class Result{
+    private CardLayout tabs;
+    private JPanel tabsHolder;
+    private TabMouseListener listener = new TabMouseListener();
+    private ArrayList<GradientLabel> tabList;
+
+    public class Result {
         public String connectionName;
         public ConnectionParams connectionParams;
 
-        public Result(){
+        public Result() {
             connectionParams = new ConnectionParams();
         }
     }
@@ -74,10 +91,17 @@ public class EditConnectionDialog extends SimpleDialog {
     private JTextField nameEdit;
     private final static Insets defaultInsets = new Insets(4, 4, 4, 4);
     private final static Insets defaultInsetsWithIndent = new Insets(defaultInsets.top, defaultInsets.left + 12, defaultInsets.bottom, defaultInsets.right);
-    private JUndoableTextField serverUriEdit;
-    private JUndoableTextField clientIDEdit;
+    private JTextField serverUriEdit;
+
+    private JTextField caCertificateEdit;
+    private JTextField clientCertificateEdit;
+    private JTextField privateKeyEdit;
+    private JTextField privateKeyPasswordEdit;
+    private JTextField sniServerEdit;
+
+    private JTextField clientIDEdit;
     private JCheckBox authRequiredCheckBox;
-    private JUndoableTextField loginEdit;
+    private JTextField loginEdit;
     private JPasswordField passwordEdit;
     private JCheckBox hidePasswordCheckBox;
     private HashMap<JComponent, JLabel> componentLabelsMap = new HashMap<>();
@@ -91,29 +115,27 @@ public class EditConnectionDialog extends SimpleDialog {
     private Result result = null;
 
 
-    protected EditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames){
+    protected EditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
         super(title, "Please specify the parameters for the connection", null, true);
         this.modelItemOfConnection = modelItemOfConnection;
         this.legacy = legacy;
         this.presentNames = alreadyPresentNames;
         this.initialName = initialConnectionName;
-        if(initialConnectionParams == null) {
+        if (initialConnectionParams == null) {
             this.connection = new Connection();
             this.connection.setName(initialConnectionName);
-        }
-        else{
+        } else {
             this.connection = new Connection(initialConnectionName, initialConnectionParams);
         }
     }
 
-    public static Result showDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames){
-        EditConnectionDialog dialog = new EditConnectionDialog(title,  modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
+    public static Result showDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
+        EditConnectionDialog dialog = new EditConnectionDialog(title, modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
         try {
             dialog.setModal(true);
             UISupport.centerDialog(dialog);
             dialog.setVisible(true);
-        }
-        finally {
+        } finally {
             dialog.dispose();
         }
         return dialog.result;
@@ -121,17 +143,18 @@ public class EditConnectionDialog extends SimpleDialog {
     }
 
 
-    public static Result editConnection(Connection connection, ModelItem modelItemOfConnection){
-        if(connection.isLegacy()){
+    public static Result editConnection(Connection connection, ModelItem modelItemOfConnection) {
+        if (connection.isLegacy()) {
             return showDialog("Configure Connection", modelItemOfConnection, null, connection.getParams(), true, null);
-        }
-        else{
+        } else {
             Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
             ArrayList<String> existingNames = new ArrayList<>();
             List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-            if(connections != null) {
+            if (connections != null) {
                 for (Connection curConnection : connections) {
-                    if (curConnection != connection) existingNames.add(curConnection.getName());
+                    if (curConnection != connection) {
+                        existingNames.add(curConnection.getName());
+                    }
                 }
             }
             String title = String.format("Configure %s Connection", connection.getName());
@@ -140,11 +163,11 @@ public class EditConnectionDialog extends SimpleDialog {
 
     }
 
-    public static Result createConnection(ModelItem modelItemOfConnection){
+    public static Result createConnection(ModelItem modelItemOfConnection) {
         Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
         ArrayList<String> existingNames = new ArrayList<>();
         List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-        if(connections != null) {
+        if (connections != null) {
             for (Connection curConnection : connections) {
                 existingNames.add(curConnection.getName());
             }
@@ -153,11 +176,11 @@ public class EditConnectionDialog extends SimpleDialog {
 
     }
 
-    public static Result convertLegacyConnection(ConnectionParams srcParams, ModelItem modelItemOfConnection){
+    public static Result convertLegacyConnection(ConnectionParams srcParams, ModelItem modelItemOfConnection) {
         Project project = ModelSupport.getModelItemProject(modelItemOfConnection);
         ArrayList<String> existingNames = new ArrayList<>();
         List<Connection> connections = ConnectionsManager.getAvailableConnections(project);
-        if(connections != null) {
+        if (connections != null) {
             for (Connection curConnection : connections) {
                 existingNames.add(curConnection.getName());
             }
@@ -168,43 +191,23 @@ public class EditConnectionDialog extends SimpleDialog {
 
     @Override
     protected void beforeShow() {
-        if(StringUtils.isNullOrEmpty(connection.getLogin())) {
+        if (StringUtils.isNullOrEmpty(connection.getLogin())) {
             loginEdit.setEnabled(false);
             passwordEdit.setEnabled(false);
             hidePasswordCheckBox.setEnabled(false);
             authRequiredCheckBox.setSelected(false);
-        }
-        else{
+        } else {
             authRequiredCheckBox.setSelected(true);
         }
-        if(!legacy){
+        if (!legacy) {
             willCheckBox.setSelected(StringUtils.hasContent(connection.getWillTopic()));
         }
     }
 
-    private GridBagConstraints labelPlace(int row){
-        return new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsets, 0, 0);
-    }
-
-    private GridBagConstraints labelPlaceWithIndent(int row){
-        return new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsetsWithIndent, 0, 0);
-    }
-
-    private GridBagConstraints extraComponentPlace(int row){
-        return new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsets, 0, 0);
-    }
-
-    private GridBagConstraints componentPlace(int row){
-        return new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, defaultInsets, 0, 0);
-    }
-
-    private GridBagConstraints largePlace(int row){
-        return new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL, defaultInsets, 0, 0);
-    }
-
-    public static class IsVisibleValueModel extends AbstractValueModel{
+    public static class IsVisibleValueModel extends AbstractValueModel {
         private JComponent component;
-        public IsVisibleValueModel(JComponent component){
+
+        public IsVisibleValueModel(JComponent component) {
             this.component = component;
             this.component.addComponentListener(new ComponentAdapter() {
                 @Override
@@ -218,17 +221,21 @@ public class EditConnectionDialog extends SimpleDialog {
                 }
             });
         }
+
         @Override
         public Object getValue() {
             return component.isVisible();
         }
+
         @Override
         public void setValue(Object newValue) {
         }
     }
-    public static class IsCheckedValueModel extends AbstractValueModel{
+
+    public static class IsCheckedValueModel extends AbstractValueModel {
         private JCheckBox component;
-        public IsCheckedValueModel(final JCheckBox component){
+
+        public IsCheckedValueModel(final JCheckBox component) {
             this.component = component;
             this.component.addItemListener(new ItemListener() {
                 @Override
@@ -237,36 +244,40 @@ public class EditConnectionDialog extends SimpleDialog {
                 }
             });
         }
+
         @Override
         public Object getValue() {
             return component.isSelected();
         }
+
         @Override
         public void setValue(Object newValue) {
         }
 
     }
 
-    private JLabel createLabel(String text, final JComponent targetComponent, int hitCharNo){
+    private JLabel createLabel(String text, final JComponent targetComponent, int hitCharNo) {
         JLabel label = new JLabel(text);
         label.setLabelFor(targetComponent);
-        if(targetComponent != null){
+        if (targetComponent != null) {
             Bindings.bind(label, "visible", new IsVisibleValueModel(targetComponent));
             Bindings.bind(label, "enabled", new PropertyAdapter<JComponent>(targetComponent, "enabled", true));
         }
-        if(hitCharNo >= 0) {
+        if (hitCharNo >= 0) {
             label.setDisplayedMnemonic(text.charAt(hitCharNo));
             label.setDisplayedMnemonicIndex(hitCharNo);
         }
         return label;
     }
 
-    private ReadOnlyValueModel<PublishedMessageType> isMsgType(PresentationModel<Connection> presentationModel, final PublishedMessageType ... alllowedTypes){
+    private ReadOnlyValueModel<PublishedMessageType> isMsgType(PresentationModel<Connection> presentationModel, final PublishedMessageType... alllowedTypes) {
         return new ReadOnlyValueModel<PublishedMessageType>(presentationModel.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP), new ReadOnlyValueModel.Converter<PublishedMessageType>() {
             @Override
             public Object convert(PublishedMessageType srcValue) {
-                for(PublishedMessageType type: alllowedTypes){
-                    if(srcValue == type) return true;
+                for (PublishedMessageType type : alllowedTypes) {
+                    if (srcValue == type) {
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -280,46 +291,58 @@ public class EditConnectionDialog extends SimpleDialog {
         final Dimension minMemoSize = new Dimension(50, 180);
         final int indentSize = 20;
 
-        int row = 0;
+        JPanel root = new JPanel(new MigLayout("wrap", "[grow,fill]", "8[]8"));
+        JPanel tabsPanel = new JPanel(new MigLayout("", "push[]8", "8[]8"));
+        tabList = new ArrayList<>();
+        tabList.add(gradientTab(MAIN_PANEL_TAB, GradientLabel.Rounded.LEFT));
+        tabList.add(gradientTab(WILL_PANEL_TAB, GradientLabel.Rounded.NONE));
+        tabList.add(gradientTab(AUTH_PANEL_TAB, GradientLabel.Rounded.NONE));
+        tabList.add(gradientTab(SSL_PANEL_TAB, GradientLabel.Rounded.RIGHT));
+        tabsPanel.add(createTabs());
+        root.add(tabsPanel);
+        tabs = new CardLayout();
+        tabsHolder = new JPanel(tabs);
+        root.add(tabsHolder);
 
         PresentationModel<Connection> pm = new PresentationModel<Connection>(connection);
-        JPanel mainPanel = new JPanel(new GridBagLayout());
+        JPanel mainPanel = new JPanel(getInnerLayout());
+        tabsHolder.add(mainPanel, MAIN_PANEL_TAB);
 
-        if(!legacy) {
-            nameEdit = new JUndoableTextField(defEditCharCount);
+        if (!legacy) {
+            nameEdit = new JTextField(defEditCharCount);
             nameEdit.setToolTipText("The unique connection name to identify it.");
             Bindings.bind(nameEdit, pm.getModel("name"));
-            mainPanel.add(nameEdit, componentPlace(row));
-            mainPanel.add(createLabel("Name:", nameEdit, 0), labelPlace(row));
-            ++row;
+            mainPanel.add(createLabel("Name:", nameEdit, 0));
+            mainPanel.add(nameEdit);
         }
 
-        serverUriEdit = new JUndoableTextField(defEditCharCount);
-        serverUriEdit.setToolTipText("The MQTT server URL");
-        Bindings.bind(serverUriEdit, pm.getModel("serverUri"));
-        mainPanel.add(serverUriEdit, componentPlace(row));
-        mainPanel.add(createLabel("Server URL:", serverUriEdit, 0), labelPlace(row));
-        ++row;
+        serverUriEdit = createField(defEditCharCount, pm, mainPanel,
+                "serverUri", "Server URL:", "The MQTT server URL");
 
-        clientIDEdit = new JUndoableTextField(defEditCharCount);
-        clientIDEdit.setToolTipText("Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
-        Bindings.bind(clientIDEdit, pm.getModel(Connection.CLIENT_ID_BEAN_PROP));
-        mainPanel.add(clientIDEdit, componentPlace(row));
-        mainPanel.add(createLabel("Client ID (optional):", clientIDEdit, 0), labelPlace(row));
-        ++row;
+        clientIDEdit = createField(defEditCharCount, pm, mainPanel,
+                Connection.CLIENT_ID_BEAN_PROP, "Client ID (optional):", "Fill this field if you want to connect with fixed Client ID or leave it empty so a unique ID will be generated");
 
-        if(!legacy) {
-            cleanSessionCheckBox = new JCheckBox("Start clean session on reconnection");
-            Bindings.bind(cleanSessionCheckBox, pm.getModel(Connection.CLEAN_SESSION_BEAN_PROP));
-            mainPanel.add(cleanSessionCheckBox, largePlace(row));
-            mainPanel.add(createLabel("Clean session:", cleanSessionCheckBox, 6), labelPlace(row));
-            ++row;
+        if (!legacy) {
+            creteCheckBox(pm, mainPanel,
+                    "Clean session:", "Start clean session on reconnection");
         }
 
-        JPanel indent = new JPanel();
-        indent.setPreferredSize(new Dimension(1, indentSize));
-        mainPanel.add(indent, componentPlace(row));
-        ++row;
+        JPanel sslPanel = new JPanel(getInnerLayout());
+        tabsHolder.add(sslPanel, SSL_PANEL_TAB);
+        caCertificateEdit = createField(defEditCharCount, pm, sslPanel,
+                Connection.CERT_CA_CERT_SETTING_NAME, "CA certificate:", "CA certificate in PEM format");
+        clientCertificateEdit = createField(defEditCharCount, pm, sslPanel,
+                Connection.CERT_CLIENT_CERT_SETTING_NAME, "Client certificate:", "Client certificate in PEM format");
+        privateKeyEdit = createField(defEditCharCount, pm, sslPanel,
+                Connection.CERT_KEY_SETTING_NAME, "Key file:", "Client private key in PEM format");
+        privateKeyPasswordEdit = createField(defEditCharCount, pm, sslPanel,
+                Connection.CERT_KEY_PASSWORD_SETTING_NAME, "Key password:", "Private key password");
+        sniServerEdit = createField(defEditCharCount, pm, sslPanel,
+                Connection.CERT_SNI_SERVER_SETTING_NAME, "SSL server name:", "Server name to be provided for SSL connection");
+
+
+        JPanel authPanel = new JPanel(getInnerLayout());
+        tabsHolder.add(authPanel, AUTH_PANEL_TAB);
 
         authRequiredCheckBox = new JCheckBox("The server requires authentication");
         authRequiredCheckBox.setToolTipText("Check if the MQTT server requires authentication to connect");
@@ -329,25 +352,26 @@ public class EditConnectionDialog extends SimpleDialog {
                 loginEdit.setEnabled(authRequiredCheckBox.isSelected());
                 passwordEdit.setEnabled(authRequiredCheckBox.isSelected());
                 hidePasswordCheckBox.setEnabled(authRequiredCheckBox.isSelected());
-                if(authRequiredCheckBox.isSelected()) loginEdit.grabFocus();
+                if (authRequiredCheckBox.isSelected()) {
+                    loginEdit.grabFocus();
+                }
             }
         });
-        mainPanel.add(authRequiredCheckBox, largePlace(row));
-        mainPanel.add(createLabel("Authentication:", authRequiredCheckBox, 0), labelPlace(row));
-        ++row;
+        authPanel.add(createLabel("", authRequiredCheckBox, 0));
+        authPanel.add(authRequiredCheckBox, "span 2");
 
-        loginEdit = new JUndoableTextField(defEditCharCount);
+
+        loginEdit = new JTextField(defEditCharCount);
         loginEdit.setToolTipText("Login for MQTT server");
         Bindings.bind(loginEdit, pm.getModel(Connection.LOGIN_BEAN_PROP));
-        mainPanel.add(loginEdit, componentPlace(row));
-        mainPanel.add(createLabel("Login:", loginEdit, 0), labelPlaceWithIndent(row));
-        ++row;
+        authPanel.add(createLabel("Login:", loginEdit, 0));
+        authPanel.add(loginEdit);
 
         passwordEdit = new JPasswordField(defEditCharCount);
         passwordEdit.setToolTipText("Password for MQTT server");
         Bindings.bind(passwordEdit, pm.getModel(Connection.PASSWORD_BEAN_PROP));
-        mainPanel.add(passwordEdit, componentPlace(row));
-        mainPanel.add(createLabel("Password:", passwordEdit, 0), labelPlaceWithIndent(row));
+        authPanel.add(createLabel("Password:", passwordEdit, 0));
+        authPanel.add(passwordEdit);
         hidePasswordCheckBox = new JCheckBox("Hide", true);
         hidePasswordCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -360,86 +384,106 @@ public class EditConnectionDialog extends SimpleDialog {
                 }
             }
         });
-        mainPanel.add(hidePasswordCheckBox, extraComponentPlace(row));
-        ++row;
+        passwordEdit.add(hidePasswordCheckBox);
 
-        if(!legacy) {
-
-            indent = new JPanel();
-            indent.setPreferredSize(new Dimension(1, indentSize));
-            mainPanel.add(indent, componentPlace(row));
-            ++row;
+        if (!legacy) {
+            JPanel willMessagePanel = new JPanel(getInnerLayout());
+            tabsHolder.add(willMessagePanel, WILL_PANEL_TAB);
 
             willCheckBox = new JCheckBox("Store Will Message on the server");
             willCheckBox.setToolTipText("Set up the message which is published by the server if the connection to the client is terminated unexpectedly.");
-            mainPanel.add(willCheckBox, largePlace(row));
-            mainPanel.add(createLabel("Will Message:", willCheckBox, 0), labelPlace(row));
-            ++row;
+            willMessagePanel.add(createLabel("", willCheckBox, 0));
+            willMessagePanel.add(willCheckBox);
+
             ValueModel isWillOn = new IsCheckedValueModel(willCheckBox);
 
             willTopicEdit = new JTextField(defEditCharCount);
             Bindings.bind(willTopicEdit, pm.getModel(Connection.WILL_TOPIC_BEAN_PROP));
             Bindings.bind(willTopicEdit, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willTopicEdit, modelItemOfConnection);
-            mainPanel.add(willTopicEdit, componentPlace(row));
-            mainPanel.add(createLabel("Topic:", willTopicEdit, 0), labelPlaceWithIndent(row));
-            ++row;
+            willMessagePanel.add(createLabel("Topic:", willTopicEdit, 0));
+            willMessagePanel.add(willTopicEdit);
+
+            JComboBox<String> willQos = new JComboBox<String>();
+            Bindings.bind(willQos, new SelectionInList<String>(MqttConnectedTestStepPanel.QOS_NAMES, new ValueHolder(MqttConnectedTestStepPanel.QOS_NAMES[connection.getWillQos()]), pm.getModel(Connection.WILL_QOS_BEAN_PROP)));
+            Bindings.bind(willQos, "enabled", isWillOn);
+            willMessagePanel.add(createLabel("Quality of Service:", willQos, 0));
+            willMessagePanel.add(willQos);
+
+            JCheckBox willRetained = new JCheckBox("Store Will Message as retained");
+            Bindings.bind(willRetained, pm.getModel(Connection.WILL_RETAINED_BEAN_PROP));
+            Bindings.bind(willRetained, "enabled", isWillOn);
+            willMessagePanel.add(createLabel("Retained:", willRetained, 0));
+            willMessagePanel.add(willRetained);
+
+            final CardLayout willMessageOptions = new CardLayout();
+            final JPanel currentWillMessage = new JPanel(willMessageOptions);
 
             final JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
             Bindings.bind(willMessageTypeCombo, new SelectionInList<PublishedMessageType>(PublishedMessageType.values(), pm.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP)));
             Bindings.bind(willMessageTypeCombo, "enabled", isWillOn);
-            mainPanel.add(willMessageTypeCombo, componentPlace(row));
-            mainPanel.add(createLabel("Message type:", willMessageTypeCombo, 9), labelPlaceWithIndent(row));
-            ++row;
+            willMessagePanel.add(createLabel("Message type:", willMessageTypeCombo, 9));
+            willMessagePanel.add(willMessageTypeCombo);
             willMessageTypeCombo.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            pack();
-                        }
-                    });
+                    switch ((PublishedMessageType) willMessageTypeCombo.getSelectedItem()) {
+                        case IntegerValue:
+                        case DoubleValue:
+                        case LongValue:
+                        case FloatValue:
+                            willMessageOptions.show(currentWillMessage, PublishedMessageType.IntegerValue.name());
+                            break;
+                        case Utf8Text:
+                        case Utf16Text:
+                            willMessageOptions.show(currentWillMessage, PublishedMessageType.Utf8Text.name());
+                            break;
+                        case BinaryFile:
+                        case Json:
+                        case Xml:
+                            willMessageOptions.show(currentWillMessage, ((PublishedMessageType) willMessageTypeCombo.getSelectedItem()).name());
+                            break;
+                    }
                 }
             });
 
+            willMessagePanel.add(currentWillMessage, "span 2");
+
+            JPanel numberPanel = new JPanel(getInnerLayout());
             final JTextField willNumberEdit = new JTextField(defEditCharCount);
             Bindings.bind(willNumberEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            Bindings.bind(willNumberEdit, "visible", isMsgType(pm, PublishedMessageType.IntegerValue, PublishedMessageType.DoubleValue, PublishedMessageType.LongValue, PublishedMessageType.FloatValue));
             Bindings.bind(willNumberEdit, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willNumberEdit, modelItemOfConnection);
-            mainPanel.add(willNumberEdit, componentPlace(row));
-            mainPanel.add(createLabel("Message:", willNumberEdit, 0), labelPlaceWithIndent(row));
-            ++row;
+            numberPanel.add(createLabel("Message:", willNumberEdit, 0));
+            numberPanel.add(willNumberEdit);
+            currentWillMessage.add(numberPanel, PublishedMessageType.IntegerValue.name());
 
+            JPanel textPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
             JTextArea willTextMemo = new JTextArea();
             JScrollPane willTextScrollPane = new JScrollPane(willTextMemo);
             willTextScrollPane.setPreferredSize(minMemoSize);
-            Bindings.bind(willTextMemo, "visible", isMsgType(pm, PublishedMessageType.Utf8Text, PublishedMessageType.Utf16Text));
-            Bindings.bind(willTextScrollPane, "visible", isMsgType(pm, PublishedMessageType.Utf8Text, PublishedMessageType.Utf16Text));
             Bindings.bind(willTextMemo, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
             Bindings.bind(willTextMemo, "enabled", isWillOn);
             Bindings.bind(willTextScrollPane, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willTextMemo, modelItemOfConnection);
-            mainPanel.add(willTextScrollPane, largePlace(row));
-            mainPanel.add(createLabel("Message:", willTextMemo, 0), labelPlaceWithIndent(row));
-            ++row;
+            textPanel.add(createLabel("Message:", willTextMemo, 0), "span 2");
+            textPanel.add(willTextScrollPane);
+            currentWillMessage.add(textPanel, PublishedMessageType.Utf8Text.name());
 
-            ValueModel isFileMsgType = isMsgType(pm, PublishedMessageType.BinaryFile);
+            JPanel filePanel = new JPanel(new MigLayout("", "0[100]8[grow,fill]8[]0", "0[]8"));
             final JTextField willFileNameEdit = new JTextField(defEditCharCount);
             willFileNameEdit.setToolTipText("The file which content will be used as a payload of Will Message");
             PropertyExpansionPopupListener.enable(willFileNameEdit, modelItemOfConnection);
-            Bindings.bind(willFileNameEdit, "visible", isFileMsgType);
             Bindings.bind(willFileNameEdit, "enabled", isWillOn);
             Bindings.bind(willFileNameEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
             final JButton chooseFileButton = new JButton(new SelectFileAction(willFileNameEdit));
-            Bindings.bind(chooseFileButton, "visible", isFileMsgType);
             Bindings.bind(chooseFileButton, "enabled", isWillOn);
-            mainPanel.add(willFileNameEdit, componentPlace(row));
-            mainPanel.add(chooseFileButton, extraComponentPlace(row));
-            mainPanel.add(createLabel("File with message:", willFileNameEdit, 0), labelPlaceWithIndent(row));
-            ++row;
+            filePanel.add(createLabel("File with message:", willFileNameEdit, 0));
+            filePanel.add(willFileNameEdit);
+            filePanel.add(chooseFileButton, "span 2");
+            currentWillMessage.add(filePanel, PublishedMessageType.BinaryFile.name());
 
+            JPanel jsonPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
             final JTabbedPane willJson = new JTabbedPane();
             RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
             Bindings.bind(syntaxTextArea, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
@@ -449,11 +493,10 @@ public class EditConnectionDialog extends SimpleDialog {
             willJson.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
             jsonTreeEditor = Utils.createJsonTreeEditor(true, modelItemOfConnection);
-            if(jsonTreeEditor == null){
+            if (jsonTreeEditor == null) {
                 JLabel stubLabel = new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER);
                 willJson.addTab("Tree View", stubLabel);
-            }
-            else {
+            } else {
                 Bindings.bind(jsonTreeEditor, "text", pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
                 Bindings.bind(jsonTreeEditor, "enabled", isWillOn);
                 JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
@@ -461,16 +504,14 @@ public class EditConnectionDialog extends SimpleDialog {
                 scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
                 willJson.addTab("Tree View", scrollPane);
             }
-
-            Bindings.bind(willJson, "visible", isMsgType(pm, PublishedMessageType.Json));
             Bindings.bind(willJson, "enabled", isWillOn);
             willJson.setPreferredSize(minMemoSize);
-            mainPanel.add(willJson, largePlace(row));
-            mainPanel.add(createLabel("Message:", willJson, 0), labelPlaceWithIndent(row));
-            ++row;
+            jsonPanel.add(createLabel("Message:", willJson, 0));
+            jsonPanel.add(willJson);
+            currentWillMessage.add(jsonPanel, PublishedMessageType.Json.name());
 
+            JPanel xmlPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
             final JTabbedPane willXml = new JTabbedPane();
-
             syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
             Bindings.bind(syntaxTextArea, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
             Bindings.bind(syntaxTextArea, "enabled", isWillOn);
@@ -478,11 +519,10 @@ public class EditConnectionDialog extends SimpleDialog {
             willXml.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
             xmlTreeEditor = Utils.createXmlTreeEditor(true, modelItemOfConnection);
-            if(xmlTreeEditor == null){
+            if (xmlTreeEditor == null) {
                 JLabel stubLabel = new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER);
                 willXml.addTab("Tree View", stubLabel);
-            }
-            else {
+            } else {
                 JScrollPane scrollPane = new JScrollPane(xmlTreeEditor);
                 scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
                 scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -492,96 +532,202 @@ public class EditConnectionDialog extends SimpleDialog {
             }
 
             willXml.setPreferredSize(minMemoSize);
-            Bindings.bind(willXml, "visible", isMsgType(pm, PublishedMessageType.Xml));
             Bindings.bind(willXml, "enabled", isWillOn);
-            mainPanel.add(willXml, largePlace(row));
-            mainPanel.add(createLabel("Message:", willXml, 0), labelPlaceWithIndent(row));
-            ++row;
-
-            JComboBox<String> willQos = new JComboBox<String>();
-            Bindings.bind(willQos, new SelectionInList<String>(MqttConnectedTestStepPanel.QOS_NAMES, new ValueHolder(MqttConnectedTestStepPanel.QOS_NAMES[connection.getWillQos()]), pm.getModel(Connection.WILL_QOS_BEAN_PROP)));
-            Bindings.bind(willQos, "enabled", isWillOn);
-            mainPanel.add(willQos, componentPlace(row));
-            mainPanel.add(createLabel("Quality of Service:", willQos, 0), labelPlaceWithIndent(row));
-            ++row;
-
-            JCheckBox willRetained = new JCheckBox("Store Will Message as retained");
-            Bindings.bind(willRetained, pm.getModel(Connection.WILL_RETAINED_BEAN_PROP));
-            Bindings.bind(willRetained, "enabled", isWillOn);
-            mainPanel.add(willRetained, componentPlace(row));
-            mainPanel.add(createLabel("Retained:", willRetained, 0), labelPlaceWithIndent(row));
-            ++row;
-        };
+            xmlPanel.add(createLabel("Message:", willXml, 0));
+            xmlPanel.add(willXml);
+            currentWillMessage.add(xmlPanel, PublishedMessageType.Xml.name());
+        }
         PropertyExpansionPopupListener.enable(serverUriEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(caCertificateEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(clientCertificateEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(privateKeyEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(privateKeyPasswordEdit, modelItemOfConnection);
+        PropertyExpansionPopupListener.enable(sniServerEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(loginEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(passwordEdit, modelItemOfConnection);
         PropertyExpansionPopupListener.enable(clientIDEdit, modelItemOfConnection);
 
-        return new JScrollPane(mainPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        return new JScrollPane(root, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    }
+
+    private Component createTabs() {
+        JPanel tabsBorder = new JPanel(new MigLayout("", "0[]0", "0[]0"));
+        tabsBorder.setBorder(new RoundedCornerBorder(defaultBorderColor(), defaultBorderArc()));
+        for (GradientLabel gradientLabel : tabList) {
+            tabsBorder.add(gradientLabel);
+        }
+        return tabsBorder;
+    }
+
+    private GradientLabel gradientTab(String label, GradientLabel.Rounded rounded) {
+        GradientLabel enabledTab = new GradientLabel(label);
+        enabledTab.setName("TabButton_" + label.replace(' ', '_'));
+        enabledTab.setRounded(rounded);
+        enabledTab.setTop(defaultTabTopColor());
+        enabledTab.setBottom(defaultTabBottomColor());
+        enabledTab.setHoverTop(defaultTabHoverTopColor());
+        enabledTab.setHoverBottom(defaultTabHoverBottomColor());
+        enabledTab.setFocusable(true);
+        enabledTab.setActiveTop(defaultSelectedColor());
+        enabledTab.setForeground((Color) UIManager.get("Label.Foreground"));
+        enabledTab.setActiveBottom(defaultSelectedColor());
+        enabledTab.setArc(defaultBorderArc() - 2);
+        enabledTab.setEnabled(true);
+        enabledTab.activateHover();
+
+        enabledTab.addMouseListener(listener);
+
+
+        return enabledTab;
+    }
+
+    static Color defaultTabTopColor() {
+        return new Color(255, 255, 255);
+    }
+
+    static Color defaultTabBottomColor() {
+        return new Color(242, 242, 242);
+    }
+
+    static Color defaultTabHoverTopColor() {
+        return new Color(255, 255, 255);
+    }
+
+    static Color defaultTabHoverBottomColor() {
+        return new Color(233, 233, 233);
+    }
+
+    private MigLayout getInnerLayout() {
+        return new MigLayout("wrap 2", "0[100]8[grow,fill]0", "0[]8");
+    }
+
+    private void creteCheckBox(PresentationModel<Connection> pm, JPanel mainPanel,
+                               String caption, String text) {
+        cleanSessionCheckBox = new JCheckBox(text);
+        Bindings.bind(cleanSessionCheckBox, pm.getModel(Connection.CLEAN_SESSION_BEAN_PROP));
+        mainPanel.add(createLabel(caption, cleanSessionCheckBox, 6));
+        mainPanel.add(cleanSessionCheckBox, "span 2");
+    }
+
+    private JTextField createField(int defEditCharCount, PresentationModel<Connection> pm, JPanel parent,
+                                   String fieldName, String caption, String hint) {
+        JTextField newEdit = new JTextField(defEditCharCount);
+        newEdit.setToolTipText(hint);
+        Bindings.bind(newEdit, pm.getModel(fieldName));
+        parent.add(createLabel(caption, newEdit, 0));
+        parent.add(newEdit);
+        return newEdit;
     }
 
     @Override
     protected boolean handleOk() {
-        if(!legacy) {
+        if (!legacy) {
             if (StringUtils.isNullOrEmpty(nameEdit.getText())) {
+                activateTab(MAIN_PANEL_TAB);
                 nameEdit.grabFocus();
                 UISupport.showErrorMessage("Please specify a name for the connection.");
                 return false;
             }
-            if(presentNames != null && !Utils.areStringsEqual(initialName, nameEdit.getText(), Connection.ARE_NAMES_CASE_INSENSITIVE)){
+            if (presentNames != null && !Utils.areStringsEqual(initialName, nameEdit.getText(), Connection.ARE_NAMES_CASE_INSENSITIVE)) {
                 boolean alreadyExists = false;
-                for(String name: presentNames){
-                    if(Utils.areStringsEqual(nameEdit.getText(), name, Connection.ARE_NAMES_CASE_INSENSITIVE)){
+                for (String name : presentNames) {
+                    if (Utils.areStringsEqual(nameEdit.getText(), name, Connection.ARE_NAMES_CASE_INSENSITIVE)) {
                         alreadyExists = true;
                         break;
                     }
                 }
-                if(alreadyExists) {
+                if (alreadyExists) {
+                    activateTab(MAIN_PANEL_TAB);
                     nameEdit.grabFocus();
                     UISupport.showErrorMessage(String.format("The connection with \"%s\" name already exists. Please specify another name.", nameEdit.getText()));
                     return false;
                 }
             }
         }
-        if(StringUtils.isNullOrEmpty(serverUriEdit.getText())){
+        if (StringUtils.isNullOrEmpty(serverUriEdit.getText())) {
+            activateTab(MAIN_PANEL_TAB);
             serverUriEdit.grabFocus();
             UISupport.showErrorMessage("Please specify URI of MQTT server.");
             return false;
         }
-        if(authRequiredCheckBox.isSelected() && StringUtils.isNullOrEmpty(loginEdit.getText())){
+        if (authRequiredCheckBox.isSelected() && StringUtils.isNullOrEmpty(loginEdit.getText())) {
+            activateTab(AUTH_PANEL_TAB);
             loginEdit.grabFocus();
             UISupport.showErrorMessage("Please specify a login or uncheck \"Authentication required\" check-box if the authentication is not required for this MQTT server.");
             return false;
         }
-        if(!legacy && willCheckBox.isSelected()){
-            if(StringUtils.isNullOrEmpty(willTopicEdit.getText())){
+        if (!legacy && willCheckBox.isSelected()) {
+            if (StringUtils.isNullOrEmpty(willTopicEdit.getText())) {
+                activateTab(WILL_PANEL_TAB);
                 willTopicEdit.grabFocus();
                 UISupport.showErrorMessage("Please specify a topic for the Will Message.");
                 return false;
             }
         }
-        result = new Result();
-        if(nameEdit != null && !legacy) result.connectionName = nameEdit.getText();
+        if (StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(clientCertificateEdit.getText())
+                || StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(privateKeyEdit.getText())
+                || StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())) {
+            activateTab(SSL_PANEL_TAB);
+            caCertificateEdit.grabFocus();
+            UISupport.showErrorMessage("Please specify all the mentioned certificates and password or clear all the fields.");
+            return false;
+        }
 
-        if(willCheckBox != null && willCheckBox.isSelected()) {
+        if (!checkCertificateField(caCertificateEdit)
+                || !checkCertificateField(clientCertificateEdit)
+                || !checkCertificateField(privateKeyEdit)) {
+            return false;
+        }
+
+        result = new Result();
+        if (nameEdit != null && !legacy) {
+            result.connectionName = nameEdit.getText();
+        }
+
+        if (willCheckBox != null && willCheckBox.isSelected()) {
             result.connectionParams = connection.getParams();
         }
+
         result.connectionParams.setServerUri(serverUriEdit.getText());
+        result.connectionParams.setCaCrtFile(caCertificateEdit.getText());
+        result.connectionParams.setCrtFile(clientCertificateEdit.getText());
+        result.connectionParams.setKeyFile(privateKeyEdit.getText());
+        result.connectionParams.setKeysPassword(privateKeyPasswordEdit.getText());
+        result.connectionParams.setSniHost(sniServerEdit.getText());
         result.connectionParams.fixedId = clientIDEdit.getText();
         result.connectionParams.cleanSession = cleanSessionCheckBox == null || cleanSessionCheckBox.isSelected();
-        if(authRequiredCheckBox.isSelected()) {
+        if (authRequiredCheckBox.isSelected()) {
             result.connectionParams.setCredentials(loginEdit.getText(), new String(passwordEdit.getPassword()));
-        }
-        else{
+        } else {
             result.connectionParams.setCredentials(null, null);
         }
         return true;
     }
 
+    private boolean checkCertificateField(JTextField edit) {
+        if (StringUtils.isNullOrEmpty(edit.getText())) {
+            return true;
+        }
+
+        File file = new File(caCertificateEdit.getText());
+        if (file.exists()) {
+            return true;
+        }
+
+        activateTab(SSL_PANEL_TAB);
+        caCertificateEdit.grabFocus();
+        UISupport.showErrorMessage("Please specify a correct file path in the selected field.");
+        return false;
+    }
+
     @Override
     public void dispose() {
-        if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
-        if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
+        if (xmlTreeEditor != null) {
+            Utils.releaseTreeEditor(xmlTreeEditor);
+        }
+        if (jsonTreeEditor != null) {
+            Utils.releaseTreeEditor(jsonTreeEditor);
+        }
         super.dispose();
     }
 
@@ -605,5 +751,34 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
     }
+
+    private class TabMouseListener extends MouseAdapter {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            if (e.getSource() instanceof GradientLabel) {
+                GradientLabel tabButton = (GradientLabel) e.getSource();
+                if (tabButton.isEnabled() && tabButton.isFocusable()) {
+                    activateTab(tabButton.getText());
+                    tabButton.activate();
+                }
+            }
+        }
+    }
+
+    private void activateTab(String text) {
+        GradientLabel activeTab = null;
+        for (GradientLabel gradientLabel : tabList) {
+            if (Utils.areStringsEqual(gradientLabel.getText(), text)) {
+                activeTab = gradientLabel;
+            }
+            gradientLabel.deactivate();
+        }
+        if (activeTab != null && activeTab.isEnabled() && activeTab.isFocusable()) {
+            tabs.show(tabsHolder, activeTab.getText());
+            activeTab.activate();
+        }
+
+    }
+
 
 }

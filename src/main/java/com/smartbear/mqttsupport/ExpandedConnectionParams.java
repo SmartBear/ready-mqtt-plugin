@@ -8,6 +8,13 @@ import java.util.Locale;
 
 public class ExpandedConnectionParams {
     private String originalServerUri;
+
+    private String caCrtFile;
+    private String crtFile;
+    private String keyFile;
+    private String keysPassword;
+    private String sniHost;
+
     public String fixedId;
     public String login;
     public String password;
@@ -19,8 +26,16 @@ public class ExpandedConnectionParams {
 
     public ExpandedConnectionParams(){}
 
-    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession){
+    public ExpandedConnectionParams(String serverUri,
+                                    String caCrtFile, String crtFile, String keyFile, String keysPassword,
+                                    String sniHost,
+                                    String clientId, String login, String password, boolean cleanSession){
         this.originalServerUri = serverUri;
+        this.caCrtFile = caCrtFile;
+        this.crtFile = crtFile;
+        this.keyFile = keyFile;
+        this.keysPassword = keysPassword;
+        this.sniHost = sniHost;
         this.fixedId = clientId;
         this.login = login;
         this.password = password;
@@ -66,6 +81,47 @@ public class ExpandedConnectionParams {
             return this.originalServerUri;
         }
     }
+
+    public String getCaCrtFile() {
+        return caCrtFile;
+    }
+
+    public void setCaCrtFile(String caCrtFile) {
+        this.caCrtFile = caCrtFile;
+    }
+
+    public String getCrtFile() {
+        return crtFile;
+    }
+
+    public void setCrtFile(String crtFile) {
+        this.crtFile = crtFile;
+    }
+
+    public String getKeyFile() {
+        return keyFile;
+    }
+
+    public void setKeyFile(String keyFile) {
+        this.keyFile = keyFile;
+    }
+
+    public String getKeysPassword() {
+        return keysPassword;
+    }
+
+    public void setKeysPassword(String keysPassword) {
+        this.keysPassword = keysPassword;
+    }
+
+    public String getSniHost() {
+        return sniHost;
+    }
+
+    public void setSniHost(String sniHost) {
+        this.sniHost = sniHost;
+    }
+
 
     public String getNormalizedServerUri(){
         return getActualServerUri().toLowerCase(Locale.ENGLISH);
