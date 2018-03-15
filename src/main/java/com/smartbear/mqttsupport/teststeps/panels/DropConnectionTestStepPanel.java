@@ -22,7 +22,7 @@ public class DropConnectionTestStepPanel extends MqttConnectedTestStepPanel<Drop
         PresentationModel<DropConnectionTestStep> pm = new PresentationModel<DropConnectionTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
 
-        JPanel propsPanel = new JPanel(new MigLayout("wrap 2", "8[100]8[grow,fill]0", "8[]0"));
+        JPanel propsPanel = new JPanel(new MigLayout("wrap 2", "8[100]8[grow,fill]0", "0[]0"));
         FormBuilder formBuilder = new FormBuilder(pm, propsPanel);
 
         buildRadioButtonsFromEnum(formBuilder, pm, "Drop method", DropConnectionTestStep.DROP_METHOD_BEAN_PROP_NAME,

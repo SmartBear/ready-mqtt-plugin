@@ -98,7 +98,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
 
-        JPanel publishPanel = new JPanel(new MigLayout("", "0[grow,fill]8[]8", "8[grow,fill]8"));
+        JPanel publishPanel = new JPanel(new MigLayout("", "0[grow,fill]8[]8", "0[grow,fill]0"));
 
         JPanel mesagePanelRoot = new JPanel(new MigLayout("wrap", "8[grow,fill]8", "0[]0[grow,fill]0"));
         mesagePanelRoot.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GlobalStyles.getDefaultBorderColor()));
@@ -167,7 +167,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         formBuilder.addCard(PublishedMessageType.Xml.name(), new MigLayout("", "0[grow,fill]0", "8[grow,fill]8")).add(xmlEditor);
         publishPanel.add(mesagePanelRoot);
 
-        JPanel propsPanel = new JPanel(new MigLayout("wrap 2", "8[100]8[grow,fill]8", "8[]8"));
+        JPanel propsPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]8", "8[]8"));
         formBuilder = new FormBuilder(pm, propsPanel);
         buildQosRadioButtons(formBuilder, pm);
         formBuilder.appendCheckBox("retained", "Retained", "");

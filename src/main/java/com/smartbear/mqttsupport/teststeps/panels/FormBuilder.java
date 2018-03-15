@@ -1,6 +1,7 @@
 package com.smartbear.mqttsupport.teststeps.panels;
 
 import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoableTextArea;
 import com.eviware.soapui.support.swing.JTextComponentPopupMenu;
 import com.jgoodies.binding.PresentationModel;
@@ -16,6 +17,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.Dimension;

@@ -15,6 +15,7 @@ import com.jgoodies.binding.list.SelectionInList;
 import com.jgoodies.binding.value.AbstractValueModel;
 import com.jgoodies.binding.value.ValueHolder;
 import com.jgoodies.binding.value.ValueModel;
+import com.smartbear.mqttsupport.teststeps.panels.FormBuilder;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.connection.Connection;

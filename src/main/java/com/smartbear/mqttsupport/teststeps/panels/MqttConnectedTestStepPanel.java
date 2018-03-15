@@ -212,7 +212,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     }
 
     protected JComponent buildConnectionSection(PresentationModel<MqttTestStep> pm) {
-        final JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0","0[]0"));
+        final JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0","0[]0[]0"));
         root.setBackground(Color.GREEN);
         connectionsModel = new ConnectionsComboBoxModel();
         ConnectionsManager.addConnectionsListener(getModelItem(), connectionsModel);

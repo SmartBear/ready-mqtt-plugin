@@ -111,7 +111,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         PresentationModel<ReceiveTestStep> pm = new PresentationModel<ReceiveTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
 
-        JPanel receivePanel = new JPanel(new MigLayout("", "8[]8[grow,fill]8", "8[grow,fill]8"));
+        JPanel receivePanel = new JPanel(new MigLayout("", "8[]8[grow,fill]8", "0[grow,fill]0"));
 
         JPanel subscribePanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[200]0[]0"));
         subscribePanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GlobalStyles.getDefaultBorderColor()));
@@ -131,7 +131,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         buildTimeoutSpinEdit(formBuilder, pm, "Timeout");
         receivePanel.add(subscribePanel);
 
-        JPanel recvMessagePanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "8[]0[grow,fill]0"));
+        JPanel recvMessagePanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "8[]0[grow,fill]8"));
         JPanel topicPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]0", "0[]0"));
         formBuilder = new FormBuilder(pm, topicPanel);
         JTextField recTopicEdit = formBuilder.appendTextField("receivedMessageTopic", "Topic", "The topic of the received message");
