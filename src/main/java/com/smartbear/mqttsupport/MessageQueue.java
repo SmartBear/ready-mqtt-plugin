@@ -1,5 +1,7 @@
 package com.smartbear.mqttsupport;
 
+import com.smartbear.mqttsupport.connection.Client;
+
 public class MessageQueue {
 
     private static class Node{

@@ -1,4 +1,5 @@
 package com.smartbear.mqttsupport;
+import com.smartbear.mqttsupport.teststeps.ReceiveTestStep;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
