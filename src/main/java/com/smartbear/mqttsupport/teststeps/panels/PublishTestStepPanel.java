@@ -1,6 +1,7 @@
-package com.smartbear.mqttsupport;
+package com.smartbear.mqttsupport.teststeps.panels;
 
 
+import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.UISupport;
@@ -15,9 +16,20 @@ import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import com.smartbear.mqttsupport.Utils;
+import com.smartbear.mqttsupport.teststeps.ExecutableTestStep;
+import com.smartbear.mqttsupport.teststeps.ExecutableTestStepResult;
+import com.smartbear.mqttsupport.teststeps.ExecutionListener;
+import com.smartbear.mqttsupport.teststeps.PublishTestStep;
+import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
+import com.smartbear.mqttsupport.teststeps.actions.RunTestStepAction;
+import com.smartbear.ready.ui.style.GlobalStyles;
+import net.miginfocom.swing.MigLayout;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.AbstractAction;
-
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -31,17 +43,16 @@ import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
-
 public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTestStep> implements ExecutionListener {
+
+    private static final String HELP_LINK = "/soapui/steps/mqtt-publish.html";
 
     private JTextField numberEdit;
     private JTextArea textMemo;
@@ -57,6 +68,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JLogList logArea;
     private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
 
+    private CardLayout messageLayouts;
+    private JPanel currentMessage;
 
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
@@ -66,7 +79,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     }
 
 
-    private void buildUI(){
+    private void buildUI() {
         JComponent mainPanel = buildMainPanel();
         inspectorPanel = JInspectorPanelFactory.build(mainPanel);
 
@@ -84,22 +97,34 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     }
 
     private JComponent buildMainPanel() {
+        JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
 
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
-        SimpleBindingForm form = new SimpleBindingForm(pm);
-        buildConnectionSection(form, pm);
+        root.add(buildConnectionSection(pm));
 
-        form.appendSeparator();
-        form.appendHeading("Published Message");
-        JTextField topicEdit = form.appendTextField("topic", "Topic", "Message Topic");
+        JPanel publishPanel = new JPanel(new MigLayout("", "0[grow,fill]8[]8", "0[grow,fill]0"));
+
+        JPanel mesagePanelRoot = new JPanel(new MigLayout("wrap", "8[grow,fill]8", "0[]0[grow,fill]0"));
+        mesagePanelRoot.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GlobalStyles.getDefaultBorderColor()));
+
+        JPanel mesagePanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]0", "8[]0"));
+        mesagePanelRoot.add(mesagePanel);
+        FormBuilder formBuilder = new FormBuilder(pm, mesagePanel);
+        JTextField topicEdit = formBuilder.appendTextField("topic", "Topic", "Message Topic");
         PropertyExpansionPopupListener.enable(topicEdit, getModelItem());
-        form.appendComboBox("messageKind", "Message type", PublishedMessageType.values(), "");
-        numberEdit = form.appendTextField("message", "Message", "The number which will be published.");
-        textMemo = form.appendTextArea("message", "Message", "The text which will be published.");
+        formBuilder.appendComboBox("messageKind", "Message type", PublishedMessageType.values(), "");
+
+        messageLayouts = new CardLayout();
+        currentMessage = new JPanel(messageLayouts);
+        mesagePanelRoot.add(currentMessage);
+        formBuilder = new FormBuilder(pm, currentMessage);
+        numberEdit = formBuilder.addCard(PublishedMessageType.IntegerValue.name(), null).appendTextField("message", "Message", "The number which will be published.");
+        textMemo = formBuilder.addCard(PublishedMessageType.Utf8Text.name(), new MigLayout("wrap", "0[grow,fill]0", "8[]8[grow,fill]0")).appendTextArea("message", "Message", "The text which will be published.");
         PropertyExpansionPopupListener.enable(textMemo, getModelItem());
-        fileNameEdit = form.appendTextField("message", "File name", "The file which content will be used as payload");
+        FormBuilder cardBuilder = formBuilder.addCard(PublishedMessageType.BinaryFile.name(), new MigLayout("", "0[100]8[grow,fill]8[]0", "8[]0"));
+        fileNameEdit = cardBuilder.appendTextField("message", "File name", "The file which content will be used as payload");
         PropertyExpansionPopupListener.enable(fileNameEdit, getModelItem());
-        chooseFileButton = form.addRightButton(new SelectFileAction());
+        chooseFileButton = cardBuilder.addRightButton(new SelectFileAction());
 
         JScrollPane scrollPane;
 
@@ -111,19 +136,18 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         jsonTreeEditor = Utils.createJsonTreeEditor(true, getModelItem());
-        if(jsonTreeEditor != null){
+        if (jsonTreeEditor != null) {
             scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
             jsonEditor.addTab("Tree View", scrollPane);
-        }
-        else{
+        } else {
             jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
         }
 
         jsonEditor.setPreferredSize(new Dimension(450, 350));
-        form.append("Message", jsonEditor);
+        formBuilder.addCard(PublishedMessageType.Json.name(), new MigLayout("", "0[grow,fill]0", "8[grow,fill]8")).add(jsonEditor);
 
         xmlEditor = new JTabbedPane();
 
@@ -133,29 +157,33 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         xmlTreeEditor = Utils.createXmlTreeEditor(true, getModelItem());
-        if(xmlTreeEditor != null) {
+        if (xmlTreeEditor != null) {
             scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
             xmlEditor.addTab("Tree View", scrollPane);
-        }
-        else{
+        } else {
             xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
         }
 
         xmlEditor.setPreferredSize(new Dimension(450, 350));
-        form.append("Message", xmlEditor);
+        formBuilder.addCard(PublishedMessageType.Xml.name(), new MigLayout("", "0[grow,fill]0", "8[grow,fill]8")).add(xmlEditor);
+        publishPanel.add(mesagePanelRoot);
 
+        JPanel propsPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]8", "8[]8"));
+        formBuilder = new FormBuilder(pm, propsPanel);
+        buildQosRadioButtons(formBuilder, pm);
+        formBuilder.appendCheckBox("retained", "Retained", "");
+        buildTimeoutSpinEdit(formBuilder, pm, "Timeout");
+        publishPanel.add(propsPanel);
 
-        form.appendSeparator();
-        form.appendHeading("Message Delivering Settings");
-        buildQosRadioButtons(form, pm);
-        form.appendCheckBox("retained", "Retained", "");
-        buildTimeoutSpinEdit(form, pm, "Timeout");
+        root.add(publishPanel);
 
         JPanel result = new JPanel(new BorderLayout(0, 0));
-        result.add(new JScrollPane(form.getPanel(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+        scrollPane = new JScrollPane(root, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GlobalStyles.getDefaultBorderColor()));
+        result.add(scrollPane, BorderLayout.CENTER);
         result.add(buildToolbar(), BorderLayout.NORTH);
 
         propertyChange(new PropertyChangeEvent(getModelItem(), "messageKind", null, getModelItem().getMessageKind()));
@@ -163,7 +191,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         return result;
     }
 
-    private JComponent buildToolbar(){
+    private JComponent buildToolbar() {
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
         JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
@@ -198,22 +226,26 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         super.propertyChange(evt);
 
         if (evt.getPropertyName().equals("messageKind")) {
-            PublishedMessageType newMessageType = (PublishedMessageType)evt.getNewValue();
-            boolean isNumber = newMessageType == PublishedMessageType.DoubleValue || newMessageType == PublishedMessageType.FloatValue || newMessageType == PublishedMessageType.IntegerValue || newMessageType == PublishedMessageType.LongValue;
-            boolean isFile = newMessageType == PublishedMessageType.BinaryFile;
-            boolean isText = newMessageType == PublishedMessageType.Utf8Text || newMessageType == PublishedMessageType.Utf16Text;
-            numberEdit.setVisible(isNumber);
-            textMemo.setVisible(isText);
-            if(textMemo.getParent() instanceof JScrollPane) {
-                textMemo.getParent().setVisible(isText);
-            }
-            else if(textMemo.getParent().getParent() instanceof JScrollPane){
-                textMemo.getParent().getParent().setVisible(isText);
-            }
-            fileNameEdit.setVisible(isFile);
-            chooseFileButton.setVisible(isFile);
-            jsonEditor.setVisible(newMessageType == PublishedMessageType.Json);
-            xmlEditor.setVisible(newMessageType == PublishedMessageType.Xml);
+            PublishedMessageType messageType = (PublishedMessageType) evt.getNewValue();
+            updateSelectedMessageType(messageType);
+        }
+    }
+
+    private void updateSelectedMessageType(PublishedMessageType messageType) {
+        switch (messageType) {
+            case DoubleValue:
+            case FloatValue:
+            case IntegerValue:
+            case LongValue:
+                messageLayouts.show(currentMessage, PublishedMessageType.IntegerValue.name());
+                break;
+            case Utf8Text:
+            case Utf16Text:
+                messageLayouts.show(currentMessage, PublishedMessageType.Utf8Text.name());
+                break;
+            default:
+                messageLayouts.show(currentMessage, messageType.name());
+                break;
         }
     }
 
@@ -221,8 +253,12 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     protected boolean release() {
         getModelItem().removeExecutionListener(this);
         inspectorPanel.release();
-        if(jsonTreeEditor != null) Utils.releaseTreeEditor(jsonTreeEditor);
-        if(xmlTreeEditor != null) Utils.releaseTreeEditor(xmlTreeEditor);
+        if (jsonTreeEditor != null) {
+            Utils.releaseTreeEditor(jsonTreeEditor);
+        }
+        if (xmlTreeEditor != null) {
+            Utils.releaseTreeEditor(xmlTreeEditor);
+        }
         return super.release();
     }
 

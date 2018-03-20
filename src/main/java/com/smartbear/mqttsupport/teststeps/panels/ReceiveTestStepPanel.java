@@ -1,11 +1,10 @@
-package com.smartbear.mqttsupport;
+package com.smartbear.mqttsupport.teststeps.panels;
 
+import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
-import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
@@ -15,18 +14,25 @@ import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
-import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
-import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
+import com.smartbear.mqttsupport.Utils;
+import com.smartbear.mqttsupport.teststeps.ExecutableTestStep;
+import com.smartbear.mqttsupport.teststeps.ExecutableTestStepResult;
+import com.smartbear.mqttsupport.teststeps.ExecutionListener;
+import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
+import com.smartbear.mqttsupport.teststeps.ReceiveTestStep;
+import com.smartbear.mqttsupport.teststeps.actions.RunTestStepAction;
+import com.smartbear.ready.ui.style.GlobalStyles;
+import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -39,6 +45,7 @@ import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -63,7 +70,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JLogList logArea;
 
     private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
-
+    private CardLayout messageLayouts;
+    private JPanel currentMessage;
 
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
@@ -99,25 +107,44 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     }
 
 
-    private JComponent buildMainPanel(){
+    private JComponent buildMainPanel() {
+        JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
+
         PresentationModel<ReceiveTestStep> pm = new PresentationModel<ReceiveTestStep>(getModelItem());
-        SimpleBindingForm form = new SimpleBindingForm(pm);
-        buildConnectionSection(form, pm);
-        form.appendSeparator();
-        form.appendHeading("Subscription settings");
-        JTextArea topicsMemo = form.appendTextArea("listenedTopics", "Subscribed topics", "The list of topic filters (one filter per line)");
+        root.add(buildConnectionSection(pm));
+
+        JPanel receivePanel = new JPanel(new MigLayout("", "8[]8[grow,fill]8", "0[grow,fill]0"));
+
+        JPanel subscribePanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[200]0[]0"));
+        subscribePanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GlobalStyles.getDefaultBorderColor()));
+
+        JPanel topicsPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]8", "8[]8[200,fill]0"));
+        subscribePanel.add(topicsPanel);
+        FormBuilder formBuilder = new FormBuilder(pm, topicsPanel);
+        JTextArea topicsMemo = formBuilder.appendTextArea("listenedTopics", "Subscribed topics", "The list of topic filters (one filter per line)");
+
+        JPanel linePropsPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]8", "8[]0"));
+        subscribePanel.add(linePropsPanel);
+        formBuilder = new FormBuilder(pm, linePropsPanel);
         PropertyExpansionPopupListener.enable(topicsMemo, getModelItem());
-        buildRadioButtonsFromEnum(form, pm, "On unexpected topic", "onUnexpectedTopic", ReceiveTestStep.UnexpectedTopicBehavior.class);
-        buildQosRadioButtons(form, pm);
-        form.appendComboBox("expectedMessageType", "Expected message type", ReceiveTestStep.MessageType.values(), "Expected type of a received message");
-        buildTimeoutSpinEdit(form, pm, "Timeout");
-        form.appendSeparator();
-        form.appendHeading("Received message");
+        buildRadioButtonsFromEnum(formBuilder, pm, "On unexpected topic", "onUnexpectedTopic", ReceiveTestStep.UnexpectedTopicBehavior.class);
+        buildQosRadioButtons(formBuilder, pm);
+        formBuilder.appendComboBox("expectedMessageType", "Expected message type", ReceiveTestStep.MessageType.values(), "Expected type of a received message");
+        buildTimeoutSpinEdit(formBuilder, pm, "Timeout");
+        receivePanel.add(subscribePanel);
 
-        JTextField recTopicEdit = form.appendTextField("receivedMessageTopic", "Topic", "The topic of the received message");
+        JPanel recvMessagePanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "8[]0[grow,fill]8"));
+        JPanel topicPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]0", "0[]0"));
+        formBuilder = new FormBuilder(pm, topicPanel);
+        JTextField recTopicEdit = formBuilder.appendTextField("receivedMessageTopic", "Topic", "The topic of the received message");
         recTopicEdit.setEditable(false);
+        recvMessagePanel.add(topicPanel);
 
-        recMessageMemo = form.appendTextArea("receivedMessage", "Message", "The payload of the received message");
+        messageLayouts = new CardLayout();
+        currentMessage = new JPanel(messageLayouts);
+        recvMessagePanel.add(currentMessage);
+        formBuilder = new FormBuilder(pm, currentMessage);
+        recMessageMemo = formBuilder.addCard(PublishedMessageType.Utf8Text.name(), new MigLayout("wrap", "0[grow,fill]0", "8[]8[grow,fill]0")).appendTextArea("receivedMessage", "Message", "The payload of the received message");
         recMessageMemo.setEditable(false);
         recMessageMemo.getCaret().setVisible(true);
         recMessageMemo.addFocusListener(new FocusListener() {
@@ -126,12 +153,12 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
                 recMessageMemo.getCaret().setVisible(true);
 
             }
+
             @Override
             public void focusLost(FocusEvent e) {
 
             }
         });
-        recMessageMemo.setRows(8);
 
         jsonEditor = new JTabbedPane();
 
@@ -142,10 +169,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         jsonEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         jsonTreeEditor = Utils.createJsonTreeEditor(false, getModelItem());
-        if(jsonTreeEditor == null){
+        if (jsonTreeEditor == null) {
             jsonEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
-        }
-        else {
+        } else {
             JScrollPane scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -154,7 +180,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         }
 
         jsonEditor.setPreferredSize(new Dimension(450, 350));
-        form.append("Message", jsonEditor);
+        formBuilder.addCard(PublishedMessageType.Json.name(), new MigLayout("", "0[grow,fill]0", "8[grow,fill]8")).add(jsonEditor);
 
         xmlEditor = new JTabbedPane();
 
@@ -164,10 +190,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         xmlEditor.addTab("Text", Utils.createRTextScrollPane(syntaxTextArea));
 
         xmlTreeEditor = Utils.createXmlTreeEditor(false, getModelItem());
-        if(xmlTreeEditor == null){
+        if (xmlTreeEditor == null) {
             xmlEditor.addTab("Tree View", new JLabel(Utils.TREE_VIEW_IS_UNAVAILABLE, SwingConstants.CENTER));
-        }
-        else {
+        } else {
             JScrollPane scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -176,15 +201,20 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         }
 
         xmlEditor.setPreferredSize(new Dimension(450, 350));
-        form.append("Message", xmlEditor);
+        formBuilder.addCard(PublishedMessageType.Xml.name(), new MigLayout("", "0[grow,fill]0", "8[grow,fill]8")).add(xmlEditor);
+
+        receivePanel.add(recvMessagePanel);
+        root.add(receivePanel);
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
         mainPanel.add(buildToolbar(), BorderLayout.NORTH);
-        mainPanel.add(new JScrollPane(form.getPanel(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(root, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GlobalStyles.getDefaultBorderColor()));
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
         return mainPanel;
     }
 
-    private JComponent buildToolbar(){
+    private JComponent buildToolbar() {
         JXToolBar toolBar = UISupport.createToolbar();
         RunTestStepAction startAction = new RunTestStepAction(getModelItem());
         JButton submitButton = UISupport.createActionButton(startAction, startAction.isEnabled());
@@ -200,7 +230,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return toolBar;
     }
 
-    private AssertionsPanel buildAssertionsPanel(){
+    private AssertionsPanel buildAssertionsPanel() {
         return new AssertionsPanel(getModelItem());
     }
 
@@ -240,30 +270,18 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     @Override
     public void propertyChange(PropertyChangeEvent event) {
         super.propertyChange(event);
-        if(event.getPropertyName().equals("assertionStatus")){
+        if (event.getPropertyName().equals("assertionStatus")) {
             updateStatusIcon();
-        }
-        else if(event.getPropertyName().equals("receivedMessage")){
-            String msg = (String)event.getNewValue();
-            if(StringUtils.isNullOrEmpty(msg)){
-                Utils.showMemo(recMessageMemo, true);
-                jsonEditor.setVisible(false);
-                xmlEditor.setVisible(false);
-            }
-            else if(JsonUtil.seemsToBeJson(msg)) {
-                Utils.showMemo(recMessageMemo, false);
-                jsonEditor.setVisible(true);
-                xmlEditor.setVisible(false);
-            }
-            else if(XmlUtils.seemsToBeXml(msg)){
-                Utils.showMemo(recMessageMemo, false);
-                jsonEditor.setVisible(false);
-                xmlEditor.setVisible(true);
-            }
-            else{
-                Utils.showMemo(recMessageMemo, true);
-                jsonEditor.setVisible(false);
-                xmlEditor.setVisible(false);
+        } else if (event.getPropertyName().equals("receivedMessage")) {
+            String msg = (String) event.getNewValue();
+            if (StringUtils.isNullOrEmpty(msg)) {
+                messageLayouts.show(currentMessage, PublishedMessageType.Utf8Text.name());
+            } else if (JsonUtil.seemsToBeJson(msg)) {
+                messageLayouts.show(currentMessage, PublishedMessageType.Json.name());
+            } else if (XmlUtils.seemsToBeXml(msg)) {
+                messageLayouts.show(currentMessage, PublishedMessageType.Xml.name());
+            } else {
+                messageLayouts.show(currentMessage, PublishedMessageType.Utf8Text.name());
             }
         }
 
@@ -283,10 +301,10 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             if (inspectorPanel != null) {
                 inspectorPanel.release();
             }
-            if(jsonTreeEditor != null) {
+            if (jsonTreeEditor != null) {
                 Utils.releaseTreeEditor(jsonTreeEditor);
             }
-            if(xmlTreeEditor != null) {
+            if (xmlTreeEditor != null) {
                 Utils.releaseTreeEditor(xmlTreeEditor);
             }
             return true;
@@ -295,7 +313,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         return false;
     }
 
-    private void assertionListChanged(){
+    private void assertionListChanged() {
         assertionInspector.setTitle(String.format("Assertions (%d)", getModelItem().getAssertionCount()));
     }
 
@@ -319,7 +337,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         logArea.addLine(DateUtil.formatFull(new Date(executionResult.getTimeStamp())) + " - " + executionResult.getOutcome());
     }
 
-    private void logMessage(long time, String message){
+    private void logMessage(long time, String message) {
         logArea.addLine(DateUtil.formatFull(new Date(time)) + " - " + message);
     }
 }
