@@ -5,7 +5,7 @@
     <name>Ready! API MQTT Plugin</name>
     <artifactId>ready-mqtt-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
     <repositories>
 
       <repository>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-            <version>1.0.1</version>
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 
