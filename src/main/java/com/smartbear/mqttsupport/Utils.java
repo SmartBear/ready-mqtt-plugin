@@ -1,13 +1,10 @@
 package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.editor.views.xml.outline.support.JsonObjectTree;
-import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
-import com.jgoodies.binding.adapter.SpinnerToValueModelConnector;
 import com.jgoodies.binding.value.ValueModel;
 import org.fife.ui.rtextarea.RTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -18,14 +15,12 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
-import java.awt.Component;
-import java.awt.event.FocusEvent;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-class Utils {
+public class Utils {
 
     public static final String TREE_VIEW_IS_UNAVAILABLE = "The Tree View is available in Ready!API only.";
 
@@ -147,7 +142,7 @@ class Utils {
     public static JComponent createJsonTreeEditor(boolean editable, ModelItem modelItem){
         Class clazz;
         try{
-            clazz = Class.forName("com.smartbear.mqttsupport.JsonTreeEditor");
+            clazz = Class.forName("com.smartbear.mqttsupport.teststeps.panels.components.JsonTreeEditor");
         }
         catch (ClassNotFoundException e){
             return null;
@@ -163,7 +158,7 @@ class Utils {
     public static JComponent createXmlTreeEditor(boolean editable, ModelItem modelItem){
         Class clazz;
         try{
-            clazz = Class.forName("com.smartbear.mqttsupport.XmlTreeEditor");
+            clazz = Class.forName("com.smartbear.mqttsupport.teststeps.panels.components.XmlTreeEditor");
         }
         catch (ClassNotFoundException e){
             return null;
