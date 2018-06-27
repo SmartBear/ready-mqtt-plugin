@@ -24,26 +24,31 @@ import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionError;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
-import com.eviware.soapui.model.testsuite.LoadTestRunner;import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.model.testsuite.LoadTestRunner;
+import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.monitor.TestMonitor;
-import com.eviware.soapui.monitor.TestMonitorListener;import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.security.SecurityTestRunner;import com.eviware.soapui.support.StringUtils;import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.monitor.TestMonitorListener;
+import com.eviware.soapui.plugins.auto.PluginTestStep;
+import com.eviware.soapui.security.SecurityTestRunner;
+import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.google.common.base.Charsets;
 import com.smartbear.mqttsupport.CancellationToken;
-import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.MessageQueue;
-import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
+import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
+import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.actions.groups.ReceiveTestStepActionGroup;
+import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -65,7 +70,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import static com.smartbear.mqttsupport.Utils.*;
+
+import static com.smartbear.mqttsupport.Utils.bytesToHexString;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.", iconPath = "com/smartbear/mqttsupport/receive_step.png")
 public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener, ExecutableTestStep {
@@ -211,7 +217,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             initIcons();
         }
         TestMonitor testMonitor = SoapUI.getTestMonitor();
-        if (testMonitor != null){
+        if (testMonitor != null) {
             testMonitor.addTestMonitorListener(this);
         }
         updateState();
@@ -223,22 +229,21 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
 
-        iconAnimator =  new IconAnimator<ReceiveTestStep>(this, "com/smartbear/mqttsupport/receive_step_base.png", "com/smartbear/mqttsupport/receive_step.png", 5);
+        iconAnimator = new IconAnimator<ReceiveTestStep>(this, "com/smartbear/mqttsupport/receive_step_base.png", "com/smartbear/mqttsupport/receive_step.png", 5);
     }
 
     private void initAssertions(TestStepConfig testStepData) {
-        if(testStepData != null && testStepData.getConfig() != null){
+        if (testStepData != null && testStepData.getConfig() != null) {
             XmlObject config = testStepData.getConfig();
             XmlObject[] assertionsSections = config.selectPath("$this/" + ASSERTION_SECTION);
-            for(XmlObject assertionSection: assertionsSections){
+            for (XmlObject assertionSection : assertionsSections) {
 //                //TestAssertionConfig assertionConfig = TestAssertionConfig.Factory.newInstance();
 //                //assertionConfig.set(assertionSection);
 //                TestAssertionConfig assertionConfig = (TestAssertionConfig)( assertionSection.changeType(TestAssertionConfig.type));
                 TestAssertionConfig assertionConfig;
                 try {
                     assertionConfig = TestAssertionConfig.Factory.parse(assertionSection.toString());
-                }
-                catch(XmlException e){
+                } catch (XmlException e) {
                     SoapUI.logError(e);
                     continue;
                 }
@@ -249,15 +254,19 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     @Override
-    public void setIcon(ImageIcon newIcon){
-        if(iconAnimator != null && newIcon == iconAnimator.getBaseIcon()) return;
+    public void setIcon(ImageIcon newIcon) {
+        if (iconAnimator != null && newIcon == iconAnimator.getBaseIcon()) {
+            return;
+        }
         super.setIcon(newIcon);
     }
 
     @Override
-    public void release(){
+    public void release() {
         TestMonitor testMonitor = SoapUI.getTestMonitor();
-        if (testMonitor != null) testMonitor.removeTestMonitorListener(this);
+        if (testMonitor != null) {
+            testMonitor.removeTestMonitorListener(this);
+        }
         super.release();
     }
 
@@ -287,7 +296,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         builder.add(QOS_PROP_NAME, qos);
         builder.add(EXPECTED_MESSAGE_TYPE_PROP_NAME, expectedMessageType.name());
         builder.add(ON_UNEXPECTED_TOPIC_PROP_NAME, onUnexpectedTopic.name());
-        for(TestAssertionConfig assertionConfig: assertionConfigs){
+        for (TestAssertionConfig assertionConfig : assertionConfigs) {
             builder.addSection(ASSERTION_SECTION, assertionConfig);
         }
     }
@@ -345,26 +354,35 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         for (String filter : filters) {
             String[] filterParts = filter.split("/", -1);
             int checkedLen = filterParts.length;
-            if("#".equals(filterParts[filterParts.length - 1])){
+            if ("#".equals(filterParts[filterParts.length - 1])) {
                 checkedLen = filterParts.length - 1;
-                if(checkedLen > topicParts.length) continue;
+                if (checkedLen > topicParts.length) {
+                    continue;
+                }
+            } else {
+                if (filterParts.length != topicParts.length) {
+                    continue;
+                }
             }
-            else{
-                if(filterParts.length != topicParts.length) continue;
+            if (checkedLen == 0) {
+                if (topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$') {
+                    continue;
+                } else {
+                    return true;
+                }
             }
-            if(checkedLen == 0){
-                if(topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$') continue; else return true;
-            }
-            if(!Utils.areStringsEqual(filterParts[0], topicParts[0]) && (!"+".equals(filterParts[0]) || (topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$'))){
+            if (!Utils.areStringsEqual(filterParts[0], topicParts[0]) && (!"+".equals(filterParts[0]) || (topicParts[0].length() > 0 && topicParts[0].charAt(0) == '$'))) {
                 continue;
             }
             int partNo = 1;
-            for(; partNo < checkedLen; ++partNo){
-                if(!Utils.areStringsEqual(filterParts[partNo], topicParts[partNo]) && !"+".equals(filterParts[partNo])){
+            for (; partNo < checkedLen; ++partNo) {
+                if (!Utils.areStringsEqual(filterParts[partNo], topicParts[partNo]) && !"+".equals(filterParts[partNo])) {
                     break;
                 }
             }
-            if(partNo == checkedLen) return true;
+            if (partNo == checkedLen) {
+                return true;
+            }
         }
         return false;
     }
@@ -382,27 +400,33 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         }
     }
 
-    private void onInvalidPayload(byte[] payload, WsdlTestStepResult errors){
-        if(payload == null || payload.length == 0) {
+    private void onInvalidPayload(byte[] payload, WsdlTestStepResult errors) {
+        if (payload == null || payload.length == 0) {
             setReceivedMessage(null);
-            errors.addMessage(String.format("Unable to extract a content of \"%s\" type from the message, because its payload is empty.", expectedMessageType));
+            errors.addMessage(String.format(Messages.UNABLE_TO_EXTRACT_A_CONTENT_OF_S_TYPE_FROM_THE_MESSAGE_BECAUSE_ITS_PAYLOAD_IS_EMPTY, expectedMessageType));
             return;
         }
         String text;
-        String actualFormat = "hexadecimal digits sequence";
-        if(payload.length >= 3 && payload[0] == ((byte)0xef) && payload[1] == ((byte)0xbb) && payload[2] == ((byte)0xbf)){
+        String actualFormat = Messages.HEXADECIMAL_DIGITS_SEQUENCE;
+        if (payload.length >= 3 && payload[0] == ((byte) 0xef) && payload[1] == ((byte) 0xbb) && payload[2] == ((byte) 0xbf)) {
             text = bytesToString(payload, 3, Charsets.UTF_8);
-            if(text == null) text = bytesToHexString(payload); else actualFormat = "UTF-8 text";
-        }
-        else if(payload.length >= 2 && ( ((payload[1] & 0xff)* 256 + (payload[0] & 0xff)) == 0xfffe || ((payload[1] & 0xff)* 256 + (payload[0] & 0xff)) == 0xfeff) ){
+            if (text == null) {
+                text = bytesToHexString(payload);
+            } else {
+                actualFormat = Messages.UTF_8_TEXT;
+            }
+        } else if (payload.length >= 2 && (((payload[1] & 0xff) * 256 + (payload[0] & 0xff)) == 0xfffe || ((payload[1] & 0xff) * 256 + (payload[0] & 0xff)) == 0xfeff)) {
             text = bytesToString(payload, 2, Charsets.UTF_16);
-            if(text == null) text = bytesToHexString(payload); else actualFormat = "UTF-16 text";
-        }
-        else{
+            if (text == null) {
+                text = bytesToHexString(payload);
+            } else {
+                actualFormat = Messages.UTF_16_TEXT;
+            }
+        } else {
             text = bytesToHexString(payload);
         }
         setReceivedMessage(text);
-        errors.addMessage(String.format("Unable to extract a content of \"%s\" type from the message. It is stored as %s.", expectedMessageType, actualFormat));
+        errors.addMessage(String.format(Messages.UNABLE_TO_EXTRACT_A_CONTENT_OF_S_TYPE_FROM_THE_MESSAGE_IT_IS_STORED_AS_S, expectedMessageType, actualFormat));
     }
 
 
@@ -416,8 +440,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     setReceivedMessage("");
                     return true;
                 }
-                if(payload.length >= 3 && payload[0] == ((byte)0xef) && payload[1] == ((byte)0xbb) && payload[2] == ((byte)0xbf)){
-                    if(payload.length == 3) {
+                if (payload.length >= 3 && payload[0] == ((byte) 0xef) && payload[1] == ((byte) 0xbb) && payload[2] == ((byte) 0xbf)) {
+                    if (payload.length == 3) {
                         setReceivedMessage("");
                         return true;
                     } else {
@@ -427,8 +451,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                             return true;
                         }
                     }
-                }
-                else {
+                } else {
                     msgText = bytesToString(payload, 0, Charsets.UTF_8);
                     if (msgText != null) {
                         setReceivedMessage(msgText);
@@ -442,8 +465,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     return true;
                 }
                 int bom = payload.length >= 2 ? payload[1] * 256 + payload[0] : 0;
-                if(bom == 0xfffe || bom == 0xfeff){
-                    if(payload.length == 2) {
+                if (bom == 0xfffe || bom == 0xfeff) {
+                    if (payload.length == 2) {
                         setReceivedMessage("");
                         return true;
                     } else {
@@ -453,8 +476,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                             return true;
                         }
                     }
-                }
-                else {
+                } else {
                     msgText = bytesToString(payload, 0, Charsets.UTF_16LE);
                     if (msgText != null) {
                         setReceivedMessage(msgText);
@@ -463,24 +485,24 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 }
                 break;
             case IntegerNumber:
-                switch(payload.length){
+                switch (payload.length) {
                     case 1:
                         setReceivedMessage(String.valueOf(payload[0]));
                         return true;
                     case 2:
-                        setReceivedMessage(String.valueOf((payload[0] & 0xff) + ((short)payload[1] << 8)));
+                        setReceivedMessage(String.valueOf((payload[0] & 0xff) + ((short) payload[1] << 8)));
                         return true;
                     case 4:
                         int ir = 0;
-                        for(int i = 0; i < 4; ++i){
+                        for (int i = 0; i < 4; ++i) {
                             ir += (payload[i] & 0xff) << (8 * i);
                         }
                         setReceivedMessage(String.valueOf(ir));
                         return true;
                     case 8:
                         long lr = 0;
-                        for(int i = 0; i < 8; ++i){
-                            lr += (long)(payload[i] & 0xff) << (8 * i);
+                        for (int i = 0; i < 8; ++i) {
+                            lr += (long) (payload[i] & 0xff) << (8 * i);
                         }
                         setReceivedMessage(String.valueOf(lr));
                         return true;
@@ -488,7 +510,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 }
                 break;
             case FloatNumber:
-                switch (payload.length){
+                switch (payload.length) {
                     case 4:
                         setReceivedMessage(String.valueOf(ByteBuffer.wrap(payload).getFloat()));
                         return true;
@@ -531,10 +553,9 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
         updateState();
-        try{
+        try {
             return doExecute(runContext, cancellationToken);
-        }
-        finally {
+        } finally {
             cleanAfterExecution(runContext);
         }
 
@@ -542,7 +563,9 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public void addExecutionListener(ExecutionListener listener) {
-        if(executionListeners == null) executionListeners = new ArrayList<ExecutionListener>();
+        if (executionListeners == null) {
+            executionListeners = new ArrayList<ExecutionListener>();
+        }
         executionListeners.add(listener);
     }
 
@@ -567,7 +590,9 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
-        if(iconAnimator != null) iconAnimator.start();
+        if (iconAnimator != null) {
+            iconAnimator.start();
+        }
         try {
             try {
                 Client client = getClient(runContext, result);
@@ -576,16 +601,18 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
                 ArrayList<String> neededTopics = new ArrayList<String>();
                 for (String t : splitTopics) {
-                    if(StringUtils.hasContent(t)) neededTopics.add(t.trim());
+                    if (StringUtils.hasContent(t)) {
+                        neededTopics.add(t.trim());
+                    }
                 }
                 if (neededTopics.size() == 0) {
-                    result.addMessage("The specified listened topic list is empty.");
+                    result.addMessage(Messages.THE_SPECIFIED_LISTENED_TOPIC_LIST_IS_EMPTY);
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
 
                 long starTime = System.nanoTime();
-                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long) getTimeout() * 1000 * 1000;
+                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long) getTimeout() * 1000_000;
 
                 int connectAttemptCount = 0;
                 MqttAsyncClient clientObj = client.getClientObject();
@@ -602,7 +629,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                     int[] qosArray = new int[requiredSubscriptions.length];
                     Arrays.fill(qosArray, qos);
-                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), cancellationToken, result, maxTime, "Attempt to subscribe on the specified topics failed.")) {
+                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), cancellationToken, result, maxTime, Messages.ATTEMPT_TO_SUBSCRIBE_ON_THE_SPECIFIED_TOPICS_FAILED)) {
                         return result;
                     }
                     Collections.addAll(activeSubscriptions, requiredSubscriptions);
@@ -621,7 +648,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         }
                         switch (onUnexpectedTopic) {
                             case Fail:
-                                result.addMessage(String.format("\"%s\" topic of the received message does not correspond to any filter", msg.topic));
+                                result.addMessage(String.format(Messages.S_TOPIC_OF_THE_RECEIVED_MESSAGE_DOES_NOT_CORRESPOND_TO_ANY_FILTER, msg.topic));
                                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
                                 return result;
                             case Discard:
@@ -636,14 +663,26 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                             }
                             ++connectAttemptCount;
                         }
+                        try {
+                            Thread.sleep(20);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
                     }
                 }
                 if (suitableMsg == null) {
                     if (cancellationToken.cancelled()) {
                         result.setStatus(TestStepResult.TestStepStatus.CANCELED);
-                    }
-                    else {
-                        result.addMessage("The test step's timeout has expired");
+                    } else {
+                        if (System.nanoTime() > maxTime) {
+                            result.addMessage(Messages.UNABLE_TO_RECEIVE_ANY_MESSAGES_IN_A_SPECIFIED_PERIOD_OF_TIME);
+                        } else {
+                            if (client.isConnected()) {
+                                result.addMessage(Messages.UNABLE_TO_RECEIVE_ANY_MESSAGES);
+                            } else {
+                                result.addMessage(Messages.UNABLE_TO_RECEIVE_ANY_MESSAGES_FROM_A_DISCONNECTED_SERVER);
+                            }
+                        }
                         result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     }
                     return result;
@@ -654,7 +693,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                 }
 
-                for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
+                for (WsdlMessageAssertion assertion : assertionsSupport.getAssertionList()) {
                     applyAssertion(assertion);
                     AssertionError[] errors = assertion.getErrors();
                     if (errors != null) {
@@ -665,16 +704,19 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 }
 
             } catch (MqttException e) {
+                result.addMessage(Messages.UNABLE_TO_RECEIVE_A_MESSAGE_DUE_TO_THE_FOLLOWIN_ERROR + e.getMessage());
                 result.setError(e);
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
             }
             return result;
         } finally {
             result.stopTimer();
-            if(iconAnimator != null) iconAnimator.stop();
+            if (iconAnimator != null) {
+                iconAnimator.stop();
+            }
             updateState();
-            if(result.getStatus() == TestStepResult.TestStepStatus.UNKNOWN) {
-                switch(getAssertionStatus()){
+            if (result.getStatus() == TestStepResult.TestStepStatus.UNKNOWN) {
+                switch (getAssertionStatus()) {
                     case FAILED:
                         result.setStatus(TestStepResult.TestStepStatus.FAILED);
                         break;
@@ -684,35 +726,32 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 }
             }
             result.setOutcome(formOutcome(result));
-            log.info(String.format("%s - [%s test step]", result.getOutcome(), getName()));
+            log.info(String.format(Messages.S_S_TEST_STEP, result.getOutcome(), getName()));
             notifyExecutionListeners(result);
         }
 
     }
 
-    private String formOutcome(ExecutableTestStepResult executionResult){
-        if(executionResult.getStatus() == TestStepResult.TestStepStatus.CANCELED){
-            return "CANCELED";
-        }
-        else {
-            if(getReceivedMessageTopic() == null){
-                if(executionResult.getError() == null){
-                    return "Unable to receive a message (" + StringUtils.join(executionResult.getMessages(), " ") + ")";
+    private String formOutcome(ExecutableTestStepResult executionResult) {
+        if (executionResult.getStatus() == TestStepResult.TestStepStatus.CANCELED) {
+            return Messages.CANCELED;
+        } else {
+            if (getReceivedMessageTopic() == null) {
+                if (executionResult.getError() == null) {
+                    return Messages.UNABLE_TO_RECEIVE_A_MESSAGE + StringUtils.join(executionResult.getMessages(), " ") + ")";
+                } else {
+                    return Messages.ERROR_DURING_MESSAGE_RECEIVING + Utils.getExceptionMessage(executionResult.getError());
                 }
-                else{
-                    return "Error during message receiving: " + Utils.getExceptionMessage(executionResult.getError());
-                }
-            }
-            else{
-                return String.format("Message with %s topic has been received within %d ms", getReceivedMessageTopic(), executionResult.getTimeTaken());
+            } else {
+                return String.format(Messages.MESSAGE_WITH_S_TOPIC_HAS_BEEN_RECEIVED_WITHIN_D_MS, getReceivedMessageTopic(), executionResult.getTimeTaken());
             }
         }
 
     }
 
-    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult){
-        if(SwingUtilities.isEventDispatchThread()){
-            if(executionListeners != null) {
+    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            if (executionListeners != null) {
                 for (ExecutionListener listener : executionListeners) {
                     try {
                         listener.afterExecution(this, stepRunResult);
@@ -721,8 +760,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                 }
             }
-        }
-        else{
+        } else {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -749,7 +787,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private void updateState() {
         final AssertionStatus oldAssertionStatus = assertionStatus;
-        if(getReceivedMessageTopic() != null){
+        if (getReceivedMessageTopic() != null) {
             int cnt = getAssertionCount();
             if (cnt == 0) {
                 assertionStatus = AssertionStatus.UNKNOWN;
@@ -762,30 +800,30 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                 }
             }
-        }
-        else{
+        } else {
             assertionStatus = AssertionStatus.UNKNOWN;
         }
-        if(oldAssertionStatus != assertionStatus){
+        if (oldAssertionStatus != assertionStatus) {
             final AssertionStatus newAssertionStatus = assertionStatus;
             SwingUtilities.invokeLater(new Runnable() {
-                   @Override
-                   public void run() {
-                       notifyPropertyChanged("assertionStatus", oldAssertionStatus, newAssertionStatus);
-                   }
-               }
+                                           @Override
+                                           public void run() {
+                                               notifyPropertyChanged("assertionStatus", oldAssertionStatus, newAssertionStatus);
+                                           }
+                                       }
             );
         }
-        if(iconAnimator == null) return;
+        if (iconAnimator == null) {
+            return;
+        }
         TestMonitor testMonitor = SoapUI.getTestMonitor();
         if (testMonitor != null
                 && (testMonitor.hasRunningLoadTest(getTestStep().getTestCase()) || testMonitor.hasRunningSecurityTest(getTestStep().getTestCase()))) {
             setIcon(disabledStepIcon);
-        }
-        else{
+        } else {
             ImageIcon icon = iconAnimator.getIcon();
-            if(icon == iconAnimator.getBaseIcon()){
-                switch(assertionStatus){
+            if (icon == iconAnimator.getBaseIcon()) {
+                switch (assertionStatus) {
                     case VALID:
                         setIcon(validStepIcon);
                         break;
@@ -801,13 +839,13 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
 
-    private void applyAssertion(WsdlMessageAssertion assertion){
+    private void applyAssertion(WsdlMessageAssertion assertion) {
         assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
     }
 
-    private void assertReceivedMessage(){
-        if(getReceivedMessageTopic() != null){
-            for(WsdlMessageAssertion assertion: assertionsSupport.getAssertionList()){
+    private void assertReceivedMessage() {
+        if (getReceivedMessageTopic() != null) {
+            for (WsdlMessageAssertion assertion : assertionsSupport.getAssertionList()) {
                 applyAssertion(assertion);
             }
         }
@@ -945,8 +983,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private class AssertableConfigImpl implements AssertableConfig {
 
-        public TestAssertionConfig addNewAssertion()
-        {
+        public TestAssertionConfig addNewAssertion() {
             TestAssertionConfig newConfig = TestAssertionConfig.Factory.newInstance();
             assertionConfigs.add(newConfig);
             return newConfig;
@@ -1122,13 +1159,20 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     @Override
     public void testCaseStarted(TestCaseRunner runner) {
 
-    }@Override
-     public void testCaseFinished(TestCaseRunner runner) {
+    }
 
-    }@Override
-     public void mockServiceStarted(MockRunner runner) {
+    @Override
+    public void testCaseFinished(TestCaseRunner runner) {
 
-    }@Override
-     public void mockServiceStopped(MockRunner runner) {
+    }
 
-    }}
+    @Override
+    public void mockServiceStarted(MockRunner runner) {
+
+    }
+
+    @Override
+    public void mockServiceStopped(MockRunner runner) {
+
+    }
+}

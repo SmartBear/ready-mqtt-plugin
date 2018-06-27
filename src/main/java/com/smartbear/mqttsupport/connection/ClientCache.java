@@ -19,6 +19,9 @@ public class ClientCache {
     private static final int LEGACY_UNTITLED_CLIENT = -1;
     private static final int FIRST_UNTITLED_CLIENT = 0;
 
+    private HashMap<CacheKey, Client> map = new HashMap<>();
+    private HashMap<String, CacheKey> mapByName = new HashMap<>();
+
     private static class CacheKey {
         public ExpandedConnectionParams params;
         public int generatedClientNo;
@@ -75,6 +78,17 @@ public class ClientCache {
             return null;
         }
         return map.get(key);
+    }
+
+    public void invalidate(String connectionName) {
+        CacheKey key = mapByName.get(connectionName);
+        if (key == null) {
+            return;
+        }
+        Client client = map.get(key);
+        if (client != null)
+            client.dispose();
+        map.remove(key);
     }
 
     public Client add(String connectionName, ExpandedConnectionParams params) throws MqttException {
@@ -155,8 +169,4 @@ public class ClientCache {
         map.clear();
         mapByName.clear();
     }
-
-    private HashMap<CacheKey, Client> map = new HashMap<>();
-    private HashMap<String, CacheKey> mapByName = new HashMap<>();
-
 }

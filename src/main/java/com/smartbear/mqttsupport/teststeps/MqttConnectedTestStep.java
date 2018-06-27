@@ -14,16 +14,15 @@ import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.CancellationToken;
+import com.smartbear.mqttsupport.Utils;
+import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.connection.ClientCache;
-import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.connection.Connection;
 import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.connection.ExpandedConnectionParams;
-import com.smartbear.mqttsupport.XmlObjectBuilder;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
-
 
 import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
@@ -53,29 +52,41 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     private final static String TIMEOUT_EXPIRED_MSG = "The test step's timeout has expired.";
 
-    public enum TimeMeasure{
+    public enum TimeMeasure {
         Milliseconds("milliseconds"), Seconds("seconds");
         private String title;
-        TimeMeasure(String title){this.title = title;}
+
+        TimeMeasure(String title) {
+            this.title = title;
+        }
+
         @Override
-        public String toString(){return title;}
+        public String toString() {
+            return title;
+        }
     }
 
     private int timeout = 30000;
     private TimeMeasure timeoutMeasure = TimeMeasure.Seconds;
 
 
-    public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest){
+    public MqttConnectedTestStep(WsdlTestCase testCase, TestStepConfig config, boolean hasEditor, boolean forLoadTest) {
         super(testCase, config, hasEditor, forLoadTest);
         addProperty(new DefaultTestStepProperty(SERVER_URI_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getServerUri();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getServerUri();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setServerUri(s);
             }
         }, this));
@@ -83,60 +94,90 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         addProperty(new DefaultTestStepProperty(CERT_CA_CERT_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getCaCrtFile();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getCaCrtFile();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setCaCrtFile(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(CERT_CLIENT_CERT_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getCrtFile();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getCrtFile();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setCrtFile(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(CERT_KEY_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getKeyFile();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getKeyFile();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setKeyFile(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(CERT_KEY_PASSWORD_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getKeysPassword();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getKeysPassword();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setKeysPassword(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(CERT_SNI_SERVER_SETTING_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if (connection == null) return ""; else return connection.getSniHost();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getSniHost();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if (connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setSniHost(s);
             }
         }, this));
@@ -144,48 +185,66 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         addProperty(new DefaultTestStepProperty(CLIENT_ID_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if(connection == null) return ""; else return connection.getFixedId();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getFixedId();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if(connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setFixedId(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(LOGIN_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if(connection == null) return ""; else return connection.getLogin();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getLogin();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if(connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setLogin(s);
             }
         }, this));
         addProperty(new DefaultTestStepProperty(PASSWORD_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
-                if(connection == null) return ""; else return connection.getPassword();
+                if (connection == null) {
+                    return "";
+                } else {
+                    return connection.getPassword();
+                }
             }
 
             @Override
             public void setValue(DefaultTestStepProperty defaultTestStepProperty, String s) {
-                if(connection == null) return;
+                if (connection == null) {
+                    return;
+                }
                 connection.setPassword(s);
             }
         }, this));
     }
 
 
-    protected void readData(XmlObjectConfigurationReader reader){
-        if(connection != null) {
+    protected void readData(XmlObjectConfigurationReader reader) {
+        if (connection != null) {
             connection.removePropertyChangeListener(this);
             connection = null;
         }
-        if(reader.readBoolean(LEGACY_CONNECTION_PROP_NAME, true)){
+        if (reader.readBoolean(LEGACY_CONNECTION_PROP_NAME, true)) {
             connection = new Connection();
             connection.setServerUri(reader.readString(SERVER_URI_PROP_NAME, ""));
 
@@ -201,37 +260,38 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             connection.setCleanSession(true);
             connection.addPropertyChangeListener(this);
             legacyConnection = connection;
-        }
-        else{
+        } else {
             String connectionName = reader.readString(CONNECTION_NAME_PROP_NAME, "");
-            if(StringUtils.hasContent(connectionName)) {
+            if (StringUtils.hasContent(connectionName)) {
                 connection = ConnectionsManager.getConnection(this, connectionName);
             }
-            if(connection != null) connection.addPropertyChangeListener(this);
+            if (connection != null) {
+                connection.addPropertyChangeListener(this);
+            }
         }
         timeout = reader.readInt(TIMEOUT_PROP_NAME, 30000);
         try {
             timeoutMeasure = TimeMeasure.valueOf(reader.readString(TIMEOUT_MEASURE_PROP_NAME, TimeMeasure.Milliseconds.toString()));
-        } catch(NumberFormatException | NullPointerException e) {
+        } catch (NumberFormatException | NullPointerException e) {
             timeoutMeasure = TimeMeasure.Milliseconds;
         }
     }
 
-    protected void writeData(XmlObjectBuilder builder){
-        if(connection == null){
+    protected void writeData(XmlObjectBuilder builder) {
+        if (connection == null) {
             builder.add(LEGACY_CONNECTION_PROP_NAME, false);
             builder.add(CONNECTION_NAME_PROP_NAME, "");
-        }
-        else if(connection.isLegacy()){
+        } else if (connection.isLegacy()) {
             builder.add(LEGACY_CONNECTION_PROP_NAME, true);
             builder.add(SERVER_URI_PROP_NAME, connection.getServerUri());
-            if (connection.getFixedId() != null) builder.add(CLIENT_ID_PROP_NAME, connection.getFixedId());
+            if (connection.getFixedId() != null) {
+                builder.add(CLIENT_ID_PROP_NAME, connection.getFixedId());
+            }
             if (connection.getLogin() != null) {
                 builder.add(LOGIN_PROP_NAME, connection.getLogin());
                 builder.add(PASSWORD_PROP_NAME, connection.getPassword());
             }
-        }
-        else {
+        } else {
             builder.add(LEGACY_CONNECTION_PROP_NAME, false);
             builder.add(CONNECTION_NAME_PROP_NAME, connection.getName());
         }
@@ -246,17 +306,24 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     protected void updateData() {
-        if(getConfig() == null) return;
+        if (getConfig() == null) {
+            return;
+        }
         updateData(getConfig());
     }
 
 
-    public Connection getConnection(){return connection;}
-    public void setConnection(Connection value){
-        if(connection == value) return;
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection value) {
+        if (connection == value) {
+            return;
+        }
         String oldServerUri = null, oldClientId = null, oldLogin = null, oldPassword = null;
         Connection oldConnection = connection;
-        if(oldConnection != null){
+        if (oldConnection != null) {
             oldServerUri = oldConnection.getServerUri();
             oldClientId = oldConnection.getFixedId();
             oldLogin = oldConnection.getLogin();
@@ -265,7 +332,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         connection = value;
         String newServerUri = null, newClientId = null, newLogin = null, newPassword = null;
-        if(value != null){
+        if (value != null) {
             value.addPropertyChangeListener(this);
             newServerUri = value.getServerUri();
             newClientId = value.getFixedId();
@@ -274,101 +341,126 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         updateData();
         notifyPropertyChanged("connection", oldConnection, value);
-        if(!Utils.areStringsEqual(newServerUri, oldServerUri, false, true)){
+        if (!Utils.areStringsEqual(newServerUri, oldServerUri, false, true)) {
             notifyPropertyChanged("serverUri", oldServerUri, newServerUri);
             firePropertyValueChanged(SERVER_URI_PROP_NAME, oldServerUri, newServerUri);
         }
-        if(!Utils.areStringsEqual(newClientId, oldClientId, false, true)){
+        if (!Utils.areStringsEqual(newClientId, oldClientId, false, true)) {
             notifyPropertyChanged("clientId", oldClientId, newClientId);
             firePropertyValueChanged(CLIENT_ID_PROP_NAME, oldClientId, newClientId);
         }
-        if(!Utils.areStringsEqual(newLogin, oldLogin, false, true)) firePropertyValueChanged(LOGIN_PROP_NAME, oldLogin, newLogin);
-        if(!Utils.areStringsEqual(newPassword, oldPassword, false, true)) firePropertyValueChanged(PASSWORD_PROP_NAME, oldPassword, newPassword);
+        if (!Utils.areStringsEqual(newLogin, oldLogin, false, true)) {
+            firePropertyValueChanged(LOGIN_PROP_NAME, oldLogin, newLogin);
+        }
+        if (!Utils.areStringsEqual(newPassword, oldPassword, false, true)) {
+            firePropertyValueChanged(PASSWORD_PROP_NAME, oldPassword, newPassword);
+        }
     }
 
-    public Connection getLegacyConnection(){return legacyConnection;}
+    public Connection getLegacyConnection() {
+        return legacyConnection;
+    }
 
     public String getServerUri() {
-        return connection == null ? null: connection.getServerUri();
+        return connection == null ? null : connection.getServerUri();
     }
 
     public void setServerUri(String value) {
-        if(connection != null) connection.setServerUri(value);
+        if (connection != null) {
+            connection.setServerUri(value);
+        }
     }
 
-    public String getClientId(){
-        return connection == null? null: connection.getFixedId();
+    public String getClientId() {
+        return connection == null ? null : connection.getFixedId();
     }
 
-    public void setClientId(String value){
-        if(connection != null) connection.setFixedId(value);
+    public void setClientId(String value) {
+        if (connection != null) {
+            connection.setFixedId(value);
+        }
     }
 
-    public String getLogin(){
+    public String getLogin() {
         return connection == null ? null : connection.getLogin();
     }
-    public void setLogin(String value){
-        if(connection != null) connection.setLogin(value);
+
+    public void setLogin(String value) {
+        if (connection != null) {
+            connection.setLogin(value);
+        }
     }
 
-    public String getPassword(){
+    public String getPassword() {
         return connection == null ? null : connection.getPassword();
     }
-    public void setPassword(String value){
-        if(connection != null) connection.setPassword(value);
+
+    public void setPassword(String value) {
+        if (connection != null) {
+            connection.setPassword(value);
+        }
     }
 
-    public int getTimeout(){return timeout;}
-    public void setTimeout(int newValue){
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int newValue) {
         int oldShownTimeout = getShownTimeout();
-        if(setIntProperty("timeout", TIMEOUT_PROP_NAME, newValue, 0, Integer.MAX_VALUE)) {
-            if(timeoutMeasure == TimeMeasure.Seconds && (newValue % 1000) != 0){
+        if (setIntProperty("timeout", TIMEOUT_PROP_NAME, newValue, 0, Integer.MAX_VALUE)) {
+            if (timeoutMeasure == TimeMeasure.Seconds && (newValue % 1000) != 0) {
                 timeoutMeasure = TimeMeasure.Milliseconds;
                 notifyPropertyChanged("timeoutMeasure", TimeMeasure.Seconds, TimeMeasure.Milliseconds);
             }
             int newShownTimeout = getShownTimeout();
-            if(oldShownTimeout != newShownTimeout) notifyPropertyChanged("shownTimeout", oldShownTimeout, newShownTimeout);
-        }
-    }
-
-    public int getShownTimeout(){
-        if(timeoutMeasure == TimeMeasure.Milliseconds) return timeout; else return timeout / 1000;
-    }
-
-    public void setShownTimeout(int newValue){
-        if(timeoutMeasure == TimeMeasure.Milliseconds){
-            setTimeout(newValue);
-        }
-        else if (timeoutMeasure == TimeMeasure.Seconds){
-            if((long)newValue * 1000 > Integer.MAX_VALUE){
-                setTimeout(Integer.MAX_VALUE / 1000 * 1000);
+            if (oldShownTimeout != newShownTimeout) {
+                notifyPropertyChanged("shownTimeout", oldShownTimeout, newShownTimeout);
             }
-            else {
+        }
+    }
+
+    public int getShownTimeout() {
+        if (timeoutMeasure == TimeMeasure.Milliseconds) {
+            return timeout;
+        } else {
+            return timeout / 1000;
+        }
+    }
+
+    public void setShownTimeout(int newValue) {
+        if (timeoutMeasure == TimeMeasure.Milliseconds) {
+            setTimeout(newValue);
+        } else if (timeoutMeasure == TimeMeasure.Seconds) {
+            if ((long) newValue * 1000 > Integer.MAX_VALUE) {
+                setTimeout(Integer.MAX_VALUE / 1000 * 1000);
+            } else {
                 setTimeout(newValue * 1000);
             }
         }
     }
 
-    public TimeMeasure getTimeoutMeasure(){
+    public TimeMeasure getTimeoutMeasure() {
         return timeoutMeasure;
     }
 
-    public void setTimeoutMeasure(TimeMeasure newValue){
-        if(newValue == null) return;
+    public void setTimeoutMeasure(TimeMeasure newValue) {
+        if (newValue == null) {
+            return;
+        }
         TimeMeasure oldValue = timeoutMeasure;
-        if(oldValue == newValue) return;
+        if (oldValue == newValue) {
+            return;
+        }
         int oldShownTimeout = getShownTimeout();
         timeoutMeasure = newValue;
         notifyPropertyChanged("timeoutMeasure", oldValue, newValue);
-        if(newValue == TimeMeasure.Milliseconds){
+        if (newValue == TimeMeasure.Milliseconds) {
             setIntProperty("timeout", TIMEOUT_PROP_NAME, oldShownTimeout, 0, Integer.MAX_VALUE);
-        }
-        else if(newValue == TimeMeasure.Seconds){
-            if((long)oldShownTimeout * 1000 > Integer.MAX_VALUE){
+        } else if (newValue == TimeMeasure.Seconds) {
+            if ((long) oldShownTimeout * 1000 > Integer.MAX_VALUE) {
                 setIntProperty("timeout", TIMEOUT_PROP_NAME, Integer.MAX_VALUE / 1000 * 1000);
                 notifyPropertyChanged("shownTimeout", oldShownTimeout, getShownTimeout());
-            }
-            else {
+            } else {
                 setIntProperty("timeout", TIMEOUT_PROP_NAME, oldShownTimeout * 1000, 0, Integer.MAX_VALUE);
             }
         }
@@ -419,15 +511,20 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                         curClass = curClass.getSuperclass();
                     }
                 }
-                if (field == null)
+                if (field == null) {
                     throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+                }
                 field.setAccessible(true);
                 old = field.get(this);
 
                 if (value == null) {
-                    if (old == null) return false;
+                    if (old == null) {
+                        return false;
+                    }
                 } else {
-                    if (value.equals(old)) return false;
+                    if (value.equals(old)) {
+                        return false;
+                    }
                 }
                 field.set(this, value);
             } catch (IllegalAccessException e) {
@@ -436,25 +533,31 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             updateData();
         }
         final Object oldValue = old;
-        if(SwingUtilities.isEventDispatchThread()){
+        if (SwingUtilities.isEventDispatchThread()) {
             notifyPropertyChanged(propName, oldValue, value);
-            if(publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
-        }
-        else {
+            if (publishedPropName != null) {
+                firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+            }
+        } else {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
                     notifyPropertyChanged(propName, oldValue, value);
-                    if (publishedPropName != null) firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+                    if (publishedPropName != null) {
+                        firePropertyValueChanged(publishedPropName, oldValue == null ? null : oldValue.toString(), value == null ? null : value.toString());
+                    }
                 }
             });
-        };
+        }
+        ;
         return true;
     }
 
 
     protected boolean setIntProperty(String propName, String publishedPropName, int value, int minAllowed, int maxAllowed) {
-        if(value < minAllowed || value > maxAllowed) return false;
+        if (value < minAllowed || value > maxAllowed) {
+            return false;
+        }
         return setIntProperty(propName, publishedPropName, value);
     }
 
@@ -463,25 +566,31 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         try {
             Field field = null;
             Class curClass = getClass();
-            while (field == null && curClass != null){
+            while (field == null && curClass != null) {
                 try {
                     field = curClass.getDeclaredField(propName);
                 } catch (NoSuchFieldException e) {
                     curClass = curClass.getSuperclass();
                 }
             }
-            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            if (field == null) {
+                throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            }
             field.setAccessible(true);
             old = (int) (field.get(this));
 
-            if (old == value) return false;
+            if (old == value) {
+                return false;
+            }
             field.set(this, value);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
-        if(StringUtils.hasContent(publishedPropName)) firePropertyValueChanged(publishedPropName, Integer.toString(old), Integer.toString(value));
+        if (StringUtils.hasContent(publishedPropName)) {
+            firePropertyValueChanged(publishedPropName, Integer.toString(old), Integer.toString(value));
+        }
         return true;
     }
 
@@ -490,52 +599,62 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         try {
             Field field = null;
             Class curClass = getClass();
-            while (field == null && curClass != null){
+            while (field == null && curClass != null) {
                 try {
                     field = curClass.getDeclaredField(propName);
                 } catch (NoSuchFieldException e) {
                     curClass = curClass.getSuperclass();
                 }
             }
-            if(field == null) throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            if (field == null) {
+                throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+            }
             field.setAccessible(true);
             old = (boolean) (field.get(this));
 
-            if (old == value) return;
+            if (old == value) {
+                return;
+            }
             field.set(this, value);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
-        if(StringUtils.hasContent(publishedPropName)) firePropertyValueChanged(publishedPropName, Boolean.toString(old), Boolean.toString(value));
+        if (StringUtils.hasContent(publishedPropName)) {
+            firePropertyValueChanged(publishedPropName, Boolean.toString(old), Boolean.toString(value));
+        }
 
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        if(evt.getSource() == connection){
-            if(Utils.areStringsEqual(evt.getPropertyName(), "serverUri")){
-                if(connection.isLegacy()) updateData();
-                notifyPropertyChanged("serverUri", (String)evt.getOldValue(), (String)evt.getNewValue());
-                firePropertyValueChanged(SERVER_URI_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
-            }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)){
-                if(connection.isLegacy()) updateData();
-                notifyPropertyChanged("clientId", (String)evt.getOldValue(), (String)evt.getNewValue());
-                firePropertyValueChanged(CLIENT_ID_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
-            }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)){
-                if(connection.isLegacy()) updateData();
-                notifyPropertyChanged("login", (String)evt.getOldValue(), (String)evt.getNewValue());
-                firePropertyValueChanged(LOGIN_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
-            }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)){
-                if(connection.isLegacy()) updateData();
-                notifyPropertyChanged("password", (String)evt.getOldValue(), (String)evt.getNewValue());
-                firePropertyValueChanged(PASSWORD_PROP_NAME, (String)evt.getOldValue(), (String)evt.getNewValue());
-            }
-            else if(Utils.areStringsEqual(evt.getPropertyName(), Connection.NAME_BEAN_PROP)){
+        if (evt.getSource() == connection) {
+            if (Utils.areStringsEqual(evt.getPropertyName(), "serverUri")) {
+                if (connection.isLegacy()) {
+                    updateData();
+                }
+                notifyPropertyChanged("serverUri", (String) evt.getOldValue(), (String) evt.getNewValue());
+                firePropertyValueChanged(SERVER_URI_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
+            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)) {
+                if (connection.isLegacy()) {
+                    updateData();
+                }
+                notifyPropertyChanged("clientId", (String) evt.getOldValue(), (String) evt.getNewValue());
+                firePropertyValueChanged(CLIENT_ID_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
+            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)) {
+                if (connection.isLegacy()) {
+                    updateData();
+                }
+                notifyPropertyChanged("login", (String) evt.getOldValue(), (String) evt.getNewValue());
+                firePropertyValueChanged(LOGIN_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
+            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)) {
+                if (connection.isLegacy()) {
+                    updateData();
+                }
+                notifyPropertyChanged("password", (String) evt.getOldValue(), (String) evt.getNewValue());
+                firePropertyValueChanged(PASSWORD_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
+            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.NAME_BEAN_PROP)) {
                 updateData();
             }
         }
@@ -543,58 +662,60 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     @Override
-    public void release(){
-        if(connection != null) connection.removePropertyChangeListener(this);
+    public void release() {
+        if (connection != null) {
+            connection.removePropertyChangeListener(this);
+        }
         super.release();
     }
 
     protected boolean waitForMqttOperation(IMqttToken token, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
-        while (!token.isComplete() && token.getException() == null) {
-            boolean stopped = cancellationToken.cancelled();
-            if (stopped || (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime)) {
-                if (stopped) {
-                    testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
-                }
-                else{
-                    testStepResult.addMessage(TIMEOUT_EXPIRED_MSG);
-                    testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
-
-                }
+        long timeout = (maxTime - System.nanoTime()) / 1000_000_000;
+        while (!token.isComplete()) {
+            if (cancellationToken.cancelled()) {
+                testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
                 return false;
             }
             try {
-                Thread.sleep(1);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                break;
             }
-        }
-        if (token.getException() != null) {
-            testStepResult.addMessage(errorText);
-            testStepResult.setError(token.getException());
-            testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
-            return false;
+            if (token.getException() != null) {
+                testStepResult.addMessage(errorText);
+                testStepResult.addMessage("Exception text: " + token.getException());
+                testStepResult.setError(token.getException());
+                testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
+                return false;
+            }
+            if (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime) {
+                testStepResult.addMessage(TIMEOUT_EXPIRED_MSG + " " + String.valueOf(timeout) + " seconds");
+                testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
+
+                return false;
+            }
         }
         return true;
     }
 
-    private ClientCache getCache(PropertyExpansionContext testRunContext){
+    private ClientCache getCache(PropertyExpansionContext testRunContext) {
         final String CLIENT_CACHE_PROPNAME = "client_cache";
-        ClientCache cache = (ClientCache)(testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
-        if(cache == null){
+        ClientCache cache = (ClientCache) (testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
+        if (cache == null) {
             cache = new ClientCache();
             testRunContext.setProperty(CLIENT_CACHE_PROPNAME, cache);
         }
         return cache;
     }
 
-    protected Client getClient(PropertyExpansionContext runContext, WsdlTestStepResult log){
-        if(connection == null){
+    protected Client getClient(PropertyExpansionContext runContext, WsdlTestStepResult log) {
+        if (connection == null) {
             log.addMessage("Connection for this test step is not selected or is broken.");
             log.setStatus(TestStepResult.TestStepStatus.FAILED);
             return null;
         }
         ExpandedConnectionParams actualConnectionParams;
-        if(connection.isLegacy()){
+        if (connection.isLegacy()) {
             try {
                 actualConnectionParams = connection.expand(runContext);
             } catch (Exception e) {
@@ -602,36 +723,45 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 log.setStatus(TestStepResult.TestStepStatus.FAILED);
                 return null;
             }
-            if(!checkConnectionParams(actualConnectionParams, log)) return null;
+            if (!checkConnectionParams(actualConnectionParams, log)) {
+                return null;
+            }
             try {
                 return getCache(runContext).getLegacy(actualConnectionParams);
-            }
-            catch (MqttException e){
+            } catch (MqttException e) {
                 log.setError(e);
                 log.setStatus(TestStepResult.TestStepStatus.FAILED);
                 return null;
             }
-        }
-        else{
+        } else {
             ClientCache cache = getCache(runContext);
             Client result = cache.get(connection.getName());
-            if(result == null){
+            if (result != null && !result.isConnected()) {
+                result = null;
+                cache.invalidate(connection.getName());
+            }
+            if (result == null) {
                 try {
                     actualConnectionParams = connection.expand(runContext);
                 } catch (Exception e) {
+                    log.addMessage("Unable to expand context");
                     log.addMessage(e.getMessage());
                     log.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return null;
                 }
-                if(!checkConnectionParams(actualConnectionParams, log)) return null;
+                if (!checkConnectionParams(actualConnectionParams, log)) {
+                    log.addMessage("Unable to check connection");
+                    return null;
+                }
                 try {
                     result = cache.add(connection.getName(), actualConnectionParams);
-                }
-                catch (MqttException e){
+                } catch (MqttException e) {
+                    log.addMessage("Unable to store connection in cache");
                     log.setError(e);
                     log.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return null;
                 }
+            } else {
             }
             return result;
         }
@@ -639,7 +769,9 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     private boolean checkConnectionParams(ExpandedConnectionParams connectionParams, WsdlTestStepResult log) {
         String uriCheckResult = Utils.checkServerUri(connectionParams.getServerUri());
-        if (uriCheckResult == null) return true;
+        if (uriCheckResult == null) {
+            return true;
+        }
         log.addMessage(uriCheckResult);
         log.setStatus(TestStepResult.TestStepStatus.FAILED);
         return false;
@@ -647,12 +779,11 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     protected boolean waitForMqttConnection(Client client, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
         long timeout;
-        if(maxTime == Long.MAX_VALUE){
+        if (maxTime == Long.MAX_VALUE) {
             timeout = 0;
-        }
-        else {
+        } else {
             timeout = maxTime - System.nanoTime();
-            if(timeout <= 0){
+            if (timeout <= 0) {
                 testStepResult.addMessage(TIMEOUT_EXPIRED_MSG);
                 testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
                 return false;
@@ -672,7 +803,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         super.finish(testRunner, testRunContext);
     }
 
-    public Project getOwningProject(){
+    public Project getOwningProject() {
         return ModelSupport.getModelItemProject(this);
     }
 

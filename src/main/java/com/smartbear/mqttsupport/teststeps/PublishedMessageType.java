@@ -2,6 +2,7 @@ package com.smartbear.mqttsupport.teststeps;
 
 import com.eviware.soapui.model.project.Project;
 import com.google.common.base.Charsets;
+import com.smartbear.mqttsupport.Messages;
 
 
 import java.io.File;
@@ -42,7 +43,7 @@ public enum PublishedMessageType {
                     iv = Integer.parseInt(msg);
                 }
                 catch (NumberFormatException e){
-                    throw new IllegalArgumentException(String.format("The specified text (\"%s\") cannot represent an integer value.", msg));
+                    throw new IllegalArgumentException(String.format(Messages.THE_SPECIFIED_TEXT_S_CANNOT_REPRESENT_AN_INTEGER_VALUE, msg));
                 }
                 buf = new byte[4];
                 for(int i = 0; i < 4; ++i){
@@ -55,7 +56,7 @@ public enum PublishedMessageType {
                     lv = Long.parseLong(msg);
                 }
                 catch (NumberFormatException e){
-                    throw new IllegalArgumentException(String.format("The specified text (\"%s\") cannot represent a long value.", msg));
+                    throw new IllegalArgumentException(String.format(Messages.THE_SPECIFIED_TEXT_S_CANNOT_REPRESENT_A_LONG_VALUE, msg));
                 }
                 buf = new byte[8];
                 for(int i = 0; i < 8; ++i){
@@ -69,7 +70,7 @@ public enum PublishedMessageType {
                     dv = Double.parseDouble(msg);
                 }
                 catch(NumberFormatException e){
-                    throw new IllegalArgumentException(String.format("The specified text (\"%s\") cannot represent a double value.", msg));
+                    throw new IllegalArgumentException(String.format(Messages.THE_SPECIFIED_TEXT_S_CANNOT_REPRESENT_A_DOUBLE_VALUE, msg));
                 }
                 long rawD = Double.doubleToLongBits(dv);
                 for(int i = 0; i < 8; ++i){
@@ -84,7 +85,7 @@ public enum PublishedMessageType {
                     fv = Float.parseFloat(msg);
                 }
                 catch(NumberFormatException e){
-                    throw new IllegalArgumentException(String.format("The specified text (\"%s\") cannot represent a float value.", msg));
+                    throw new IllegalArgumentException(String.format(Messages.THE_SPECIFIED_TEXT_S_CANNOT_REPRESENT_A_FLOAT_VALUE, msg));
                 }
                 int rawF = Float.floatToIntBits(fv);
                 for(int i = 0; i < 4; ++i){
@@ -99,7 +100,7 @@ public enum PublishedMessageType {
                         file = new File(new File(project.getPath()).getParent(), file.getPath());
                     }
                     if (!file.exists()) {
-                        throw new IllegalArgumentException(String.format("Unable to find \"%s\" file which contains a message", file.getPath()));
+                        throw new IllegalArgumentException(String.format(Messages.UNABLE_TO_FIND_S_FILE_WHICH_CONTAINS_A_MESSAGE, file.getPath()));
                     }
                     int fileLen = (int) file.length();
                     buf = new byte[fileLen];
@@ -108,11 +109,11 @@ public enum PublishedMessageType {
                     return buf;
                 }
                 catch(RuntimeException | IOException e){
-                    throw new RuntimeException(String.format("Attempt of access to \"%s\" file with a published message has failed.", file.getPath()), e);
+                    throw new RuntimeException(String.format(Messages.ATTEMPT_OF_ACCESS_TO_S_FILE_WITH_A_PUBLISHED_MESSAGE_HAS_FAILED, file.getPath()), e);
                 }
 
         }
-        throw new IllegalArgumentException("The format of the published message is not specified or unknown."); //We won't be here
+        throw new IllegalArgumentException(Messages.THE_FORMAT_OF_THE_PUBLISHED_MESSAGE_IS_NOT_SPECIFIED_OR_UNKNOWN); //We won't be here
     }
 
 }

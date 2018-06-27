@@ -8,7 +8,6 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.internal.wire.MqttWireMessage;
@@ -16,12 +15,13 @@ import org.eclipse.paho.client.mqttv3.internal.wire.MqttWireMessage;
 import java.util.ArrayList;
 
 public class Client implements MqttCallback, IMqttActionListener {
+    private final long SECOND_IN_NANOSECONDS = 1000_000_000;
 
-    public static class Message{
+    public static class Message {
         public String topic;
         public MqttMessage message;
 
-        public Message(String topic, MqttMessage msg){
+        public Message(String topic, MqttMessage msg) {
             this.topic = topic;
             this.message = msg;
         }
@@ -35,27 +35,27 @@ public class Client implements MqttCallback, IMqttActionListener {
     private MessageQueue messageQueue = new MessageQueue();
     private boolean resetSession;
 
-    public Client(MqttAsyncClientEx client, MqttConnectOptions connectionOptions, boolean resetSession){
+    public Client(MqttAsyncClientEx client, MqttConnectOptions connectionOptions, boolean resetSession) {
         this.clientObj = client;
         this.connectionOptions = connectionOptions;
         this.resetSession = resetSession;
         client.setCallback(this);
     }
 
-    public boolean isConnected(){
+    public boolean isConnected() {
         return clientObj.isConnected();
         //return connectionToken != null && connectionToken.isComplete() && connectionToken.getException() == null;
     }
 
     public IMqttToken getConnectingStatus(long maxTimeout) throws MqttException { // 0 - no timeout
-        if(connectionToken == null){
-            if(connectionOptions.isCleanSession()) subscribedTopics = new ArrayList<String>();
-            if(resetSession){
-                connectionToken = new ResetSessionToken(maxTimeout);
+        if (connectionToken == null) {
+            if (connectionOptions.isCleanSession()) {
+                subscribedTopics = new ArrayList<String>();
             }
-            else {
-                final int unitsPerSecond = 1000 * 1000 * 1000;
-                connectionOptions.setConnectionTimeout((int)((maxTimeout + unitsPerSecond - 1)/ unitsPerSecond));
+            if (resetSession) {
+                connectionToken = new ResetSessionToken(maxTimeout / 1000);
+            } else {
+                connectionOptions.setConnectionTimeout((int) (maxTimeout / SECOND_IN_NANOSECONDS));
                 connectionToken = clientObj.connect(connectionOptions, null, this);
 
             }
@@ -64,22 +64,24 @@ public class Client implements MqttCallback, IMqttActionListener {
     }
 
 
-    public void connectionLost(Throwable throwable){
+    public void connectionLost(Throwable throwable) {
         onDisconnected();
     }
 
 
-    public void messageArrived(String topic, MqttMessage mqttMessage) throws java.lang.Exception{
+    public void messageArrived(String topic, MqttMessage mqttMessage) throws java.lang.Exception {
         messageQueue.addMessage(new Message(topic, mqttMessage));
     }
 
-    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken){
+    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
     }
 
     @Override
     public void onSuccess(IMqttToken asyncActionToken) {
-        if(!asyncActionToken.getSessionPresent()) subscribedTopics = new ArrayList<>();
+        if (!asyncActionToken.getSessionPresent()) {
+            subscribedTopics = new ArrayList<>();
+        }
     }
 
     @Override
@@ -87,48 +89,53 @@ public class Client implements MqttCallback, IMqttActionListener {
     }
 
 
-    private void onDisconnected(){
+    private void onDisconnected() {
         connectionToken = null;
     }
 
-    public MqttAsyncClient getClientObject(){
+    public MqttAsyncClient getClientObject() {
         return clientObj;
     }
 
-    public ArrayList<String> getCachedSubscriptions(){
-        if(connectionToken == null && connectionOptions.isCleanSession()) subscribedTopics = new ArrayList<>();
+    public ArrayList<String> getCachedSubscriptions() {
+        if (connectionToken == null && connectionOptions.isCleanSession()) {
+            subscribedTopics = new ArrayList<>();
+        }
         return subscribedTopics;
     }
 
 
-    public MessageQueue getMessageQueue(){return messageQueue;}
+    public MessageQueue getMessageQueue() {
+        return messageQueue;
+    }
 
 
-    public void disconnect(boolean sendDisconnectMessage) throws MqttException{
+    public void disconnect(boolean sendDisconnectMessage) throws MqttException {
         messageQueue = new MessageQueue();
-        if(sendDisconnectMessage){
+        if (sendDisconnectMessage) {
             clientObj.disconnectForcibly();
-        }
-        else{
+        } else {
             clientObj.closeConnection();
         }
         onDisconnected(); //we may not receive connectionLost notification (especially if sendDisconnectMessage = false)
     }
 
-    public void dispose(){
-        if(!connectionOptions.isCleanSession()){
+    public void dispose() {
+        if (!connectionOptions.isCleanSession()) {
             ArrayList<String> topicList = subscribedTopics;
             String[] topics = new String[topicList.size()];
             topicList.toArray(topics);
-            if(getClientObject().isConnected()) {
-                try{
+            if (getClientObject().isConnected()) {
+                try {
                     getClientObject().unsubscribe(topics);
                 } catch (MqttException e) {
                 }
             }
         }
         try {
-            if(getClientObject().isConnected()) clientObj.disconnectForcibly();
+            if (getClientObject().isConnected()) {
+                clientObj.disconnectForcibly();
+            }
             clientObj.close();
 
         } catch (MqttException e) {
@@ -136,12 +143,23 @@ public class Client implements MqttCallback, IMqttActionListener {
 
     }
 
-    private static class TokenState{
+    private static class TokenState {
         boolean completed;
         MqttException exception;
-        public TokenState(boolean completed){this.completed = completed;}
-        public TokenState(MqttException exception){this.exception = exception; this.completed = true;}
-        public TokenState(IMqttToken token){this.completed = token.isComplete(); this.exception = token.getException(); }
+
+        public TokenState(boolean completed) {
+            this.completed = completed;
+        }
+
+        public TokenState(MqttException exception) {
+            this.exception = exception;
+            this.completed = true;
+        }
+
+        public TokenState(IMqttToken token) {
+            this.completed = token.isComplete();
+            this.exception = token.getException();
+        }
     }
 
     class ResetSessionToken implements IMqttToken {
@@ -151,10 +169,14 @@ public class Client implements MqttCallback, IMqttActionListener {
         private long maxTime;
 
 
-        public ResetSessionToken(long maxTimeout) throws MqttException{
-            if(maxTimeout == 0) maxTime = Long.MAX_VALUE; else maxTime = System.nanoTime() + maxTimeout;
+        public ResetSessionToken(long maxTimeout) throws MqttException {
+            if (maxTimeout == 0) {
+                maxTime = Long.MAX_VALUE;
+            } else {
+                maxTime = System.nanoTime() + maxTimeout;
+            }
             MqttConnectOptions resetConnectionOptions = new MqttConnectOptions();
-            if(connectionOptions.getUserName() == null || connectionOptions.getUserName().length() == 0) {
+            if (connectionOptions.getUserName() == null || connectionOptions.getUserName().length() == 0) {
                 resetConnectionOptions.setUserName(connectionOptions.getUserName());
                 resetConnectionOptions.setPassword(connectionOptions.getPassword());
             }
@@ -170,16 +192,26 @@ public class Client implements MqttCallback, IMqttActionListener {
 
         private int getTimeout() throws MqttException {
             final int unitsPerSecond = 1000 * 1000 * 1000;
-            if(maxTime == Long.MAX_VALUE) return 0;
+            if (maxTime == Long.MAX_VALUE) {
+                return 0;
+            }
             long timeout = maxTime - System.nanoTime();
-            if(timeout <= 0) throw new MqttException(MqttException.REASON_CODE_CLIENT_TIMEOUT); else return (int)((timeout + unitsPerSecond - 1) / unitsPerSecond);
+            if (timeout <= 0) {
+                throw new MqttException(MqttException.REASON_CODE_CLIENT_TIMEOUT);
+            } else {
+                return (int) ((timeout + unitsPerSecond - 1) / unitsPerSecond);
+            }
         }
 
-        private TokenState getState(){
-            if(initiationException != null) return new TokenState(initiationException);
-            if(connect2Token != null) return new TokenState(connect2Token);
-            if(disconnectToken != null){
-                if(disconnectToken.isComplete()) {
+        private TokenState getState() {
+            if (initiationException != null) {
+                return new TokenState(initiationException);
+            }
+            if (connect2Token != null) {
+                return new TokenState(connect2Token);
+            }
+            if (disconnectToken != null) {
+                if (disconnectToken.isComplete()) {
                     if (disconnectToken.getException() == null) {
                         try {
                             connectionOptions.setConnectionTimeout(getTimeout());
@@ -189,33 +221,27 @@ public class Client implements MqttCallback, IMqttActionListener {
                             initiationException = e;
                             return new TokenState(initiationException);
                         }
-                    }
-                    else{
+                    } else {
                         return new TokenState(disconnectToken.getException());
                     }
-                }
-                else{
+                } else {
                     return new TokenState(false);
                 }
-            }
-            else{
-                if(connect1Token.isComplete()){
-                    if(connect1Token.getException() == null){
+            } else {
+                if (connect1Token.isComplete()) {
+                    if (connect1Token.getException() == null) {
                         resetSession = false;
                         try {
                             disconnectToken = clientObj.disconnect(0);
-                        }
-                        catch (MqttException e){
+                        } catch (MqttException e) {
                             initiationException = e;
                             return new TokenState(initiationException);
                         }
                         return getState();
-                    }
-                    else{
+                    } else {
                         return new TokenState(connect1Token.getException());
                     }
-                }
-                else{
+                } else {
                     return new TokenState(false);
                 }
             }
@@ -223,11 +249,21 @@ public class Client implements MqttCallback, IMqttActionListener {
 
         @Override
         public void waitForCompletion() throws MqttException {
-            throw new UnsupportedOperationException("Not implemented yet.");
+            waitForCompletion(Long.MAX_VALUE);
         }
+
         @Override
         public void waitForCompletion(long timeout) throws MqttException {
-            throw new UnsupportedOperationException("Not implemented yet.");
+            long endTime = System.currentTimeMillis() + timeout;
+            while (System.currentTimeMillis() < endTime) {
+                if (connectionToken == null || connectionToken.isComplete())
+                    return;
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
         }
 
         @Override
@@ -277,14 +313,24 @@ public class Client implements MqttCallback, IMqttActionListener {
 
         @Override
         public boolean getSessionPresent() {
-            if(connect2Token != null) return connect2Token.getSessionPresent(); else return false;
+            if (connect2Token != null) {
+                return connect2Token.getSessionPresent();
+            } else {
+                return false;
+            }
         }
 
         @Override
         public MqttWireMessage getResponse() {
-            if(connect2Token != null) return connect2Token.getResponse();
-            if(disconnectToken != null) return disconnectToken.getResponse();
-            if(connect1Token != null) return connect1Token.getResponse();
+            if (connect2Token != null) {
+                return connect2Token.getResponse();
+            }
+            if (disconnectToken != null) {
+                return disconnectToken.getResponse();
+            }
+            if (connect1Token != null) {
+                return connect1Token.getResponse();
+            }
             return null;
         }
     }

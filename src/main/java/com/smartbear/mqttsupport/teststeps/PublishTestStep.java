@@ -20,12 +20,12 @@ import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
-
 import com.smartbear.mqttsupport.CancellationToken;
-import com.smartbear.mqttsupport.connection.Client;
+import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
+import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.actions.groups.PublishTestStepActionGroup;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -86,13 +86,15 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             @Override
             public void setValue(DefaultTestStepProperty property, String value) {
                 PublishedMessageType messageType = PublishedMessageType.fromString(value);
-                if(messageType != null) setMessageKind(messageType);
+                if (messageType != null) {
+                    setMessageKind(messageType);
+                }
             }
         }, this));
         addProperty(new TestStepBeanProperty(TOPIC_PROP_NAME, false, this, "topic", this));
         addProperty(new TestStepBeanProperty(MESSAGE_PROP_NAME, false, this, "message", this));
 
-        addProperty(new DefaultTestStepProperty(TIMEOUT_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler(){
+        addProperty(new DefaultTestStepProperty(TIMEOUT_PROP_NAME, false, new DefaultTestStepProperty.PropertyHandler() {
             @Override
             public String getValue(DefaultTestStepProperty property) {
                 return Integer.toString(getTimeout());
@@ -101,10 +103,9 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             @Override
             public void setValue(DefaultTestStepProperty property, String value) {
                 int newTimeout;
-                try{
+                try {
                     newTimeout = Integer.parseInt(value);
-                }
-                catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     return;
                 }
                 setTimeout(newTimeout);
@@ -120,10 +121,9 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             @Override
             public void setValue(DefaultTestStepProperty property, String value) {
                 int newQos;
-                try{
+                try {
                     newQos = Integer.parseInt(value);
-                }
-                catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     return;
                 }
                 setQos(newQos);
@@ -135,7 +135,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         }
         setIcon(unknownStepIcon);
         TestMonitor testMonitor = SoapUI.getTestMonitor();
-        if (testMonitor != null){
+        if (testMonitor != null) {
             testMonitor.addTestMonitorListener(this);
         }
     }
@@ -144,28 +144,34 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_publish_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_publish_step.png");
 
-        iconAnimator =  new IconAnimator<PublishTestStep>(this, "com/smartbear/mqttsupport/unknown_publish_step.png", "com/smartbear/mqttsupport/publish_step.png", 5);
+        iconAnimator = new IconAnimator<PublishTestStep>(this, "com/smartbear/mqttsupport/unknown_publish_step.png", "com/smartbear/mqttsupport/publish_step.png", 5);
     }
 
     @Override
-    public void release(){
+    public void release() {
         TestMonitor testMonitor = SoapUI.getTestMonitor();
-        if (testMonitor != null) testMonitor.removeTestMonitorListener(this);
+        if (testMonitor != null) {
+            testMonitor.removeTestMonitorListener(this);
+        }
         super.release();
     }
 
     private boolean checkProperties(WsdlTestStepResult result, String topicToCheck, PublishedMessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
-        if(StringUtils.isNullOrEmpty(topicToCheck)){
-            result.addMessage("The topic of message is not specified");
+        if (StringUtils.isNullOrEmpty(topicToCheck)) {
+            result.addMessage(Messages.THE_TOPIC_OF_MESSAGE_IS_NOT_SPECIFIED);
             ok = false;
         }
-        if(messageTypeToCheck == null){
-            result.addMessage("The message format is not specified.");
+        if (messageTypeToCheck == null) {
+            result.addMessage(Messages.THE_MESSAGE_FORMAT_IS_NOT_SPECIFIED);
             ok = false;
         }
-        if(StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != PublishedMessageType.Utf16Text) && (messageTypeToCheck != PublishedMessageType.Utf8Text)){
-            if(messageTypeToCheck == PublishedMessageType.BinaryFile) result.addMessage("A file which contains a message is not specified"); else result.addMessage("A message content is not specified.");
+        if (StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != PublishedMessageType.Utf16Text) && (messageTypeToCheck != PublishedMessageType.Utf8Text)) {
+            if (messageTypeToCheck == PublishedMessageType.BinaryFile) {
+                result.addMessage(Messages.A_FILE_WHICH_CONTAINS_A_MESSAGE_IS_NOT_SPECIFIED);
+            } else {
+                result.addMessage(Messages.A_MESSAGE_CONTENT_IS_NOT_SPECIFIED);
+            }
             ok = false;
         }
 
@@ -193,11 +199,15 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.OK);
-        if(iconAnimator != null) iconAnimator.start();
+        if (iconAnimator != null) {
+            iconAnimator.start();
+        }
         try {
             try {
                 Client client = getClient(testRunContext, result);
-                if(client == null) return result;
+                if (client == null) {
+                    return result;
+                }
                 String expandedMessage = testRunContext.expand(message);
                 String expandedTopic = testRunContext.expand(topic);
 
@@ -206,61 +216,75 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                     return result;
                 }
                 long starTime = System.nanoTime();
-                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long)getTimeout() * 1000 * 1000;
+                long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long) getTimeout() * 1000_000;
 
                 byte[] payload = null;
                 try {
                     payload = messageKind.toPayload(expandedMessage, getOwningProject());
-                }
-                catch(RuntimeException e) {
+                } catch (RuntimeException e) {
                     result.addMessage(e.getMessage());
                     result.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return result;
                 }
 
-                if(!waitForMqttConnection(client, cancellationToken, result, maxTime)) return result;
+                if (!waitForMqttConnection(client, cancellationToken, result, maxTime)) {
+                    log.error(Messages.UNABLE_TO_CONNECT_TO_THE_SERVER);
+                    return result;
+                }
+
+                if (!client.isConnected()){
+                    log.error(Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_LOST_CONNECTION);
+                    return result;
+                }
 
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
                 message.setPayload(payload);
-                if(!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message), cancellationToken, result, maxTime, "Attempt to publish the message failed.")) return result;
+                if (!waitForMqttOperation(client.getClientObject().publish(expandedTopic, message),
+                        cancellationToken, result, maxTime,
+                        Messages.ATTEMPT_TO_PUBLISH_THE_MESSAGE_FAILED)) {
+                    client.disconnect(false);
+                    return result;
+                }
 
             } catch (MqttException e) {
+                result.addMessage(Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_THE_FOLLOWING_ERROR +e.getMessage());
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
                 result.setError(e);
             }
             return result;
         } finally {
             result.stopTimer();
-            if(iconAnimator != null) iconAnimator.stop();
+            if (iconAnimator != null) {
+                iconAnimator.stop();
+            }
             result.setOutcome(formOutcome(result));
-            log.info(String.format("%s - [%s test step]", result.getOutcome(), getName()));
+            log.info(String.format(Messages.S_S_TEST_STEP, result.getOutcome(), getName()));
             notifyExecutionListeners(result);
         }
     }
 
     private String formOutcome(WsdlTestStepResult executionResult) {
-        switch (executionResult.getStatus()){
+        switch (executionResult.getStatus()) {
             case CANCELED:
-                return "CANCELED";
+                return Messages.CANCELED;
             case FAILED:
-                if(executionResult.getError() == null){
-                    return "Unable to publish the message (" + StringUtils.join(executionResult.getMessages(), " ") + ")";
-                }
-                else{
-                    return "Error during message publishing: " + Utils.getExceptionMessage(executionResult.getError());
+                if (executionResult.getError() == null) {
+                    return Messages.UNABLE_TO_PUBLISH_THE_MESSAGE + StringUtils.join(executionResult.getMessages(), " ") + ")";
+                } else {
+                    return Messages.ERROR_DURING_MESSAGE_PUBLISHING + Utils.getExceptionMessage(executionResult.getError());
                 }
             default:
-                return String.format("The message has been published within %d ms", executionResult.getTimeTaken());
+                return String.format(Messages.THE_MESSAGE_HAS_BEEN_PUBLISHED_WITHIN_D_MS, executionResult.getTimeTaken());
 
         }
 
     }
 
-    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult){
-        if(SwingUtilities.isEventDispatchThread()){
-            if(executionListeners != null) {
+    private void notifyExecutionListeners(final ExecutableTestStepResult stepRunResult) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            if (executionListeners != null) {
                 for (ExecutionListener listener : executionListeners) {
                     try {
                         listener.afterExecution(this, stepRunResult);
@@ -269,8 +293,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                     }
                 }
             }
-        }
-        else{
+        } else {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -282,7 +305,9 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     @Override
     public void addExecutionListener(ExecutionListener listener) {
-        if(executionListeners == null) executionListeners = new ArrayList<ExecutionListener>();
+        if (executionListeners == null) {
+            executionListeners = new ArrayList<ExecutionListener>();
+        }
         executionListeners.add(listener);
     }
 
@@ -291,16 +316,23 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         executionListeners.remove(listener);
     }
 
-    public PublishedMessageType getMessageKind(){return messageKind;}
-    public void setMessageKind(PublishedMessageType newValue){
-        if(messageKind == newValue) return;
+    public PublishedMessageType getMessageKind() {
+        return messageKind;
+    }
+
+    public void setMessageKind(PublishedMessageType newValue) {
+        if (messageKind == newValue) {
+            return;
+        }
         PublishedMessageType old = messageKind;
         messageKind = newValue;
         updateData();
         notifyPropertyChanged("messageKind", old, newValue);
         firePropertyValueChanged(MESSAGE_TYPE_PROP_NAME, old.toString(), newValue.toString());
         String oldMessage = getMessage();
-        if(oldMessage == null) oldMessage = "";
+        if (oldMessage == null) {
+            oldMessage = "";
+        }
         try {
             switch (messageKind) {
                 case IntegerValue:
@@ -316,23 +348,24 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                     Double.parseDouble(oldMessage);
                     break;
             }
-        }
-        catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             setMessage("0");
         }
     }
 
-    public String getTopic(){
+    public String getTopic() {
         return topic;
     }
 
-    public void setTopic(String newValue){
+    public void setTopic(String newValue) {
         setProperty("topic", TOPIC_PROP_NAME, newValue);
     }
 
-    public String getMessage(){return message;}
+    public String getMessage() {
+        return message;
+    }
 
-    public void setMessage(String value){
+    public void setMessage(String value) {
         try {
             switch (messageKind) {
                 case IntegerValue:
@@ -342,37 +375,45 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                     Long.parseLong(value);
                     break;
             }
-        }
-        catch(NumberFormatException e){
-                return;
+        } catch (NumberFormatException e) {
+            return;
         }
         setProperty("message", MESSAGE_PROP_NAME, value);
     }
 
     @Override
     public ExecutableTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
-        try{
+        try {
             return doExecute(runContext, cancellationToken);
-        }
-        finally {
+        } finally {
             cleanAfterExecution(runContext);
         }
 
     }
 
 
-    public int getQos(){return qos;}
-    public void setQos(int newValue){setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);}
+    public int getQos() {
+        return qos;
+    }
 
-    public boolean getRetained(){return retained;}
-    public void setRetained(boolean value){setBooleanProperty("retained", RETAINED_PROP_NAME, value);}
+    public void setQos(int newValue) {
+        setIntProperty("qos", QOS_PROP_NAME, newValue, 0, 2);
+    }
+
+    public boolean getRetained() {
+        return retained;
+    }
+
+    public void setRetained(boolean value) {
+        setBooleanProperty("retained", RETAINED_PROP_NAME, value);
+    }
 
     @Override
-    protected void readData(XmlObjectConfigurationReader reader){
+    protected void readData(XmlObjectConfigurationReader reader) {
         super.readData(reader);
-        try{
+        try {
             messageKind = PublishedMessageType.valueOf(reader.readString(MESSAGE_KIND_SETTING_NAME, DEFAULT_MESSAGE_TYPE.name()));
-        } catch (IllegalArgumentException | NullPointerException e){
+        } catch (IllegalArgumentException | NullPointerException e) {
             messageKind = DEFAULT_MESSAGE_TYPE;
         }
         topic = reader.readString(TOPIC_SETTING_NAME, "");
@@ -383,9 +424,11 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
 
     @Override
-    protected void writeData(XmlObjectBuilder builder){
+    protected void writeData(XmlObjectBuilder builder) {
         super.writeData(builder);
-        if(messageKind != null) builder.add(MESSAGE_KIND_SETTING_NAME, messageKind.name());
+        if (messageKind != null) {
+            builder.add(MESSAGE_KIND_SETTING_NAME, messageKind.name());
+        }
         builder.add(TOPIC_SETTING_NAME, topic);
         builder.add(MESSAGE_SETTING_NAME, message);
         builder.add(QOS_SETTING_NAME, qos);
@@ -393,13 +436,14 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     }
 
     private void updateState() {
-        if(iconAnimator == null) return;
+        if (iconAnimator == null) {
+            return;
+        }
         TestMonitor testMonitor = SoapUI.getTestMonitor();
         if (testMonitor != null
                 && (testMonitor.hasRunningLoadTest(getTestCase()) || testMonitor.hasRunningSecurityTest(getTestCase()))) {
             setIcon(disabledStepIcon);
-        }
-        else {
+        } else {
             setIcon(unknownStepIcon);
         }
     }
@@ -428,16 +472,19 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     public void testCaseStarted(TestCaseRunner runner) {
 
     }
+
     @Override
-     public void testCaseFinished(TestCaseRunner runner) {
+    public void testCaseFinished(TestCaseRunner runner) {
 
     }
+
     @Override
-     public void mockServiceStarted(MockRunner runner) {
+    public void mockServiceStarted(MockRunner runner) {
 
     }
+
     @Override
-     public void mockServiceStopped(MockRunner runner) {
+    public void mockServiceStopped(MockRunner runner) {
 
     }
 

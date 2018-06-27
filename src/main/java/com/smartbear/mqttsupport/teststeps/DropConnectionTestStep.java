@@ -16,6 +16,7 @@ import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
+import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.PluginConfig;
@@ -155,7 +156,7 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
                 }
             }
             else{
-                result.addMessage("Already disconnected from the MQTT server");
+                result.addMessage(Messages.ALREADY_DISCONNECTED_FROM_THE_MQTT_SERVER);
                 result.setStatus(TestStepResult.TestStepStatus.FAILED);
             }
 
