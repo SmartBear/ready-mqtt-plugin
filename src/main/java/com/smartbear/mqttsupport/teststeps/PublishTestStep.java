@@ -10,9 +10,11 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.LoadTestRunner;
+import com.eviware.soapui.model.testsuite.ProjectRunner;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.model.testsuite.TestSuiteRunner;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
@@ -206,14 +208,13 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             try {
                 Client client = getClient(testRunContext, result);
                 if (client == null) {
-                    return result;
+                    return reportError(result, Messages.ATTEMPT_TO_PUBLISH_THE_MESSAGE_FAILED, cancellationToken);
                 }
                 String expandedMessage = testRunContext.expand(message);
                 String expandedTopic = testRunContext.expand(topic);
 
                 if (!checkProperties(result, expandedTopic, messageKind, expandedMessage)) {
-                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                    return result;
+                    return reportError(result, null, cancellationToken);
                 }
                 long starTime = System.nanoTime();
                 long maxTime = getTimeout() == 0 ? Long.MAX_VALUE : starTime + (long) getTimeout() * 1000_000;
@@ -222,21 +223,16 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                 try {
                     payload = messageKind.toPayload(expandedMessage, getOwningProject());
                 } catch (RuntimeException e) {
-                    result.addMessage(e.getMessage());
-                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                    return result;
+                    return reportError(result, e.getMessage(), cancellationToken);
                 }
-
-                if (!waitForMqttConnection(client, cancellationToken, result, maxTime)) {
-                    log.error(Messages.UNABLE_TO_CONNECT_TO_THE_SERVER);
-                    return result;
+                if (!client.isConnected()) {
+                    if (!waitForMqttConnection(client, cancellationToken, result, maxTime)) {
+                        return reportError(result, Messages.UNABLE_TO_CONNECT_TO_THE_SERVER, cancellationToken);
+                    }
                 }
-
-                if (!client.isConnected()){
-                    log.error(Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_LOST_CONNECTION);
-                    return result;
+                if (!client.isConnected()) {
+                    return reportError(result, Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_LOST_CONNECTION, cancellationToken);
                 }
-
                 MqttMessage message = new MqttMessage();
                 message.setRetained(retained);
                 message.setQos(qos);
@@ -249,9 +245,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
                 }
 
             } catch (MqttException e) {
-                result.addMessage(Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_THE_FOLLOWING_ERROR +e.getMessage());
-                result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                result.setError(e);
+                return reportError(result, Messages.UNABLE_TO_PUBLISH_THE_MESSAGE_DUE_TO_THE_FOLLOWING_ERROR + e.getMessage(), cancellationToken);
             }
             return result;
         } finally {
@@ -485,6 +479,26 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     @Override
     public void mockServiceStopped(MockRunner runner) {
+
+    }
+
+    @Override
+    public void projectStarted(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void projectFinished(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void testSuiteStarted(TestSuiteRunner testSuiteRunner) {
+
+    }
+
+    @Override
+    public void testSuiteFinished(TestSuiteRunner testSuiteRunner) {
 
     }
 

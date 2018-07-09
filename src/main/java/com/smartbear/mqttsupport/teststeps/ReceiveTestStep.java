@@ -25,11 +25,13 @@ import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionError;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.LoadTestRunner;
+import com.eviware.soapui.model.testsuite.ProjectRunner;
 import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.model.testsuite.TestSuiteRunner;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
@@ -606,9 +608,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                 }
                 if (neededTopics.size() == 0) {
-                    result.addMessage(Messages.THE_SPECIFIED_LISTENED_TOPIC_LIST_IS_EMPTY);
-                    result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                    return result;
+                    return reportError(result, Messages.THE_SPECIFIED_LISTENED_TOPIC_LIST_IS_EMPTY, cancellationToken);
                 }
 
                 long starTime = System.nanoTime();
@@ -629,7 +629,9 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                     }
                     int[] qosArray = new int[requiredSubscriptions.length];
                     Arrays.fill(qosArray, qos);
-                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray), cancellationToken, result, maxTime, Messages.ATTEMPT_TO_SUBSCRIBE_ON_THE_SPECIFIED_TOPICS_FAILED)) {
+                    if (!waitForMqttOperation(clientObj.subscribe(requiredSubscriptions, qosArray),
+                            cancellationToken, result, maxTime,
+                            Messages.ATTEMPT_TO_SUBSCRIBE_ON_THE_SPECIFIED_TOPICS_FAILED)) {
                         return result;
                     }
                     Collections.addAll(activeSubscriptions, requiredSubscriptions);
@@ -648,9 +650,9 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                         }
                         switch (onUnexpectedTopic) {
                             case Fail:
-                                result.addMessage(String.format(Messages.S_TOPIC_OF_THE_RECEIVED_MESSAGE_DOES_NOT_CORRESPOND_TO_ANY_FILTER, msg.topic));
-                                result.setStatus(TestStepResult.TestStepStatus.FAILED);
-                                return result;
+                                return reportError(result,
+                                        String.format(Messages.S_TOPIC_OF_THE_RECEIVED_MESSAGE_DOES_NOT_CORRESPOND_TO_ANY_FILTER, msg.topic),
+                                        cancellationToken);
                             case Discard:
                                 messageQueue.removeCurrentMessage();
                                 messageQueue.setCurrentMessageToHead();
@@ -1173,6 +1175,26 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public void mockServiceStopped(MockRunner runner) {
+
+    }
+
+    @Override
+    public void projectStarted(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void projectFinished(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void testSuiteStarted(TestSuiteRunner testSuiteRunner) {
+
+    }
+
+    @Override
+    public void testSuiteFinished(TestSuiteRunner testSuiteRunner) {
 
     }
 }

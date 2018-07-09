@@ -14,6 +14,7 @@ import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.CancellationToken;
+import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.connection.Client;
@@ -23,6 +24,8 @@ import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.connection.ExpandedConnectionParams;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
@@ -31,6 +34,10 @@ import java.lang.reflect.Field;
 
 
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties implements PropertyChangeListener {
+    Logger log = LoggerFactory.getLogger(MqttConnectedTestStep.class);
+
+
+    public static final int MAX_CONNECTION_ATTEMPTS = 100_000;
     private Connection connection;
     private Connection legacyConnection;
 
@@ -49,8 +56,6 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     final static String LEGACY_CONNECTION_PROP_NAME = "LegacyConnection";
     protected final static String TIMEOUT_PROP_NAME = "Timeout";
     private final static String TIMEOUT_MEASURE_PROP_NAME = "TimeoutMeasure";
-
-    private final static String TIMEOUT_EXPIRED_MSG = "The test step's timeout has expired.";
 
     public enum TimeMeasure {
         Milliseconds("milliseconds"), Seconds("seconds");
@@ -670,30 +675,46 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     protected boolean waitForMqttOperation(IMqttToken token, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
+        if (token == null) {
+            log.error("Connection token is null");
+            return false;
+        }
         long timeout = (maxTime - System.nanoTime()) / 1000_000_000;
         while (!token.isComplete()) {
             if (cancellationToken.cancelled()) {
                 testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
+                log.error("Canceled on connect");
                 return false;
             }
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
+                log.error("Interruped on connect");
                 break;
             }
             if (token.getException() != null) {
-                testStepResult.addMessage(errorText);
-                testStepResult.addMessage("Exception text: " + token.getException());
-                testStepResult.setError(token.getException());
-                testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
-                return false;
+                log.error("Exception on connect");
+                break;
             }
             if (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime) {
-                testStepResult.addMessage(TIMEOUT_EXPIRED_MSG + " " + String.valueOf(timeout) + " seconds");
+                testStepResult.addMessage(Messages.THE_TEST_STEP_S_TIMEOUT_HAS_EXPIRED + " Timeout " + String.valueOf(timeout) + " second(s).");
                 testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
-
+                log.error("Timeout on connect");
                 return false;
             }
+        }
+        if (token.getException() != null) {
+            testStepResult.addMessage(errorText);
+            testStepResult.addMessage(Messages.EXCEPTION_TEXT + token.getException());
+            testStepResult.setError(token.getException());
+            testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
+
+            log.error("Exception text " + token.getException());
+            return false;
+        }
+
+        if (!token.isComplete()) {
+            log.warn("Token not completed");
         }
         return true;
     }
@@ -736,9 +757,10 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         } else {
             ClientCache cache = getCache(runContext);
             Client result = cache.get(connection.getName());
-            if (result != null && !result.isConnected()) {
-                result = null;
+            if (result != null && !result.isConnected() && !result.isConnecting()) {
                 cache.invalidate(connection.getName());
+                this.log.error("Invalid client in cache " + result.toString());
+                result = null;
             }
             if (result == null) {
                 try {
@@ -778,18 +800,64 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     protected boolean waitForMqttConnection(Client client, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime) throws MqttException {
+        if (client != null && client.isConnected()) {
+            return true;
+        }
+
         long timeout;
         if (maxTime == Long.MAX_VALUE) {
             timeout = 0;
         } else {
             timeout = maxTime - System.nanoTime();
             if (timeout <= 0) {
-                testStepResult.addMessage(TIMEOUT_EXPIRED_MSG);
+                testStepResult.addMessage(Messages.UNABLE_TO_CONNECT_TO_THE_SERVER_DUE_TO_TIMEOUT);
                 testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
                 return false;
             }
         }
-        return waitForMqttOperation(client.getConnectingStatus(timeout), cancellationToken, testStepResult, maxTime, "Unable connect to the MQTT broker.");
+        for (int i = 0; i < MAX_CONNECTION_ATTEMPTS; i++) {
+            IMqttToken token = client.getConnectingStatus(timeout);
+            if (!client.isConnecting() && !client.isConnected()) {
+                if (client.isClosed()) {
+                    log.error("Client is closed");
+                } else {
+                    log.error("Client in invalid initial state");
+                }
+            }
+            if (token == null) {
+                log.error("Null connection token");
+                continue;
+            }
+            if (client.isDisconnected()) {
+                log.error("Client is disconnected");
+            }
+            if (!waitForMqttOperation(token, cancellationToken, testStepResult, maxTime,
+                    Messages.UNABLE_CONNECT_TO_THE_MQTT_BROKER)) {
+                return false;
+            }
+            if (client.isDisconnected()) {
+                log.error("Client became disconnected " + client.getClientObject().getClientId());
+            }
+            if (cancellationToken.cancelled()) {
+                return false;
+            }
+            if (!client.isConnected()) {
+                if (token.isComplete()) {
+                    if (token.getClient() != client.getClientObject()) {
+                        log.error("Invalid client of the token");
+                    } else {
+                        log.warn(String.format("Not connected with completed token to connect from %d attempt: %s",
+                                i, token.getResponse().toString()));
+                    }
+                } else {
+                    log.warn(String.format("Unable to connect from %d attempt", i));
+                }
+
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
 
 
@@ -805,6 +873,19 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     public Project getOwningProject() {
         return ModelSupport.getModelItemProject(this);
+    }
+
+    protected ExecutableTestStepResult reportError(ExecutableTestStepResult result,
+                                                   String message, CancellationToken cancellationToken) {
+        if (cancellationToken.cancelled()) {
+            result.setStatus(TestStepResult.TestStepStatus.CANCELED);
+        } else {
+            if (message != null) {
+                result.addMessage(message);
+            }
+            result.setStatus(TestStepResult.TestStepStatus.FAILED);
+        }
+        return result;
     }
 
 }

@@ -3,17 +3,16 @@ package com.smartbear.mqttsupport.connection;
 import com.eviware.soapui.support.StringUtils;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.connection.ssl.SSLCertsHelper;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 public class ClientCache {
-
     private final static org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
     private static final int LEGACY_UNTITLED_CLIENT = -1;
@@ -86,12 +85,13 @@ public class ClientCache {
             return;
         }
         Client client = map.get(key);
-        if (client != null)
+        if (client != null) {
             client.dispose();
+        }
         map.remove(key);
     }
 
-    public Client add(String connectionName, ExpandedConnectionParams params) throws MqttException {
+    synchronized public Client add(String connectionName, ExpandedConnectionParams params) throws MqttException {
         Client result = get(connectionName);
         if (result == null) {
             if (!params.isGeneratedId()) {
@@ -111,14 +111,14 @@ public class ClientCache {
 
     private Client register(ExpandedConnectionParams connectionParams, int generatedClientNo) throws MqttException {
         CacheKey cacheKey = new CacheKey(connectionParams, generatedClientNo);
-        String clientId;
+        MqttAsyncClientEx clientObj;
         if (connectionParams.isGeneratedId()) {
-            clientId = MqttAsyncClient.generateClientId();
+            clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), Client.getClientIndex(), new MemoryPersistence());
         } else {
-            clientId = connectionParams.fixedId;
+            clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), connectionParams.fixedId, new MemoryPersistence());
         }
 
-        MqttAsyncClientEx clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), clientId, new MemoryPersistence());
+
         Client newClient = new Client(clientObj, createConnectionOptions(connectionParams), !connectionParams.cleanSession && !connectionParams.isGeneratedId());
         map.put(cacheKey, newClient);
         return newClient;
@@ -138,6 +138,7 @@ public class ClientCache {
             if (connectionParams.willTopic != null && connectionParams.willTopic.length() != 0) {
                 connectOptions.setWill(connectionParams.willTopic, connectionParams.willMessage, connectionParams.willQos, connectionParams.willRetained);
             }
+            connectOptions.setKeepAliveInterval(60);
         }
 
         if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())

@@ -7,9 +7,11 @@ import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.mock.MockRunner;
 import com.eviware.soapui.model.testsuite.LoadTestRunner;
+import com.eviware.soapui.model.testsuite.ProjectRunner;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
+import com.eviware.soapui.model.testsuite.TestSuiteRunner;
 import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
@@ -206,6 +208,26 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     }
     @Override
     public void mockServiceStopped(MockRunner runner) {
+
+    }
+
+    @Override
+    public void projectStarted(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void projectFinished(ProjectRunner projectRunner) {
+
+    }
+
+    @Override
+    public void testSuiteStarted(TestSuiteRunner testSuiteRunner) {
+
+    }
+
+    @Override
+    public void testSuiteFinished(TestSuiteRunner testSuiteRunner) {
 
     }
 

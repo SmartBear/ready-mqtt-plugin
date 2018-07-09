@@ -37,4 +37,8 @@ public class Messages {
     public static final String ATTEMPT_OF_ACCESS_TO_S_FILE_WITH_A_PUBLISHED_MESSAGE_HAS_FAILED = "Attempt of access to \"%s\" file with a published message has failed.";
     public static final String THE_FORMAT_OF_THE_PUBLISHED_MESSAGE_IS_NOT_SPECIFIED_OR_UNKNOWN = "The format of the published message is not specified or unknown.";
     public static final String ALREADY_DISCONNECTED_FROM_THE_MQTT_SERVER = "Already disconnected from the MQTT server";
+    public static final String UNABLE_CONNECT_TO_THE_MQTT_BROKER = "Unable connect to the MQTT broker.";
+    public static final String UNABLE_TO_CONNECT_TO_THE_SERVER_DUE_TO_TIMEOUT = "Unable to connect to the server due to timeout";
+    public static final String THE_TEST_STEP_S_TIMEOUT_HAS_EXPIRED = "Aborting current operation due to timeout.";
+    public static final String EXCEPTION_TEXT = "Exception text: ";
 }
