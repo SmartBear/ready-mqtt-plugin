@@ -1,6 +1,7 @@
 package com.smartbear.mqttsupport.connection;
 
 import com.smartbear.mqttsupport.MessageQueue;
+import com.smartbear.mqttsupport.Messages;
 import org.apache.commons.collections.list.SynchronizedList;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
@@ -80,18 +81,18 @@ public class Client implements MqttCallback, IMqttActionListener {
             }
             if (resetSession) {
                 connectionToken = new ResetSessionToken(maxTimeout / 1000);
-                log.warn("Creating reset connection token");
+                //log.warn(Messages.CREATING_RESET_CONNECTION_TOKEN);
             } else {
                 connectionOptions.setKeepAliveInterval((int) (maxTimeout / SECOND_IN_NANOSECONDS));
                 connectionOptions.setConnectionTimeout((int) (maxTimeout / SECOND_IN_NANOSECONDS));
                 //connectionOptions.setAutomaticReconnect(true);
                 connectionToken = clientObj.connect(connectionOptions, null, this);
                 if (!clientObj.isConnecting()) {
-                    log.error("Client is not attepting to connect");
+                    log.error(Messages.CLIENT_IS_NOT_ATTEPTING_TO_CONNECT);
                 }
             }
         } else {
-            log.warn("Connection token already exists");
+            //log.warn(Messages.CONNECTION_TOKEN_ALREADY_EXISTS);
             return connectionToken;
         }
         return connectionToken;
@@ -100,7 +101,7 @@ public class Client implements MqttCallback, IMqttActionListener {
 
     public void connectionLost(Throwable throwable) {
         onDisconnected();
-        //log.error("Connection lost " + clientObj.getClientId(), throwable);
+        //log.error(Messages.CONNECTION_LOST + clientObj.getClientId(), throwable);
     }
 
 
@@ -121,7 +122,7 @@ public class Client implements MqttCallback, IMqttActionListener {
 
     @Override
     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-        log.error("Internal error", exception);
+        log.error(Messages.INTERNAL_ERROR, exception);
     }
 
 
@@ -330,7 +331,7 @@ public class Client implements MqttCallback, IMqttActionListener {
 
         @Override
         public void setActionCallback(IMqttActionListener listener) {
-            throw new UnsupportedOperationException("Not implemented yet.");
+            throw new UnsupportedOperationException(Messages.NOT_IMPLEMENTED_YET);
         }
 
         @Override
@@ -350,7 +351,7 @@ public class Client implements MqttCallback, IMqttActionListener {
 
         @Override
         public void setUserContext(Object userContext) {
-            throw new UnsupportedOperationException("Not implemented yet.");
+            throw new UnsupportedOperationException(Messages.NOT_IMPLEMENTED_YET);
         }
 
         @Override

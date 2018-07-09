@@ -1,6 +1,7 @@
 package com.smartbear.mqttsupport.connection;
 
 import com.eviware.soapui.support.StringUtils;
+import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.connection.ssl.SSLCertsHelper;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -150,7 +151,7 @@ public class ClientCache {
                         connectionParams.getCrtFile(), connectionParams.getKeyFile(), connectionParams.getKeysPassword(),
                         connectionParams.getSniHost()));
             } catch (Exception e) {
-                log.error("Unable to initialize SSL connection.", e);
+                log.error(Messages.UNABLE_TO_INITIALIZE_SSL_CONNECTION, e);
             }
         }
         return connectOptions;

@@ -81,7 +81,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getServerUri();
                 }
@@ -100,7 +100,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getCaCrtFile();
                 }
@@ -118,7 +118,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getCrtFile();
                 }
@@ -136,7 +136,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getKeyFile();
                 }
@@ -154,7 +154,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getKeysPassword();
                 }
@@ -172,7 +172,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getSniHost();
                 }
@@ -191,7 +191,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getFixedId();
                 }
@@ -209,7 +209,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getLogin();
                 }
@@ -227,7 +227,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             @Override
             public String getValue(DefaultTestStepProperty defaultTestStepProperty) {
                 if (connection == null) {
-                    return "";
+                    return Messages.EMPTY_STRING;
                 } else {
                     return connection.getPassword();
                 }
@@ -251,22 +251,22 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         if (reader.readBoolean(LEGACY_CONNECTION_PROP_NAME, true)) {
             connection = new Connection();
-            connection.setServerUri(reader.readString(SERVER_URI_PROP_NAME, ""));
+            connection.setServerUri(reader.readString(SERVER_URI_PROP_NAME, Messages.EMPTY_STRING));
 
-            connection.setCaCrtFile(reader.readString(CERT_CA_CERT_SETTING_NAME, ""));
-            connection.setCrtFile(reader.readString(CERT_CLIENT_CERT_SETTING_NAME, ""));
-            connection.setKeyFile(reader.readString(CERT_KEY_SETTING_NAME, ""));
-            connection.setKeysPassword(reader.readString(CERT_KEY_PASSWORD_SETTING_NAME, ""));
-            connection.setSniHost(reader.readString(CERT_SNI_SERVER_SETTING_NAME, ""));
+            connection.setCaCrtFile(reader.readString(CERT_CA_CERT_SETTING_NAME, Messages.EMPTY_STRING));
+            connection.setCrtFile(reader.readString(CERT_CLIENT_CERT_SETTING_NAME, Messages.EMPTY_STRING));
+            connection.setKeyFile(reader.readString(CERT_KEY_SETTING_NAME, Messages.EMPTY_STRING));
+            connection.setKeysPassword(reader.readString(CERT_KEY_PASSWORD_SETTING_NAME, Messages.EMPTY_STRING));
+            connection.setSniHost(reader.readString(CERT_SNI_SERVER_SETTING_NAME, Messages.EMPTY_STRING));
 
-            connection.setFixedId(reader.readString(CLIENT_ID_PROP_NAME, ""));
-            connection.setLogin(reader.readString(LOGIN_PROP_NAME, ""));
-            connection.setPassword(reader.readString(PASSWORD_PROP_NAME, ""));
+            connection.setFixedId(reader.readString(CLIENT_ID_PROP_NAME, Messages.EMPTY_STRING));
+            connection.setLogin(reader.readString(LOGIN_PROP_NAME, Messages.EMPTY_STRING));
+            connection.setPassword(reader.readString(PASSWORD_PROP_NAME, Messages.EMPTY_STRING));
             connection.setCleanSession(true);
             connection.addPropertyChangeListener(this);
             legacyConnection = connection;
         } else {
-            String connectionName = reader.readString(CONNECTION_NAME_PROP_NAME, "");
+            String connectionName = reader.readString(CONNECTION_NAME_PROP_NAME, Messages.EMPTY_STRING);
             if (StringUtils.hasContent(connectionName)) {
                 connection = ConnectionsManager.getConnection(this, connectionName);
             }
@@ -285,7 +285,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     protected void writeData(XmlObjectBuilder builder) {
         if (connection == null) {
             builder.add(LEGACY_CONNECTION_PROP_NAME, false);
-            builder.add(CONNECTION_NAME_PROP_NAME, "");
+            builder.add(CONNECTION_NAME_PROP_NAME, Messages.EMPTY_STRING);
         } else if (connection.isLegacy()) {
             builder.add(LEGACY_CONNECTION_PROP_NAME, true);
             builder.add(SERVER_URI_PROP_NAME, connection.getServerUri());
@@ -517,7 +517,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                     }
                 }
                 if (field == null) {
-                    throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+                    throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_UNABLE_TO_FIND_THE_UNDERLYING_FIELD, propName)); //We may not get here
                 }
                 field.setAccessible(true);
                 old = field.get(this);
@@ -533,7 +533,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 }
                 field.set(this, value);
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+                throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_S, propName, e.getMessage() + Messages.CLOSE_BRACKET)); //We may not get here
             }
             updateData();
         }
@@ -579,7 +579,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 }
             }
             if (field == null) {
-                throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+                throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_UNABLE_TO_FIND_THE_UNDERLYING_FIELD, propName)); //We may not get here
             }
             field.setAccessible(true);
             old = (int) (field.get(this));
@@ -589,7 +589,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             }
             field.set(this, value);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+            throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_S, propName, e.getMessage() + Messages.CLOSE_BRACKET)); //We may not get here
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
@@ -612,7 +612,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
                 }
             }
             if (field == null) {
-                throw new RuntimeException(String.format("Error during access to %s bean property (details: unable to find the underlying field)", propName)); //We may not get here
+                throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_UNABLE_TO_FIND_THE_UNDERLYING_FIELD, propName)); //We may not get here
             }
             field.setAccessible(true);
             old = (boolean) (field.get(this));
@@ -622,7 +622,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             }
             field.set(this, value);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(String.format("Error during access to %s bean property (details: %s)", propName, e.getMessage() + ")")); //We may not get here
+            throw new RuntimeException(String.format(Messages.ERROR_DURING_ACCESS_TO_S_BEAN_PROPERTY_DETAILS_S, propName, e.getMessage() + Messages.CLOSE_BRACKET)); //We may not get here
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
@@ -676,30 +676,30 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     protected boolean waitForMqttOperation(IMqttToken token, CancellationToken cancellationToken, WsdlTestStepResult testStepResult, long maxTime, String errorText) {
         if (token == null) {
-            log.error("Connection token is null");
+            log.error(Messages.CONNECTION_TOKEN_IS_NULL);
             return false;
         }
         long timeout = (maxTime - System.nanoTime()) / 1000_000_000;
         while (!token.isComplete()) {
             if (cancellationToken.cancelled()) {
                 testStepResult.setStatus(TestStepResult.TestStepStatus.CANCELED);
-                log.error("Canceled on connect");
+                //log.error(Messages.CANCELED_ON_CONNECT);
                 return false;
             }
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
-                log.error("Interruped on connect");
+                //log.error(Messages.INTERRUPTED_ON_CONNECT);
                 break;
             }
             if (token.getException() != null) {
-                log.error("Exception on connect");
+                //log.error(Messages.EXCEPTION_ON_CONNECT);
                 break;
             }
             if (maxTime != Long.MAX_VALUE && System.nanoTime() > maxTime) {
-                testStepResult.addMessage(Messages.THE_TEST_STEP_S_TIMEOUT_HAS_EXPIRED + " Timeout " + String.valueOf(timeout) + " second(s).");
+                testStepResult.addMessage(Messages.THE_TEST_STEP_S_TIMEOUT_HAS_EXPIRED);
                 testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
-                log.error("Timeout on connect");
+                //log.error(Messages.TIMEOUT_ON_CONNECT);
                 return false;
             }
         }
@@ -709,12 +709,12 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             testStepResult.setError(token.getException());
             testStepResult.setStatus(TestStepResult.TestStepStatus.FAILED);
 
-            log.error("Exception text " + token.getException());
+            //log.error(Messages.EXCEPTION_TEXT + token.getException());
             return false;
         }
 
         if (!token.isComplete()) {
-            log.warn("Token not completed");
+            //log.warn(Messages.TOKEN_NOT_COMPLETED);
         }
         return true;
     }
@@ -731,7 +731,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     protected Client getClient(PropertyExpansionContext runContext, WsdlTestStepResult log) {
         if (connection == null) {
-            log.addMessage("Connection for this test step is not selected or is broken.");
+            log.addMessage(Messages.CONNECTION_FOR_THIS_TEST_STEP_IS_NOT_SELECTED_OR_IS_BROKEN);
             log.setStatus(TestStepResult.TestStepStatus.FAILED);
             return null;
         }
@@ -759,26 +759,26 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             Client result = cache.get(connection.getName());
             if (result != null && !result.isConnected() && !result.isConnecting()) {
                 cache.invalidate(connection.getName());
-                this.log.error("Invalid client in cache " + result.toString());
+                //this.log.error(Messages.INVALID_CLIENT_IN_CACHE + result.toString());
                 result = null;
             }
             if (result == null) {
                 try {
                     actualConnectionParams = connection.expand(runContext);
                 } catch (Exception e) {
-                    log.addMessage("Unable to expand context");
+                    log.addMessage(Messages.UNABLE_TO_EXPAND_CONTEXT);
                     log.addMessage(e.getMessage());
                     log.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return null;
                 }
                 if (!checkConnectionParams(actualConnectionParams, log)) {
-                    log.addMessage("Unable to check connection");
+                    log.addMessage(Messages.UNABLE_TO_CHECK_CONNECTION);
                     return null;
                 }
                 try {
                     result = cache.add(connection.getName(), actualConnectionParams);
                 } catch (MqttException e) {
-                    log.addMessage("Unable to store connection in cache");
+                    log.addMessage(Messages.UNABLE_TO_STORE_CONNECTION_IN_CACHE);
                     log.setError(e);
                     log.setStatus(TestStepResult.TestStepStatus.FAILED);
                     return null;
@@ -817,42 +817,47 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         for (int i = 0; i < MAX_CONNECTION_ATTEMPTS; i++) {
             IMqttToken token = client.getConnectingStatus(timeout);
+            /*
             if (!client.isConnecting() && !client.isConnected()) {
                 if (client.isClosed()) {
-                    log.error("Client is closed");
+                    log.error(Messages.CLIENT_IS_CLOSED);
                 } else {
-                    log.error("Client in invalid initial state");
+                    log.error(Messages.CLIENT_IN_INVALID_INITIAL_STATE);
                 }
             }
+            */
             if (token == null) {
-                log.error("Null connection token");
+                //log.error(Messages.NULL_CONNECTION_TOKEN);
                 continue;
             }
             if (client.isDisconnected()) {
-                log.error("Client is disconnected");
+                //log.error(Messages.CLIENT_IS_DISCONNECTED);
             }
             if (!waitForMqttOperation(token, cancellationToken, testStepResult, maxTime,
                     Messages.UNABLE_CONNECT_TO_THE_MQTT_BROKER)) {
                 return false;
             }
+            /*
             if (client.isDisconnected()) {
-                log.error("Client became disconnected " + client.getClientObject().getClientId());
+                log.error(Messages.CLIENT_BECAME_DISCONNECTED + client.getClientObject().getClientId());
             }
+            */
             if (cancellationToken.cancelled()) {
                 return false;
             }
             if (!client.isConnected()) {
+                /*
                 if (token.isComplete()) {
                     if (token.getClient() != client.getClientObject()) {
-                        log.error("Invalid client of the token");
+                        log.error(Messages.INVALID_CLIENT_OF_THE_TOKEN);
                     } else {
-                        log.warn(String.format("Not connected with completed token to connect from %d attempt: %s",
+                        log.warn(String.format(Messages.NOT_CONNECTED_WITH_COMPLETED_TOKEN_TO_CONNECT_FROM_D_ATTEMPT_S,
                                 i, token.getResponse().toString()));
                     }
                 } else {
-                    log.warn(String.format("Unable to connect from %d attempt", i));
+                    log.warn(String.format(Messages.UNABLE_TO_CONNECT_FROM_D_ATTEMPT, i));
                 }
-
+                */
                 continue;
             }
             return true;
