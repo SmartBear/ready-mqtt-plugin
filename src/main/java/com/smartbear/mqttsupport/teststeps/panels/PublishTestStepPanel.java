@@ -98,7 +98,6 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
-        root.setMaximumSize(new Dimension(500, 500));
 
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
@@ -162,6 +161,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
             scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setPreferredSize(new Dimension(500,300));
+            scrollPane.setMaximumSize(new Dimension(500,300));
             Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
             xmlEditor.addTab("Tree View", scrollPane);
         } else {
@@ -184,6 +185,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         JPanel result = new JPanel(new BorderLayout(0, 0));
         scrollPane = new JScrollPane(root, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GlobalStyles.getDefaultBorderColor()));
+        scrollPane.setPreferredSize(new Dimension(500,300));
+        scrollPane.setMaximumSize(new Dimension(500,300));
         result.add(scrollPane, BorderLayout.CENTER);
         result.add(buildToolbar(), BorderLayout.NORTH);
 
