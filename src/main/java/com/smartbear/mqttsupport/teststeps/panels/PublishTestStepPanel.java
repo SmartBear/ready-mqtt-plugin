@@ -93,7 +93,6 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
         add(inspectorPanel.getComponent());
         setPreferredSize(new Dimension(500, 300));
-        setMaximumSize(new Dimension(500, 300));
 
     }
 
@@ -141,6 +140,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
             scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setMaximumSize(new Dimension(500, 300));
             Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
             jsonEditor.addTab("Tree View", scrollPane);
         } else {
