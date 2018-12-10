@@ -406,7 +406,7 @@ public class EditConnectionDialog extends SimpleDialog {
             final JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
             Bindings.bind(willMessageTypeCombo, new SelectionInList<PublishedMessageType>(PublishedMessageType.values(), pm.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP)));
             Bindings.bind(willMessageTypeCombo, "enabled", isWillOn);
-            willMessagePanel.add(createLabel("Message type:", willMessageTypeCombo, 9));
+            willMessagePanel.add(createLabel("FFFFFFFFF:", willMessageTypeCombo, 9));
             willMessagePanel.add(willMessageTypeCombo);
             willMessageTypeCombo.addActionListener(new ActionListener() {
                 @Override
