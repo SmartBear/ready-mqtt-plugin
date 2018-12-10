@@ -112,7 +112,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         FormBuilder formBuilder = new FormBuilder(pm, mesagePanel);
         JTextField topicEdit = formBuilder.appendTextField("topic", "Topic", "Message Topic");
         PropertyExpansionPopupListener.enable(topicEdit, getModelItem());
-        formBuilder.appendComboBox("messageKind", "Message type", PublishedMessageType.values(), "");
+        formBuilder.appendComboBox("messageKind", "FFFFFFFFF", PublishedMessageType.values(), "");
 
         messageLayouts = new CardLayout();
         currentMessage = new JPanel(messageLayouts);
