@@ -141,6 +141,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
             scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            jsonTreeEditor.setMaximumSize(new Dimension(100, 100));
             Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
             jsonEditor.addTab("Tree View", scrollPane);
         } else {
