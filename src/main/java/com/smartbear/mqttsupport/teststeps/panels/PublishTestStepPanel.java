@@ -140,7 +140,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         if (jsonTreeEditor != null) {
             scrollPane = new JScrollPane(jsonTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             Bindings.bind(jsonTreeEditor, "text", pm.getModel("message"));
             jsonEditor.addTab("Tree View", scrollPane);
         } else {
@@ -161,7 +161,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         if (xmlTreeEditor != null) {
             scrollPane = new JScrollPane(xmlTreeEditor);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             Bindings.bind(xmlTreeEditor, "text", pm.getModel("message"));
             xmlEditor.addTab("Tree View", scrollPane);
         } else {
