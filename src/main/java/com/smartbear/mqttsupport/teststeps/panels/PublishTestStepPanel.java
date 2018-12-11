@@ -98,12 +98,12 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
-        root.setMaximumSize(new Dimension(1000,600));
 
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
 
         JPanel publishPanel = new JPanel(new MigLayout("", "0[grow,fill]8[]8", "0[grow,fill]0"));
+        publishPanel.setMaximumSize(new Dimension(500,300));
 
         JPanel mesagePanelRoot = new JPanel(new MigLayout("wrap", "8[grow,fill]8", "0[]0[grow,fill]0"));
         mesagePanelRoot.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, GlobalStyles.getDefaultBorderColor()));
