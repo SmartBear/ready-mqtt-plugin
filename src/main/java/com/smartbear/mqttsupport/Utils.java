@@ -22,7 +22,7 @@ import java.net.URISyntaxException;
 
 public class Utils {
 
-    public static final String TREE_VIEW_IS_UNAVAILABLE = "The Tree View is available in Ready!API only.";
+    public static final String TREE_VIEW_IS_UNAVAILABLE = "The Tree View is available in ReadyAPI only.";
 
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty){
         if(dontDistinctNullAndEmpty) {
