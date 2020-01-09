@@ -2,7 +2,6 @@ package com.smartbear.mqttsupport.connection;
 
 import com.smartbear.mqttsupport.MessageQueue;
 import com.smartbear.mqttsupport.Messages;
-import org.apache.commons.collections.list.SynchronizedList;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -17,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client implements MqttCallback, IMqttActionListener {
@@ -188,11 +186,11 @@ public class Client implements MqttCallback, IMqttActionListener {
 
     public static int getClientIndex() {
         synchronized (clientIndexPool) {
-            if (clientIndexPool.size()>0){
+            if (clientIndexPool.size() > 0) {
                 Integer value = clientIndexPool.get(0);
                 clientIndexPool.remove(value);
                 return value;
-            }else{
+            } else {
                 return maxClientIndex.getAndIncrement();
             }
         }

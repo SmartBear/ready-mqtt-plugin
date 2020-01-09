@@ -3,8 +3,6 @@ package com.smartbear.mqttsupport;
 import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlObject;
 
-import javax.xml.namespace.QName;
-
 public class XmlObjectBuilder {
 
     private XmlObject config;
@@ -42,14 +40,16 @@ public class XmlObjectBuilder {
         return this;
     }
 
-    public XmlObjectBuilder addSection(String sectionName, XmlObject section){
+    public XmlObjectBuilder addSection(String sectionName, XmlObject section) {
         cursor.beginElement(sectionName);
         cursor.push();
         XmlCursor srcCursor = section.newCursor();
         srcCursor.toNextToken();
-        while(srcCursor.currentTokenType() != XmlCursor.TokenType.NONE && srcCursor.currentTokenType() !=  XmlCursor.TokenType.ENDDOC){
+        while (srcCursor.currentTokenType() != XmlCursor.TokenType.NONE && srcCursor.currentTokenType() != XmlCursor.TokenType.ENDDOC) {
             srcCursor.copyXml(cursor);
-            if(srcCursor.currentTokenType() == XmlCursor.TokenType.START) srcCursor.toEndToken();
+            if (srcCursor.currentTokenType() == XmlCursor.TokenType.START) {
+                srcCursor.toEndToken();
+            }
             srcCursor.toNextToken();
 
         }

@@ -78,7 +78,8 @@ public class SSLCertsHelper {
             serverNames.add(serverName);
 
             return new SSLSocketFactoryWrapper(context.getSocketFactory(), serverNames);
-        }else
+        } else {
             return context.getSocketFactory();
+        }
     }
 }
