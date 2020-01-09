@@ -37,11 +37,6 @@
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
             <version>1.2.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bctsp-jdk15</artifactId>
-            <version>1.46</version>
-        </dependency>
     </dependencies>
 
     <build>
