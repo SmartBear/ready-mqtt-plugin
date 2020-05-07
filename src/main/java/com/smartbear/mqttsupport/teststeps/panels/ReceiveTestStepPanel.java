@@ -87,7 +87,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
         assertionsPanel = buildAssertionsPanel();
 
-        assertionInspector = new JComponentInspector<JComponent>(assertionsPanel, "Assertions ("
+        assertionInspector = new JComponFentInspector<JComponent>(assertionsPanel, "Assertions ("
                 + getModelItem().getAssertionCount() + ")", "Assertions for this Message", true);
 
         inspectorPanel.addInspector(assertionInspector);
