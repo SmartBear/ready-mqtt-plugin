@@ -3,6 +3,8 @@ package com.smartbear.mqttsupport.teststeps;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestAssertionConfig;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.rest.support.handlers.JsonMediaTypeHandler;
+import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
 import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertableConfig;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
@@ -36,11 +38,13 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
+import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
+import com.eviware.soapui.support.xml.XmlUtils;
 import com.google.common.base.Charsets;
 import com.smartbear.mqttsupport.CancellationToken;
 import com.smartbear.mqttsupport.MessageQueue;
@@ -923,8 +927,17 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public String getAssertableContentAsXml() {
-        //XmlObject.Factory.parse(receivedMessage)
-        return getReceivedMessage();
+        String message = getReceivedMessage();
+        if (XmlUtils.seemsToBeXml(message)) {
+            return message;
+        }
+        if (JsonUtil.seemsToBeJson(message)) {
+            JsonXmlSerializer serializer = new JsonXmlSerializer();
+            serializer.setTypeHintsEnabled(false);
+            serializer.setRootName("Request");
+            return XmlUtils.prettyPrintXml(serializer.write(JsonMediaTypeHandler.createJsonObject(message)));
+        }
+        return null;
     }
 
     @Override
