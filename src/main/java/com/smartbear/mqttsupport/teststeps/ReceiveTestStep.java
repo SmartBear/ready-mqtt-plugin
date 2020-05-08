@@ -928,7 +928,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     @Override
     public String getAssertableContentAsXml() {
         String message = getReceivedMessage();
-        ;
         if (XmlUtils.seemsToBeXml(message)) {
             return message;
         }
