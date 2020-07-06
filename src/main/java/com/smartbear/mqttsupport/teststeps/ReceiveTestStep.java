@@ -38,6 +38,7 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
+import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -55,6 +56,7 @@ import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.actions.groups.ReceiveTestStepActionGroup;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
+import com.smartbear.ready.core.ApplicationEnvironment;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -158,8 +160,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private AssertionStatus assertionStatus = AssertionStatus.UNKNOWN;
     private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
 
-    private ImageIcon validStepIcon;
-    private ImageIcon failedStepIcon;
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<ReceiveTestStep> iconAnimator;
@@ -230,8 +230,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     protected void initIcons() {
-        validStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step.png");
-        failedStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
 
@@ -829,12 +827,22 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } else {
             ImageIcon icon = iconAnimator.getIcon();
             if (icon == iconAnimator.getBaseIcon()) {
+                boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
                 switch (assertionStatus) {
-                    case VALID:
-                        setIcon(validStepIcon);
+                    case VALID: {
+                        if (isColorBlindMode) {
+                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step_color_blind.png"));
+                        } else {
+                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step.png"));
+                        }
                         break;
+                    }
                     case FAILED:
-                        setIcon(failedStepIcon);
+                        if (isColorBlindMode) {
+                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step_color_blind.png"));
+                        } else {
+                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step.png"));
+                        }
                         break;
                     case UNKNOWN:
                         setIcon(unknownStepIcon);

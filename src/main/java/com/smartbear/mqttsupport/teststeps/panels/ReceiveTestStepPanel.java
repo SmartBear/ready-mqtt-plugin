@@ -5,6 +5,7 @@ import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
@@ -27,6 +28,7 @@ import com.smartbear.mqttsupport.teststeps.ExecutionListener;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.ReceiveTestStep;
 import com.smartbear.mqttsupport.teststeps.actions.RunTestStepAction;
+import com.smartbear.ready.core.ApplicationEnvironment;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -249,9 +251,14 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     private void updateStatusIcon() {
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
+        boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
         switch (status) {
             case FAILED: {
-                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion.png"));
+                if (isColorBlindMode) {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion_color_blind.png"));
+                } else {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion.png"));
+                }
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
@@ -260,7 +267,11 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
                 break;
             }
             case VALID: {
-                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion.png"));
+                if (isColorBlindMode) {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion_color_blind.png"));
+                } else {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion.png"));
+                }
                 inspectorPanel.deactivate();
                 break;
             }
@@ -328,7 +339,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     }
 
     @Override
-    public void assertionMoved(TestAssertion testAssertion, int i)  {
+    public void assertionMoved(TestAssertion testAssertion, int i) {
         assertionListChanged();
     }
 
