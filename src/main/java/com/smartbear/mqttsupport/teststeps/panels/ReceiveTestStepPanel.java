@@ -251,14 +251,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     private void updateStatusIcon() {
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
-        boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
         switch (status) {
             case FAILED: {
-                if (isColorBlindMode) {
-                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion_color_blind.png"));
-                } else {
-                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/failed_assertion.png"));
-                }
+                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/failed_assertion.png"));
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
@@ -267,11 +262,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
                 break;
             }
             case VALID: {
-                if (isColorBlindMode) {
-                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion_color_blind.png"));
-                } else {
-                    assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_assertion.png"));
-                }
+                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_assertion.png"));
                 inspectorPanel.deactivate();
                 break;
             }

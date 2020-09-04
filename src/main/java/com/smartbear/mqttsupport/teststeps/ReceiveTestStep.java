@@ -38,7 +38,6 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
-import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -56,7 +55,6 @@ import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.actions.groups.ReceiveTestStepActionGroup;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
-import com.smartbear.ready.core.ApplicationEnvironment;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
@@ -827,31 +825,25 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } else {
             ImageIcon icon = iconAnimator.getIcon();
             if (icon == iconAnimator.getBaseIcon()) {
-                boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
-                switch (assertionStatus) {
-                    case VALID: {
-                        if (isColorBlindMode) {
-                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step_color_blind.png"));
-                        } else {
-                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step.png"));
-                        }
-                        break;
-                    }
-                    case FAILED:
-                        if (isColorBlindMode) {
-                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step_color_blind.png"));
-                        } else {
-                            setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step.png"));
-                        }
-                        break;
-                    case UNKNOWN:
-                        setIcon(unknownStepIcon);
-                        break;
-                }
+                setIcon(getIcon());
             }
         }
     }
 
+    @Override
+    public ImageIcon getIcon() {
+        switch (assertionStatus) {
+            case VALID: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_receive_step.png");
+            }
+            case FAILED: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
+            }
+            default: {
+                return unknownStepIcon;
+            }
+        }
+    }
 
     private void applyAssertion(WsdlMessageAssertion assertion) {
         assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
