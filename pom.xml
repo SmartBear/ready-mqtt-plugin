@@ -6,7 +6,7 @@
     <name>ReadyAPI MQTT Plugin</name>
     <artifactId>ready-mqtt-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.5.8</version>
+    <version>1.5.9-SNAPSHOT</version>
 
     <repositories>
         <repository>
@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.smartbear</groupId>
             <artifactId>ready-api-soapui-pro</artifactId>
-            <version>3.3.1</version>
+            <version>3.7.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.smartbear</groupId>
