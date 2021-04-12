@@ -2,6 +2,7 @@ package com.smartbear.mqttsupport.teststeps.panels;
 
 import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
+import com.eviware.soapui.impl.wsdl.panels.teststeps.common.TestStepVariables;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.model.testsuite.AssertionsListener;
 import com.eviware.soapui.model.testsuite.TestAssertion;
@@ -53,9 +54,10 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
+import java.text.MessageFormat;
 import java.util.Date;
 
-public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements AssertionsListener, ExecutionListener {
+public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements ExecutionListener {
 
     private static final String HELP_LINK = "/soapui/steps/mqtt-receive.html";
 
@@ -71,33 +73,31 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JComponentInspector<JComponent> logInspector;
     private JLogList logArea;
 
-    private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
     private CardLayout messageLayouts;
     private JPanel currentMessage;
 
     public ReceiveTestStepPanel(ReceiveTestStep modelItem) {
         super(modelItem);
         buildUI();
-        modelItem.addAssertionsListener(this);
         modelItem.addExecutionListener(this);
     }
 
     private void buildUI() {
 
         JComponent mainPanel = buildMainPanel();
-        inspectorPanel = JInspectorPanelFactory.build(mainPanel);
+        inspectorPanel = JInspectorPanelFactory.buildRequestInspectorPanel(mainPanel, getModelItemSimpleName());
 
         assertionsPanel = buildAssertionsPanel();
 
-        assertionInspector = new JComponentInspector<JComponent>(assertionsPanel, "Assertions ("
-                + getModelItem().getAssertionCount() + ")", "Assertions for this Message", true);
+        assertionInspector = new JComponentInspector<JComponent>(assertionsPanel,
+                TestStepVariables.ASSERTION_INSPECTOR_TITLE, TestStepVariables.ASSERTION_INSPECTOR_DESCRIPTION, true);
 
         inspectorPanel.addInspector(assertionInspector);
 
-        logInspector = new JComponentInspector<JComponent>(buildLogPanel(), String.format(LOG_TAB_TITLE, 0), "Log of the test step executions", true);
+        logInspector = new JComponentInspector<JComponent>(buildLogPanel(),
+                TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
-        inspectorPanel.setDefaultDividerLocation(0.6F);
         inspectorPanel.setCurrentInspector("Assertions");
 
         updateStatusIcon();
@@ -111,6 +111,9 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
+        root.setBorder(BorderFactory.createMatteBorder(
+                GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
+                GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
 
         PresentationModel<ReceiveTestStep> pm = new PresentationModel<ReceiveTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
@@ -238,14 +241,6 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
 
     protected JComponent buildLogPanel() {
         logArea = new JLogList("Test Step Log");
-
-        logArea.getLogList().getModel().addListDataListener(new ListDataChangeListener() {
-
-            public void dataChanged(ListModel model) {
-                logInspector.setTitle(String.format(LOG_TAB_TITLE, model.getSize()));
-            }
-        });
-
         return logArea;
     }
 
@@ -295,7 +290,6 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             ReceiveTestStep testStep = getModelItem();
             if (testStep != null) {
                 testStep.removeExecutionListener(this);
-                testStep.removeAssertionsListener(this);
             }
             if (assertionsPanel != null) {
                 assertionsPanel.release();
@@ -313,25 +307,6 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         }
 
         return false;
-    }
-
-    private void assertionListChanged() {
-        assertionInspector.setTitle(String.format("Assertions (%d)", getModelItem().getAssertionCount()));
-    }
-
-    @Override
-    public void assertionAdded(TestAssertion assertion) {
-        assertionListChanged();
-    }
-
-    @Override
-    public void assertionRemoved(TestAssertion assertion) {
-        assertionListChanged();
-    }
-
-    @Override
-    public void assertionMoved(TestAssertion testAssertion, int i) {
-        assertionListChanged();
     }
 
     @Override
