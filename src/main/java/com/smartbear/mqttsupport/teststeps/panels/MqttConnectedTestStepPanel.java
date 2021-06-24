@@ -1,6 +1,7 @@
 package com.smartbear.mqttsupport.teststeps.panels;
 
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JUndoableTextArea;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
@@ -14,6 +15,9 @@ import com.smartbear.mqttsupport.connection.dialog.ConfigureProjectConnectionsDi
 import com.smartbear.mqttsupport.connection.dialog.EditConnectionDialog;
 import com.smartbear.mqttsupport.teststeps.MqttConnectedTestStep;
 import com.smartbear.ready.ui.style.GlobalStyles;
+import com.smartbear.soapui.ui.components.ButtonFactory;
+import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
+import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.AbstractAction;
@@ -21,6 +25,7 @@ import javax.swing.AbstractListModel;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -219,11 +224,10 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JPanel comboPanel = new JPanel(new MigLayout("", "8[100]8[grow,fill]8[]8", "8[]8"));
         comboPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GlobalStyles.getDefaultBorderColor()));
         comboPanel.add(new JLabel("Connection:"));
-        JComboBox connection = new JComboBox();
-        connection.setModel(connectionsModel);
+        JComboBox connection = ComboBoxFactory.createComboBox(connectionsModel);
         connection.getAccessibleContext().setAccessibleDescription("Choose one of pre-configured connections");
         comboPanel.add(connection);
-        configureConnectionButton = new JButton("Configure...");
+        configureConnectionButton = ButtonFactory.createLightButton().withText("Configure...");
         configureConnectionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -245,13 +249,18 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         root.add(comboPanel);
 
         final JPanel legacyPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]8", "8[]8"));
-        JTextArea legacyInfoLabel = new JTextArea(LEGACY_WARNING, 0, 40);
+        JTextArea legacyInfoLabel = new JUndoableTextArea();
+        legacyInfoLabel.setText(LEGACY_WARNING);
+        legacyInfoLabel.setRows(40);
+        legacyInfoLabel.setBackground(GlobalStyles.TextField.ENABLED_COLOR);
+        legacyInfoLabel.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
         legacyInfoLabel.setEnabled(false);
         legacyInfoLabel.setLineWrap(true);
         legacyInfoLabel.setWrapStyleWord(true);
         legacyPanel.add(legacyInfoLabel);
 
-        JButton convertConnectionButton = new JButton(CONVERT_BUTTON_CAPTION + "...");
+        JButton convertConnectionButton = ButtonFactory.createLightButton();
+        convertConnectionButton.setText(CONVERT_BUTTON_CAPTION + "...");
         convertConnectionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -288,7 +297,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JPanel qosPanel = new JPanel();
         qosPanel.setLayout(new MigLayout("", "0[]8", "0[]0"));
         for (int i = 0; i < QOS_NAMES.length; ++i) {
-            JRadioButton qosRadio = new JRadioButton(QOS_NAMES[i]);
+            JRadioButton qosRadio = ButtonFactory.createRadioButton(QOS_NAMES[i]);
+            qosRadio.setBackground(GlobalStyles.Dialog.DARK_BACKGROUND_COLOR);
+            qosRadio.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
             Bindings.bind(qosRadio, pm.getModel("qos"), i);
             qosPanel.add(qosRadio);
         }
@@ -302,7 +313,9 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
 
         for (Object option : propertyType.getEnumConstants()) {
             UIOption uiOption = (UIOption) option;
-            JRadioButton radioButton = new JRadioButton(uiOption.getTitle());
+            JRadioButton radioButton = ButtonFactory.createRadioButton(uiOption.getTitle());
+            radioButton.setBackground(GlobalStyles.Dialog.DARK_BACKGROUND_COLOR);
+            radioButton.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
             Bindings.bind(radioButton, pm.getModel(propertyName), option);
             panel.add(radioButton);
         }
@@ -315,7 +328,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JSpinner spinEdit = Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1);
         spinEdit.setPreferredSize(new Dimension(80, spinEdit.getHeight()));
         timeoutPanel.add(spinEdit);
-        JComboBox measureCombo = new JComboBox(MqttConnectedTestStep.TimeMeasure.values());
+        JComboBox measureCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel( MqttConnectedTestStep.TimeMeasure.values()));
         Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
         timeoutPanel.add(measureCombo);
         timeoutPanel.add(new JLabel(" (0 - forever)"));

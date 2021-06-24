@@ -142,4 +142,11 @@ public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
     public void workspaceSwitched(Workspace workspace) {
 
     }
+
+
+    @Override
+    public void environmentsReordered(){
+
+    }
 }
+
