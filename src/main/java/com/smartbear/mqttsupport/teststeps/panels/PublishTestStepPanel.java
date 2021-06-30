@@ -2,6 +2,7 @@ package com.smartbear.mqttsupport.teststeps.panels;
 
 
 import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
+import com.eviware.soapui.impl.wsdl.panels.teststeps.common.TestStepVariables;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.UISupport;
@@ -66,7 +67,6 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JInspectorPanel inspectorPanel;
     private JComponentInspector<JComponent> logInspector;
     private JLogList logArea;
-    private final static String LOG_TAB_TITLE = "Test Step Log (%d)";
 
     private CardLayout messageLayouts;
     private JPanel currentMessage;
@@ -81,15 +81,12 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     private void buildUI() {
         JComponent mainPanel = buildMainPanel();
-        inspectorPanel = JInspectorPanelFactory.build(mainPanel);
+        inspectorPanel = JInspectorPanelFactory.buildRequestInspectorPanel(mainPanel, getModelItemSimpleName());
 
 
-        logInspector = new JComponentInspector<JComponent>(buildLogPanel(), String.format(LOG_TAB_TITLE, 0), "Log of the test step executions", true);
+        logInspector = new JComponentInspector<JComponent>(buildLogPanel(),
+                TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
-
-        inspectorPanel.setDefaultDividerLocation(0.6F);
-//        inspectorPanel.setCurrentInspector("Assertions");
-
 
         add(inspectorPanel.getComponent());
         setPreferredSize(new Dimension(500, 300));
@@ -98,6 +95,9 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
+        root.setBorder(BorderFactory.createMatteBorder(
+                GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
+                GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
 
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
@@ -211,14 +211,6 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
 
     protected JComponent buildLogPanel() {
         logArea = new JLogList("Test Step Log");
-
-        logArea.getLogList().getModel().addListDataListener(new ListDataChangeListener() {
-
-            public void dataChanged(ListModel model) {
-                logInspector.setTitle(String.format(LOG_TAB_TITLE, model.getSize()));
-            }
-        });
-
         return logArea;
     }
 

@@ -109,6 +109,11 @@ public class ConnectionsGrabber implements ProjectListener, WorkspaceListener {
     }
 
     @Override
+    public void environmentsReordered() {
+
+    }
+
+    @Override
     public void projectAdded(Project project) {
 
     }

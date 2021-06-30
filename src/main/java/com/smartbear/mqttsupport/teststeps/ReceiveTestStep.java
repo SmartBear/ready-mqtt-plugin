@@ -3,6 +3,8 @@ package com.smartbear.mqttsupport.teststeps;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestAssertionConfig;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.rest.support.handlers.JsonMediaTypeHandler;
+import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
 import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertableConfig;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
@@ -36,11 +38,13 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
+import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
+import com.eviware.soapui.support.xml.XmlUtils;
 import com.google.common.base.Charsets;
 import com.smartbear.mqttsupport.CancellationToken;
 import com.smartbear.mqttsupport.MessageQueue;
@@ -154,8 +158,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private AssertionStatus assertionStatus = AssertionStatus.UNKNOWN;
     private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
 
-    private ImageIcon validStepIcon;
-    private ImageIcon failedStepIcon;
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<ReceiveTestStep> iconAnimator;
@@ -226,8 +228,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     protected void initIcons() {
-        validStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/valid_receive_step.png");
-        failedStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
 
@@ -825,21 +825,25 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } else {
             ImageIcon icon = iconAnimator.getIcon();
             if (icon == iconAnimator.getBaseIcon()) {
-                switch (assertionStatus) {
-                    case VALID:
-                        setIcon(validStepIcon);
-                        break;
-                    case FAILED:
-                        setIcon(failedStepIcon);
-                        break;
-                    case UNKNOWN:
-                        setIcon(unknownStepIcon);
-                        break;
-                }
+                setIcon(getIcon());
             }
         }
     }
 
+    @Override
+    public ImageIcon getIcon() {
+        switch (assertionStatus) {
+            case VALID: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_receive_step.png");
+            }
+            case FAILED: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
+            }
+            default: {
+                return unknownStepIcon;
+            }
+        }
+    }
 
     private void applyAssertion(WsdlMessageAssertion assertion) {
         assertion.assertProperty(this, RECEIVED_MESSAGE_PROP_NAME, new MessageExchangeImpl(), new WsdlTestRunContext(this));
@@ -923,8 +927,17 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public String getAssertableContentAsXml() {
-        //XmlObject.Factory.parse(receivedMessage)
-        return getReceivedMessage();
+        String message = getReceivedMessage();
+        if (XmlUtils.seemsToBeXml(message)) {
+            return message;
+        }
+        if (JsonUtil.seemsToBeJson(message)) {
+            JsonXmlSerializer serializer = new JsonXmlSerializer();
+            serializer.setTypeHintsEnabled(false);
+            serializer.setRootName("Request");
+            return XmlUtils.prettyPrintXml(serializer.write(JsonMediaTypeHandler.createJsonObject(message)));
+        }
+        return null;
     }
 
     @Override
