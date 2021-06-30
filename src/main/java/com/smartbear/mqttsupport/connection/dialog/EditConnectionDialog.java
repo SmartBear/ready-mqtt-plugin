@@ -6,6 +6,8 @@ import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JUndoableTextArea;
+import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.jgoodies.binding.PresentationModel;
@@ -22,12 +24,17 @@ import com.smartbear.mqttsupport.connection.Connection;
 import com.smartbear.mqttsupport.connection.ConnectionParams;
 import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
+import com.smartbear.ready.ui.style.GlobalStyles;
+import com.smartbear.soapui.ui.components.ButtonFactory;
+import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
+import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
 
 import javax.swing.AbstractAction;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -96,7 +103,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private JTextField clientIDEdit;
     private JCheckBox authRequiredCheckBox;
     private JTextField loginEdit;
-    private JPasswordField passwordEdit;
+    private JUndoableTextField passwordEdit;
     private JCheckBox hidePasswordCheckBox;
     private HashMap<JComponent, JLabel> componentLabelsMap = new HashMap<>();
 
@@ -294,7 +301,7 @@ public class EditConnectionDialog extends SimpleDialog {
         tabsHolder.addTab(MAIN_PANEL_TAB, mainPanel);
 
         if (!legacy) {
-            nameEdit = new JTextField(defEditCharCount);
+            nameEdit = TextFieldFactory.createTextField(defEditCharCount);
             nameEdit.setToolTipText("The unique connection name to identify it.");
             Bindings.bind(nameEdit, pm.getModel("name"));
             mainPanel.add(createLabel("Name:", nameEdit, 0));
@@ -328,7 +335,7 @@ public class EditConnectionDialog extends SimpleDialog {
         JPanel authPanel = new JPanel(getInnerLayout());
         tabsHolder.addTab(AUTH_PANEL_TAB, authPanel);
 
-        authRequiredCheckBox = new JCheckBox("The server requires authentication");
+        authRequiredCheckBox = ButtonFactory.createCheckBox("The server requires authentication");
         authRequiredCheckBox.setToolTipText("Check if the MQTT server requires authentication to connect");
         authRequiredCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -345,27 +352,23 @@ public class EditConnectionDialog extends SimpleDialog {
         authPanel.add(authRequiredCheckBox, "span 2");
 
 
-        loginEdit = new JTextField(defEditCharCount);
+        loginEdit = TextFieldFactory.createTextField(defEditCharCount);
         loginEdit.setToolTipText("Login for MQTT server");
         Bindings.bind(loginEdit, pm.getModel(Connection.LOGIN_BEAN_PROP));
         authPanel.add(createLabel("Login:", loginEdit, 0));
         authPanel.add(loginEdit);
 
-        passwordEdit = new JPasswordField(defEditCharCount);
+        passwordEdit = TextFieldFactory.createPasswordTextField().withColumns(defEditCharCount);
         passwordEdit.setToolTipText("Password for MQTT server");
         Bindings.bind(passwordEdit, pm.getModel(Connection.PASSWORD_BEAN_PROP));
         authPanel.add(createLabel("Password:", passwordEdit, 0));
         authPanel.add(passwordEdit);
-        hidePasswordCheckBox = new JCheckBox("Hide", true);
+        hidePasswordCheckBox = ButtonFactory.createCheckBox("Hide");
+        hidePasswordCheckBox.setSelected(true);
         hidePasswordCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (hidePasswordCheckBox.isSelected()) {
-                    passwordEdit.setEchoChar(passwordChar);
-                } else {
-                    passwordChar = passwordEdit.getEchoChar();
-                    passwordEdit.setEchoChar('\0');
-                }
+                passwordEdit.setHidePassword(hidePasswordCheckBox.isSelected());
             }
         });
         passwordEdit.add(hidePasswordCheckBox);
@@ -374,27 +377,29 @@ public class EditConnectionDialog extends SimpleDialog {
             JPanel willMessagePanel = new JPanel(getInnerLayout());
             tabsHolder.addTab(WILL_PANEL_TAB, willMessagePanel);
 
-            willCheckBox = new JCheckBox("Store Will Message on the server");
+            willCheckBox = ButtonFactory.createCheckBox("Store Will Message on the server");
             willCheckBox.setToolTipText("Set up the message which is published by the server if the connection to the client is terminated unexpectedly.");
             willMessagePanel.add(new JLabel());
             willMessagePanel.add(willCheckBox);
 
             ValueModel isWillOn = new IsCheckedValueModel(willCheckBox);
 
-            willTopicEdit = new JTextField(defEditCharCount);
+            willTopicEdit = TextFieldFactory.createTextField(defEditCharCount);
             Bindings.bind(willTopicEdit, pm.getModel(Connection.WILL_TOPIC_BEAN_PROP));
             Bindings.bind(willTopicEdit, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willTopicEdit, modelItemOfConnection);
             willMessagePanel.add(createLabel("Topic:", willTopicEdit, 0));
             willMessagePanel.add(willTopicEdit);
 
-            JComboBox<String> willQos = new JComboBox<String>();
+            JComboBox willQos = ComboBoxFactory.createComboBox(new DefaultComboBoxModel());
             Bindings.bind(willQos, new SelectionInList<String>(MqttConnectedTestStepPanel.QOS_NAMES, new ValueHolder(MqttConnectedTestStepPanel.QOS_NAMES[connection.getWillQos()]), pm.getModel(Connection.WILL_QOS_BEAN_PROP)));
             Bindings.bind(willQos, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Quality of Service:", willQos, 0));
             willMessagePanel.add(willQos);
 
-            JCheckBox willRetained = new JCheckBox("Store Will Message as retained");
+            JCheckBox willRetained = ButtonFactory.createCheckBox("Store Will Message as retained");
+            willRetained.setBackground(GlobalStyles.Dialog.DARK_BACKGROUND_COLOR);
+            willRetained.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
             Bindings.bind(willRetained, pm.getModel(Connection.WILL_RETAINED_BEAN_PROP));
             Bindings.bind(willRetained, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Retained:", willRetained, 0));
@@ -403,7 +408,7 @@ public class EditConnectionDialog extends SimpleDialog {
             final CardLayout willMessageOptions = new CardLayout();
             final JPanel currentWillMessage = new JPanel(willMessageOptions);
 
-            final JComboBox<PublishedMessageType> willMessageTypeCombo = new JComboBox<PublishedMessageType>(PublishedMessageType.values());
+            final JComboBox willMessageTypeCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(PublishedMessageType.values()));
             Bindings.bind(willMessageTypeCombo, new SelectionInList<PublishedMessageType>(PublishedMessageType.values(), pm.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP)));
             Bindings.bind(willMessageTypeCombo, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Message type:", willMessageTypeCombo, 9));
@@ -418,7 +423,7 @@ public class EditConnectionDialog extends SimpleDialog {
             willMessagePanel.add(currentWillMessage, "span 2");
 
             JPanel numberPanel = new JPanel(new MigLayout("wrap 2", "0[100]8[grow,fill]0", "8[]8"));
-            final JTextField willNumberEdit = new JTextField(defEditCharCount);
+            final JTextField willNumberEdit = TextFieldFactory.createTextField(defEditCharCount);
             Bindings.bind(willNumberEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
             Bindings.bind(willNumberEdit, "enabled", isWillOn);
             PropertyExpansionPopupListener.enable(willNumberEdit, modelItemOfConnection);
@@ -427,7 +432,9 @@ public class EditConnectionDialog extends SimpleDialog {
             currentWillMessage.add(numberPanel, PublishedMessageType.IntegerValue.name());
 
             JPanel textPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
-            JTextArea willTextMemo = new JTextArea();
+            JTextArea willTextMemo = new JUndoableTextArea();
+            willTextMemo.setBackground(GlobalStyles.TextField.ENABLED_COLOR);
+            willTextMemo.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
             JScrollPane willTextScrollPane = new JScrollPane(willTextMemo);
             willTextScrollPane.setPreferredSize(minMemoSize);
             Bindings.bind(willTextMemo, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
@@ -439,12 +446,12 @@ public class EditConnectionDialog extends SimpleDialog {
             currentWillMessage.add(textPanel, PublishedMessageType.Utf8Text.name());
 
             JPanel filePanel = new JPanel(new MigLayout("", "0[100]8[grow,fill]8[]0", "0[]8"));
-            final JTextField willFileNameEdit = new JTextField(defEditCharCount);
+            final JTextField willFileNameEdit = TextFieldFactory.createTextField(defEditCharCount);
             willFileNameEdit.setToolTipText("The file which content will be used as a payload of Will Message");
             PropertyExpansionPopupListener.enable(willFileNameEdit, modelItemOfConnection);
             Bindings.bind(willFileNameEdit, "enabled", isWillOn);
             Bindings.bind(willFileNameEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            final JButton chooseFileButton = new JButton(new SelectFileAction(willFileNameEdit));
+            final JButton chooseFileButton = ButtonFactory.createLightButton().withAction(new SelectFileAction(willFileNameEdit));
             Bindings.bind(chooseFileButton, "enabled", isWillOn);
             filePanel.add(createLabel("File with message:", willFileNameEdit, 0));
             filePanel.add(willFileNameEdit);
@@ -548,7 +555,7 @@ public class EditConnectionDialog extends SimpleDialog {
 
     private void creteCheckBox(PresentationModel<Connection> pm, JPanel mainPanel,
                                String caption, String text) {
-        cleanSessionCheckBox = new JCheckBox(text);
+        cleanSessionCheckBox = ButtonFactory.createCheckBox(text);
         Bindings.bind(cleanSessionCheckBox, pm.getModel(Connection.CLEAN_SESSION_BEAN_PROP));
         mainPanel.add(createLabel(caption, cleanSessionCheckBox, 6));
         mainPanel.add(cleanSessionCheckBox, "span 2");
@@ -556,7 +563,7 @@ public class EditConnectionDialog extends SimpleDialog {
 
     private JTextField createField(int defEditCharCount, PresentationModel<Connection> pm, JPanel parent,
                                    String fieldName, String caption, String hint) {
-        JTextField newEdit = new JTextField(defEditCharCount);
+        JTextField newEdit = TextFieldFactory.createTextField(defEditCharCount);
         newEdit.setToolTipText(hint);
         Bindings.bind(newEdit, pm.getModel(fieldName));
         parent.add(createLabel(caption, newEdit, 0));

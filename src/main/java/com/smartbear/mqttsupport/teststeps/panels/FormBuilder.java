@@ -7,9 +7,14 @@ import com.eviware.soapui.support.swing.JTextComponentPopupMenu;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.list.SelectionInList;
+import com.smartbear.ready.ui.style.GlobalStyles;
+import com.smartbear.soapui.ui.components.ButtonFactory;
+import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
+import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.Action;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -55,7 +60,7 @@ public class FormBuilder {
     }
 
     public static JTextField addTextField(JComponent parent, String label, String name, String tooltip) {
-        JTextField textField = new JTextField();
+        JTextField textField = TextFieldFactory.createTextField();
         textField.setName(name);
         setToolTip(textField, tooltip);
         textField.getAccessibleContext().setAccessibleDescription(tooltip);
@@ -72,6 +77,8 @@ public class FormBuilder {
 
     private static JTextArea addTextArea(JComponent parent, String label, String tooltip) {
         JTextArea textArea = new JUndoableTextArea();
+        textArea.setBackground(GlobalStyles.TextField.ENABLED_COLOR);
+        textArea.setForeground(GlobalStyles.Common.ENABLED_TEXT_COLOR);
         Dimension textAreaDimension = textArea.getPreferredSize();
         int bordersSize = 2;
         textAreaDimension.setSize(textAreaDimension.getWidth() + bordersSize,
@@ -94,7 +101,7 @@ public class FormBuilder {
     }
 
     public JComboBox addComboBox(JComponent parent, String label, Object[] values, String tooltip) {
-        JComboBox comboBox = new JComboBox(values);
+        JComboBox comboBox = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(values));
         setToolTip(comboBox, tooltip);
         comboBox.getAccessibleContext().setAccessibleDescription(tooltip);
         append(parent, label, comboBox);
@@ -108,7 +115,9 @@ public class FormBuilder {
     }
 
     private JCheckBox addCheckBox(JComponent parent, String caption, String label, boolean selected) {
-        JCheckBox checkBox = new JCheckBox(label, selected);
+        JCheckBox checkBox = ButtonFactory.createCheckBox(caption);
+        checkBox.setBackground(GlobalStyles.Dialog.DARK_BACKGROUND_COLOR);
+        checkBox.setSelected(selected);
         checkBox.getAccessibleContext().setAccessibleDescription(caption);
         append(parent, caption, checkBox);
         return checkBox;
@@ -135,7 +144,7 @@ public class FormBuilder {
     }
 
     public JButton addRightButton(Action action) {
-        JButton button = new JButton(action);
+        JButton button = ButtonFactory.createLightButton().withAction(action);
         parent.add(new JLabel());
         parent.add(button);
         return button;
