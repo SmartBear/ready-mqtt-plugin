@@ -310,11 +310,6 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     }
 
     @Override
-    public void assertionInserted(TestAssertion assertion, int index) {
-        assertionListChanged();
-    }
-
-    @Override
     public void afterExecution(ExecutableTestStep testStep, ExecutableTestStepResult executionResult) {
         logArea.addLine(DateUtil.formatFull(new Date(executionResult.getTimeStamp())) + " - " + executionResult.getOutcome());
     }
