@@ -4,8 +4,8 @@ import com.eviware.soapui.plugins.PluginAdapter;
 import com.eviware.soapui.plugins.PluginConfiguration;
 import com.eviware.soapui.support.UISupport;
 
-@PluginConfiguration(groupId = "com.smartbear.plugins", name = "MQTT Support Plugin", version = "1.5.9",
-        autoDetect = true, description = "Adds MQTT TestSteps to ReadyAPI", minimumReadyApiVersion = "3.7.0",
+@PluginConfiguration(groupId = "com.smartbear.plugins", name = "MQTT Support Plugin", version = "1.6.0",
+        autoDetect = true, description = "Adds MQTT TestSteps to ReadyAPI", minimumReadyApiVersion = "3.9.2",
         infoUrl = "https://smartbear.com/plugins/mqtt-test-steps-page/")
 public class PluginConfig extends PluginAdapter {
 
