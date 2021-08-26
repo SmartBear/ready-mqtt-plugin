@@ -223,6 +223,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         if (testMonitor != null) {
             testMonitor.addTestMonitorListener(this);
         }
+
         updateState();
     }
 
@@ -286,9 +287,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } catch (IllegalArgumentException | NullPointerException e) {
             onUnexpectedTopic = UnexpectedTopicBehavior.Ignore;
         }
-
     }
-
 
     @Override
     protected void writeData(XmlObjectBuilder builder) {
@@ -913,8 +912,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             assertionsSupport.removeAssertion((WsdlMessageAssertion) assertion);
         } finally {
             ((WsdlMessageAssertion) assertion).release();
+            updateState();
         }
-        updateState();
     }
 
     @Override
