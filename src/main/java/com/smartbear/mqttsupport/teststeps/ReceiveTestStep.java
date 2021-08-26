@@ -142,7 +142,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private final static String ON_UNEXPECTED_TOPIC_PROP_NAME = "OnUnexpectedTopic";
     private final static String RECEIVED_MESSAGE_PROP_NAME = "ReceivedMessage";
     private final static String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
-    private final static String STATUS_PROPERTY = ReceiveTestStep.class.getName() + "@status";
     private final static String ASSERTION_SECTION = "assertion";
     private final static org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
