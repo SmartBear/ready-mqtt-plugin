@@ -61,6 +61,7 @@ import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
@@ -121,6 +122,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             this.title = title;
         }
 
+        @Nullable
         public static MessageType fromString(String s) {
             if (s == null) {
                 return null;
@@ -131,7 +133,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                 }
             }
             return null;
-
         }
     }
 
@@ -141,7 +142,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private final static String ON_UNEXPECTED_TOPIC_PROP_NAME = "OnUnexpectedTopic";
     private final static String RECEIVED_MESSAGE_PROP_NAME = "ReceivedMessage";
     private final static String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
-
     private final static String ASSERTION_SECTION = "assertion";
     private final static org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
@@ -163,7 +163,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private IconAnimator<ReceiveTestStep> iconAnimator;
 
     private ArrayList<ExecutionListener> executionListeners;
-
 
     public ReceiveTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
         super(testCase, config, true, forLoadTest);
@@ -224,6 +223,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         if (testMonitor != null) {
             testMonitor.addTestMonitorListener(this);
         }
+
         updateState();
     }
 
@@ -287,9 +287,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         } catch (IllegalArgumentException | NullPointerException e) {
             onUnexpectedTopic = UnexpectedTopicBehavior.Ignore;
         }
-
     }
-
 
     @Override
     protected void writeData(XmlObjectBuilder builder) {
@@ -870,7 +868,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public TestAssertion addAssertion(String selection) {
-
         try {
             WsdlMessageAssertion assertion = assertionsSupport.addWsdlAssertion(selection);
             if (assertion == null) {
@@ -913,11 +910,10 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     public void removeAssertion(TestAssertion assertion) {
         try {
             assertionsSupport.removeAssertion((WsdlMessageAssertion) assertion);
-
         } finally {
             ((WsdlMessageAssertion) assertion).release();
+            updateState();
         }
-        updateState();
     }
 
     @Override
@@ -991,7 +987,16 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         try {
             return assertionsSupport.moveAssertion(ix, offset);
         } finally {
-            ((WsdlMessageAssertion) assertion).release();
+            assertion.release();
+            updateState();
+        }
+    }
+
+    @Override
+    public TestAssertion insertAssertion(TestAssertion assertion, int index) {
+        try {
+            return assertionsSupport.insertAssertion(assertion, index);
+        } finally {
             updateState();
         }
     }
