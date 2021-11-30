@@ -27,6 +27,7 @@ import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
 import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
+import com.smartbear.soapui.ui.components.tabbedpane.TabbedPane;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -293,7 +294,7 @@ public class EditConnectionDialog extends SimpleDialog {
         final int indentSize = 20;
 
         JPanel root = new JPanel(new MigLayout("wrap", "[grow,fill]", "8[]8"));
-        tabsHolder = new JTabbedPane();
+        tabsHolder = new TabbedPane();
         root.add(tabsHolder);
 
         PresentationModel<Connection> pm = new PresentationModel<Connection>(connection);
@@ -459,7 +460,7 @@ public class EditConnectionDialog extends SimpleDialog {
             currentWillMessage.add(filePanel, PublishedMessageType.BinaryFile.name());
 
             JPanel jsonPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
-            final JTabbedPane willJson = new JTabbedPane();
+            final JTabbedPane willJson = new TabbedPane();
             RSyntaxTextArea syntaxTextArea = SyntaxEditorUtil.createDefaultJavaScriptSyntaxTextArea();
             Bindings.bind(syntaxTextArea, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
             Bindings.bind(syntaxTextArea, "enabled", isWillOn);
@@ -486,7 +487,7 @@ public class EditConnectionDialog extends SimpleDialog {
             currentWillMessage.add(jsonPanel, PublishedMessageType.Json.name());
 
             JPanel xmlPanel = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[grow,fill]8"));
-            final JTabbedPane willXml = new JTabbedPane();
+            final JTabbedPane willXml = new TabbedPane();
             syntaxTextArea = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
             Bindings.bind(syntaxTextArea, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP), true);
             Bindings.bind(syntaxTextArea, "enabled", isWillOn);
