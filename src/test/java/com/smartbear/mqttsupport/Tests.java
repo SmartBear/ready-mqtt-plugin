@@ -7,6 +7,7 @@ public class Tests{
 
     @Test
     public void filtersTopicsCorrectly() {
+
         assertTrue(ReceiveTestStep.topicCorrespondsFilters("sport", new String[]{"sport"}));
         assertTrue(ReceiveTestStep.topicCorrespondsFilters("sport/tennis/player1", new String[]{"sport/tennis/player1"}));
         assertTrue(!ReceiveTestStep.topicCorrespondsFilters("sport/tennis/", new String[]{"sport/tennis/player1"}));
