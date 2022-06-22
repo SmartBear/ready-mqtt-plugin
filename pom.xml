@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.smartbear</groupId>
             <artifactId>ready-api-soapui-pro</artifactId>
-            <version>3.20.1</version>
+            <version>3.40.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.lowagie</groupId>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-            <version>1.2.1</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
