@@ -1,0 +1,39 @@
+name: 01. Build
+
+on:
+  push:
+    branches:
+      - master
+      - 'release/**'
+      - 'feature/**'
+
+# See: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Maven.gitlab-ci.yml
+env:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+
+jobs:
+  build:
+    runs-on:
+      - ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Cache .m2
+        uses: actions/cache@v3
+        with:
+          path: ${GITHUB_WORKSPACE}/.m2/repository
+          key: v1-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: v1-${{ runner.os }}-maven-
+      - name: Setup ${GITHUB_WORKSPACE}/.m2/settings.xml
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
+          repositories: '[{ "id": "nexus", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }]'
+          servers: '[{ "id": "nexus-creds", "username": "${{ secrets.NEXUS_USERNAME }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }]'
+      - name: Build master branch
+        if: ${{ contains(github.ref, 'refs/heads/master') }}
+        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single deploy -DaltDeploymentRepository=nexus-creds::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/plugin-dev/
+      - name: Build feature branch
+        if: ${{ contains(github.ref, 'refs/heads/feature/') }}
+        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single deploy -DaltDeploymentRepository=nexus-creds::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/plugin-dev/
