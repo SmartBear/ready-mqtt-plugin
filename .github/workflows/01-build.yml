@@ -32,7 +32,6 @@ jobs:
           output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
           repositories: '[{ "id": "nexus", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
           plugin_repositories: '[{ "id": "plugin-repository", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }]'
-          servers: '[{ "id": "nexus-creds", "username": "${{ secrets.NEXUS_USERNAME }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }]'
       - name: Build master branch
         if: ${{ contains(github.ref, 'refs/heads/master') }}
         run: mvn $MAVEN_CLI_OPTS clean compile assembly:single deploy -DaltDeploymentRepository=nexus-creds::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/plugin-dev/
