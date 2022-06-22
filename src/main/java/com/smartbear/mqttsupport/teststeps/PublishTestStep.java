@@ -377,12 +377,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     @Override
     public ExecutableTestStepResult execute(PropertyExpansionContext runContext, CancellationToken cancellationToken) {
-        try {
-            return doExecute(runContext, cancellationToken);
-        } finally {
-            cleanAfterExecution(runContext);
-        }
-
+        return doExecute(runContext, cancellationToken);
     }
 
 

@@ -8,10 +8,9 @@ import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.ModelSupport;
-import com.eviware.soapui.model.testsuite.TestCaseRunContext;
-import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.types.StringToObjectMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.CancellationToken;
 import com.smartbear.mqttsupport.Messages;
@@ -671,6 +670,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         if (connection != null) {
             connection.removePropertyChangeListener(this);
         }
+        MqttClientCache.INSTANCE.purge();
         super.release();
     }
 
@@ -720,13 +720,9 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     }
 
     private ClientCache getCache(PropertyExpansionContext testRunContext) {
-        final String CLIENT_CACHE_PROPNAME = "client_cache";
-        ClientCache cache = (ClientCache) (testRunContext.getProperty(CLIENT_CACHE_PROPNAME));
-        if (cache == null) {
-            cache = new ClientCache();
-            testRunContext.setProperty(CLIENT_CACHE_PROPNAME, cache);
-        }
-        return cache;
+        StringToObjectMap vuc = (StringToObjectMap) testRunContext.getProperty("VirtualUserContext");
+        String vuId = vuc.get("VirtualUserId").toString();
+        return MqttClientCache.INSTANCE.getOrCreate(vuId);
     }
 
     protected Client getClient(PropertyExpansionContext runContext, WsdlTestStepResult log) {
@@ -863,17 +859,6 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             return true;
         }
         return false;
-    }
-
-
-    protected void cleanAfterExecution(PropertyExpansionContext runContext) {
-        getCache(runContext).assureFinalized();
-    }
-
-    @Override
-    public void finish(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        cleanAfterExecution(testRunContext);
-        super.finish(testRunner, testRunContext);
     }
 
     public Project getOwningProject() {

@@ -7,8 +7,11 @@ import org.eclipse.paho.client.mqttv3.MqttPingSender;
 import org.eclipse.paho.client.mqttv3.MqttToken;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import java.util.UUID;
+
 public class MqttAsyncClientEx extends MqttAsyncClient {
 
+    private final static String INSTANCE_ID = UUID.randomUUID().toString();
     private final static String READY_API_CLIENT_ID = "ReadyAPI_MQTT_client";
     private int clientIndex;
 
@@ -33,7 +36,7 @@ public class MqttAsyncClientEx extends MqttAsyncClient {
     }
 
     private static String getClientId(int clientIndex) {
-        return READY_API_CLIENT_ID + clientIndex;
+        return READY_API_CLIENT_ID + "_" + INSTANCE_ID + "_" + clientIndex;
     }
 
     public void closeConnection() {

@@ -553,11 +553,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         setReceivedMessage(null);
         setReceivedMessageTopic(null);
         updateState();
-        try {
-            return doExecute(runContext, cancellationToken);
-        } finally {
-            cleanAfterExecution(runContext);
-        }
+        return doExecute(runContext, cancellationToken);
 
     }
 
