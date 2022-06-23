@@ -2,17 +2,18 @@ package com.smartbear.mqttsupport.teststeps;
 
 import com.smartbear.mqttsupport.connection.ClientCache;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 public enum MqttClientCache {
     INSTANCE;
-    private final ConcurrentHashMap<String, ClientCache> clientCache = new ConcurrentHashMap<>();
+    private final HashMap<String, ClientCache> clientCache = new HashMap<>();
 
-    public ClientCache getOrCreate(String key) {
+    public synchronized ClientCache getOrCreate(String key) {
         return clientCache.computeIfAbsent(key, a -> new ClientCache());
     }
 
-    public void purge() {
+    public synchronized void purge() {
         clientCache.values().forEach(ClientCache::assureFinalized);
+        clientCache.clear();
     }
 }
