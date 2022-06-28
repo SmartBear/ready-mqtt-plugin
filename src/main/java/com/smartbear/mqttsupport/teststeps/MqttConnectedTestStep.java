@@ -721,8 +721,15 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     private ClientCache getCache(PropertyExpansionContext testRunContext) {
         StringToObjectMap vuc = (StringToObjectMap) testRunContext.getProperty("VirtualUserContext");
-        String vuId = vuc.get("VirtualUserId").toString();
-        return MqttClientCache.INSTANCE.getOrCreate(vuId);
+        if (vuc != null) {
+            //in a performance test
+            Object vuId = vuc.get("VirtualUserId");
+            if (vuId != null) {
+                return MqttClientCache.INSTANCE.getOrCreate(vuId.toString());
+            }
+        }
+        //regular case (api, functional test)
+        return MqttClientCache.INSTANCE.getOrCreate("DefaultConnection");
     }
 
     protected Client getClient(PropertyExpansionContext runContext, WsdlTestStepResult log) {
