@@ -15,7 +15,8 @@ env:
 jobs:
   build:
     runs-on:
-      - ubuntu-22.04
+      - self-hosted
+      - Linux
     container:
       image: maven:3.8-eclipse-temurin-17
     steps:
