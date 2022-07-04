@@ -35,7 +35,14 @@ jobs:
           plugin_repositories: '[{ "id": "plugin-repository", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }]'
       - name: Build master branch
         if: ${{ contains(github.ref, 'refs/heads/master') }}
-        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single deploy -DaltDeploymentRepository=nexus-creds::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/plugin-dev/
+        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single
       - name: Build feature branch
         if: ${{ contains(github.ref, 'refs/heads/feature/') }}
-        run: mvn $MAVEN_CLI_OPTS clean compile
+        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single
+      - name: Upload JAR
+        if: ${{ contains(github.ref, 'refs/heads/master') || contains(github.ref, 'refs/heads/feature/') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: mqtt-plugin
+          path: target/ready-mqtt-plugin-*.jar
+          retention-days: 5
