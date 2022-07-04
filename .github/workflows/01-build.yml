@@ -15,8 +15,7 @@ env:
 jobs:
   build:
     runs-on:
-      - self-hosted
-      - Linux
+      - ubuntu-22.04
     container:
       image: maven:3.8-eclipse-temurin-17
     steps:
@@ -32,8 +31,8 @@ jobs:
         uses: whelk-io/maven-settings-xml-action@v20
         with:
           output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
-          repositories: '[{ "id": "nexus", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
-          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }]'
+          repositories: '[{ "id": "nexus", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }]'
       - name: Build master branch
         if: ${{ contains(github.ref, 'refs/heads/master') }}
         run: mvn $MAVEN_CLI_OPTS clean compile assembly:single deploy -DaltDeploymentRepository=nexus-creds::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/plugin-dev/
