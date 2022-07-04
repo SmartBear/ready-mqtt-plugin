@@ -1,0 +1,76 @@
+name: 02. Start release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        type: string
+        description: Version to release!
+        required: true
+      next-version:
+        type: string
+        description: Next version on main!
+        required: true
+
+# See: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Maven.gitlab-ci.yml
+env:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$GITHUB_WORKSPACE/.m2/repository -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--settings .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+
+jobs:
+  create-release-branch:
+    if: ${{ contains(github.ref, 'refs/heads/master') }}
+    runs-on:
+      - ubuntu-22.04
+    container:
+      image: maven:3.8-eclipse-temurin-17-alpine
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup ${GITHUB_WORKSPACE}/.m2/settings.xml
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
+          repositories: '[{ "id": "nexus", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }]'
+      - name: Set release version to ${{ inputs.release-version }}
+        run: mvn $MAVEN_CLI_OPTS versions:set -DnewVersion=${{ inputs.release-version }}
+      - name: Create release branch
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Automated Change
+          branch: release/${{ inputs.release-version }}
+          file_pattern: pom.xml
+          create_branch: true
+  next-development-version:
+    if: ${{ contains(github.ref, 'refs/heads/next') }}
+    runs-on:
+      - ubuntu-22.04
+    container:
+      image: maven:3.8-eclipse-temurin-17-alpine
+    needs: create-release-branch
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup ${GITHUB_WORKSPACE}/.m2/settings.xml
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
+          repositories: '[{ "id": "nexus", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }]'
+      - name: Set next development version to ${{ inputs.next-version }}
+        run: mvn $MAVEN_CLI_OPTS versions:set -DnewVersion=${{ inputs.next-version }}
+      - name: Create branch
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Automated Change
+          branch: bot/${{ inputs.next-version }}
+          file_pattern: pom.xml
+          create_branch: true
+      - name: Create merge request back to next
+        uses: devops-infra/action-pull-request@v0.4.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          target_branch: master
+          title: Closing bot/${{ inputs.next-version }}
+          body: "**Automated pull request**"
