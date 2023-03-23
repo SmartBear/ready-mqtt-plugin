@@ -1,0 +1,45 @@
+name: 01. Build
+
+on:
+  push:
+    branches:
+      - master
+      - 'release/**'
+      - 'feature/**'
+
+# See: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Maven.gitlab-ci.yml
+env:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--settings .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+
+jobs:
+  build:
+    runs-on:
+      - ubuntu-22.04
+    container:
+      image: maven:3.8-eclipse-temurin-17-alpine
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Cache .m2
+        uses: actions/cache@v3
+        with:
+          path: ${GITHUB_WORKSPACE}/.m2/repository
+          key: v1-${{ runner.os }}-maven-${{ hashFiles('pom.xml') }}
+          restore-keys: v1-${{ runner.os }}-maven-
+      - name: Setup ${GITHUB_WORKSPACE}/.m2/settings.xml
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
+          repositories: '[{ "id": "nexus", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://rapi.tools.ops.smartbear.io/nexus/content/groups/public/" }]'
+      - name: Build plugin
+        if: ${{ contains(github.ref, 'refs/heads/master') || contains(github.ref, 'refs/heads/feature/') || contains(github.ref, 'refs/heads/release/') }}
+        run: mvn $MAVEN_CLI_OPTS clean compile assembly:single
+      - name: Upload JAR
+        if: ${{ contains(github.ref, 'refs/heads/master') || contains(github.ref, 'refs/heads/feature/') || contains(github.ref, 'refs/heads/release/') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: mqtt-plugin
+          path: target/ready-mqtt-plugin-*.jar
+          retention-days: 5
