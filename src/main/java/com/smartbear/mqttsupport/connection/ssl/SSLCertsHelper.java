@@ -40,36 +40,44 @@ public class SSLCertsHelper {
         Security.addProvider(new BouncyCastleProvider());
         JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter();
 
+        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+        ks.load(null, null);
+
         // load CA certificate
         PEMParser caCertificateReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(caCrtFile)))));
         X509CertificateHolder caCertHolder = (X509CertificateHolder) caCertificateReader.readObject();
         X509Certificate caCertificate = certificateConverter.setProvider(SECURITY_PROVIDER).getCertificate(caCertHolder);
         caCertificateReader.close();
 
-        // load client certificate
-        PEMParser clientCertificateReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(crtFile)))));
-        X509CertificateHolder clientCertificateHolder = (X509CertificateHolder) clientCertificateReader.readObject();
-        X509Certificate clientCertificate = certificateConverter.setProvider(SECURITY_PROVIDER).getCertificate(clientCertificateHolder);
-        clientCertificateReader.close();
+        if (!StringUtils.isNullOrEmpty(crtFile)) {
+            // load client certificate
+            PEMParser clientCertificateReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(crtFile)))));
+            X509CertificateHolder clientCertificateHolder = (X509CertificateHolder) clientCertificateReader.readObject();
+            X509Certificate clientCertificate = certificateConverter.setProvider(SECURITY_PROVIDER).getCertificate(clientCertificateHolder);
+            clientCertificateReader.close();
 
-        // load client private key
-        PEMParser clientPrivateKeyReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(keyFile)))));
-        Object encryptedKey = clientPrivateKeyReader.readObject();
-        clientPrivateKeyReader.close();
-        PEMDecryptorProvider decryptorProvider = new JcePEMDecryptorProviderBuilder().build(password.toCharArray());
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(SECURITY_PROVIDER);
+            // load client private key
+            PEMParser clientPrivateKeyReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(keyFile)))));
+            Object encryptedKey = clientPrivateKeyReader.readObject();
+            clientPrivateKeyReader.close();
+            PEMDecryptorProvider decryptorProvider = new JcePEMDecryptorProviderBuilder().build(password.toCharArray());
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(SECURITY_PROVIDER);
 
-        PrivateKey privateKey;
-        if (encryptedKey instanceof PEMEncryptedKeyPair) {
-            KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) encryptedKey).decryptKeyPair(decryptorProvider));
-            privateKey = keyPair.getPrivate();
-        } else if (encryptedKey instanceof PrivateKeyInfo) {
-            privateKey = converter.getPrivateKey((PrivateKeyInfo) encryptedKey);
-        } else {
-            KeyPair keyPair = converter.getKeyPair((PEMKeyPair) encryptedKey);
-            privateKey = keyPair.getPrivate();
+            PrivateKey privateKey;
+            if (encryptedKey instanceof PEMEncryptedKeyPair) {
+                KeyPair keyPair = converter.getKeyPair(((PEMEncryptedKeyPair) encryptedKey).decryptKeyPair(decryptorProvider));
+                privateKey = keyPair.getPrivate();
+            } else if (encryptedKey instanceof PrivateKeyInfo) {
+                privateKey = converter.getPrivateKey((PrivateKeyInfo) encryptedKey);
+            } else {
+                KeyPair keyPair = converter.getKeyPair((PEMKeyPair) encryptedKey);
+                privateKey = keyPair.getPrivate();
+            }
+
+            ks.setCertificateEntry("certificate", clientCertificate);
+            ks.setKeyEntry("private-key", privateKey, password.toCharArray(), new java.security.cert.Certificate[]{clientCertificate});
         }
-        
+
         // CA certificate is used to authenticate server
         KeyStore caKs = KeyStore.getInstance(KeyStore.getDefaultType());
         caKs.load(null, null);
@@ -78,10 +86,6 @@ public class SSLCertsHelper {
         tmf.init(caKs);
 
         // client key and certificates are sent to server so it can authenticate us
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        ks.load(null, null);
-        ks.setCertificateEntry("certificate", clientCertificate);
-        ks.setKeyEntry("private-key", privateKey, password.toCharArray(), new java.security.cert.Certificate[]{clientCertificate});
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, password.toCharArray());
 

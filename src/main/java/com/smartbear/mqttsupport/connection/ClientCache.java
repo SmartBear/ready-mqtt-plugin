@@ -142,10 +142,7 @@ public class ClientCache {
             connectOptions.setKeepAliveInterval(60);
         }
 
-        if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())
-                && !StringUtils.isNullOrEmpty(connectionParams.getCrtFile())
-                && !StringUtils.isNullOrEmpty(connectionParams.getKeyFile())
-                && !StringUtils.isNullOrEmpty(connectionParams.getKeysPassword())) {
+        if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())) {
             try {
                 connectOptions.setSocketFactory(SSLCertsHelper.getSocketFactory(connectionParams.getCaCrtFile(),
                         connectionParams.getCrtFile(), connectionParams.getKeyFile(), connectionParams.getKeysPassword(),
