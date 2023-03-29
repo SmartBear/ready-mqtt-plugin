@@ -629,9 +629,9 @@ public class EditConnectionDialog extends SimpleDialog {
             }
 
             if (!StringUtils.isNullOrEmpty(clientCertificateEdit.getText())) {
-                if (StringUtils.isNullOrEmpty(privateKeyEdit.getText()) || StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())) {
+                if (StringUtils.isNullOrEmpty(privateKeyEdit.getText())) {
                     activateTab(SSL_PANEL_TAB);
-                    UISupport.showErrorMessage("Client certificate was provided without Key file or Key password. Please provide Key file and Key password or clear Client certificate");
+                    UISupport.showErrorMessage("Client certificate was provided without Key file. Please provide Key file or clear Client certificate");
                     return false;
                 }
             } else {
