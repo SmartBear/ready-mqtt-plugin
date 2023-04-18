@@ -1,16 +1,8 @@
 name: 01. release
 
 on:
+  push:
   workflow_dispatch:
-    inputs:
-      s3-folder:
-        type: string
-        description: S3 folder with installers to notarize!
-        required: true
-      ready-api-version:
-        type: string
-        description: POM version required to identify installer name!
-        required: true
 
 # See: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Maven.gitlab-ci.yml
 env:
