@@ -13,8 +13,7 @@ env:
 jobs:
   nexus-release:
     runs-on:
-      - self-hosted
-      - Linux
+      - ubuntu-22.04
     container:
       image: ghcr.io/smartbear/readyapi-ci-images/maven:3.8-openjdk-17-slim-822ba26
     steps:
