@@ -1,0 +1,48 @@
+name: 01. release
+
+on:
+  workflow_dispatch:
+    inputs:
+      s3-folder:
+        type: string
+        description: S3 folder with installers to notarize!
+        required: true
+      ready-api-version:
+        type: string
+        description: POM version required to identify installer name!
+        required: true
+
+# See: https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Maven.gitlab-ci.yml
+env:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$GITHUB_WORKSPACE/.m2/repository -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--settings .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  READY_API_PRODUCT_ID: 3
+
+jobs:
+  nexus-release:
+    runs-on:
+      - self-hosted
+      - Linux
+    container:
+      image: ghcr.io/smartbear/readyapi-ci-images/maven:3.8-openjdk-17-slim-822ba26
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          # https://github.com/devops-infra/action-pull-request/issues/51
+          fetch-depth: 0
+      - name: Cache .m2
+        uses: actions/cache@v3
+        with:
+          path: ${GITHUB_WORKSPACE}/.m2/repository
+          key: v1-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: v1-${{ runner.os }}-maven-
+      - name: Setup ${GITHUB_WORKSPACE}/.m2/settings.xml
+        uses: whelk-io/maven-settings-xml-action@v20
+        with:
+          output_file: ${GITHUB_WORKSPACE}/.m2/settings.xml
+          repositories: '[{ "id": "nexus", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }, { "id": "com.teamdev", "url": "https://europe-maven.pkg.dev/jxbrowser/releases" }]'
+          plugin_repositories: '[{ "id": "plugin-repository", "url": "https://readyapinexus.tools.ops.smartbear.io/nexus/content/groups/Releases" }]'
+          servers: '[{"id":"nexus-dev","username":"${{ secrets.NEXUS_USERNAME }}","password":"${{ secrets.NEXUS_PASSWORD }}"}]'
+      - name: Maven Deploy Release
+        run: mvn ${MAVEN_CLI_OPTS} -DskipTests -DaltDeploymentRepository=nexus-dev::default::https://readyapinexus.tools.ops.smartbear.io/nexus/content/repositories/smartbear-release -P obfuscate -P assembly --also-make clean package deploy
