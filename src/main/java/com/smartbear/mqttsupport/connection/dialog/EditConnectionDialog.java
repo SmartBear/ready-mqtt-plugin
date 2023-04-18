@@ -17,13 +17,13 @@ import com.jgoodies.binding.list.SelectionInList;
 import com.jgoodies.binding.value.AbstractValueModel;
 import com.jgoodies.binding.value.ValueHolder;
 import com.jgoodies.binding.value.ValueModel;
-import com.smartbear.mqttsupport.teststeps.panels.FormBuilder;
-import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.connection.Connection;
 import com.smartbear.mqttsupport.connection.ConnectionParams;
 import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
+import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
+import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
 import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
@@ -32,7 +32,6 @@ import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
@@ -43,7 +42,6 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -617,13 +615,32 @@ public class EditConnectionDialog extends SimpleDialog {
                 return false;
             }
         }
-        if (StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(clientCertificateEdit.getText())
-                || StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(privateKeyEdit.getText())
-                || StringUtils.isNullOrEmpty(caCertificateEdit.getText()) != StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())) {
-            activateTab(SSL_PANEL_TAB);
-            caCertificateEdit.grabFocus();
-            UISupport.showErrorMessage("Please specify all the mentioned certificates and password or clear all the fields.");
-            return false;
+
+        boolean isSSL = !StringUtils.isNullOrEmpty(caCertificateEdit.getText()) || !StringUtils.isNullOrEmpty(clientCertificateEdit.getText())
+                || !StringUtils.isNullOrEmpty(privateKeyEdit.getText()) || !StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())
+                || !StringUtils.isNullOrEmpty(sniServerEdit.getText());
+
+        if (isSSL) {
+            if (StringUtils.isNullOrEmpty(caCertificateEdit.getText())) {
+                activateTab(SSL_PANEL_TAB);
+                caCertificateEdit.grabFocus();
+                UISupport.showErrorMessage("Missing CA certificate. Please provide a valid CA certificate and retry");
+                return false;
+            }
+
+            if (!StringUtils.isNullOrEmpty(clientCertificateEdit.getText())) {
+                if (StringUtils.isNullOrEmpty(privateKeyEdit.getText())) {
+                    activateTab(SSL_PANEL_TAB);
+                    UISupport.showErrorMessage("Client certificate was provided without Key file. Please provide Key file or clear Client certificate");
+                    return false;
+                }
+            } else {
+                if (!StringUtils.isNullOrEmpty(privateKeyEdit.getText()) || !StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())) {
+                    activateTab(SSL_PANEL_TAB);
+                    UISupport.showErrorMessage("Key file or Key password was provided without Client certificate. Please provide Client certificate or clear fields");
+                    return false;
+                }
+            }
         }
 
         if (!checkCertificateField(caCertificateEdit)
@@ -672,13 +689,13 @@ public class EditConnectionDialog extends SimpleDialog {
             return true;
         }
 
-        File file = new File(caCertificateEdit.getText());
+        File file = new File(edit.getText());
         if (file.exists()) {
             return true;
         }
 
         activateTab(SSL_PANEL_TAB);
-        caCertificateEdit.grabFocus();
+        edit.grabFocus();
         UISupport.showErrorMessage("Please specify a correct file path in the selected field.");
         return false;
     }
