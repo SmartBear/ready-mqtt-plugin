@@ -3,6 +3,9 @@ package com.smartbear.mqttsupport.connection.dialog;
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
+import com.eviware.soapui.model.propertyexpansion.DefaultPropertyExpansionContext;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -685,11 +688,17 @@ public class EditConnectionDialog extends SimpleDialog {
     }
 
     private boolean checkCertificateField(JTextField edit) {
-        if (StringUtils.isNullOrEmpty(edit.getText())) {
+        String input = edit.getText();
+
+        if (StringUtils.isNullOrEmpty(input)) {
             return true;
         }
 
-        File file = new File(edit.getText());
+        PropertyExpander expander = new PropertyExpander(true);
+        PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
+        input = expander.expand(context, input);
+
+        File file = new File(input);
         if (file.exists()) {
             return true;
         }
