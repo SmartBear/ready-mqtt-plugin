@@ -646,9 +646,9 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
 
-        if (!checkCertificateField(caCertificateEdit, expandProperty(caCertificateEdit))
-                || !checkCertificateField(clientCertificateEdit, expandProperty(clientCertificateEdit))
-                || !checkCertificateField(privateKeyEdit, expandProperty(privateKeyEdit))) {
+        if (!checkCertificateField(caCertificateEdit, expandProperty(caCertificateEdit.getText()))
+                || !checkCertificateField(clientCertificateEdit, expandProperty(clientCertificateEdit.getText()))
+                || !checkCertificateField(privateKeyEdit, expandProperty(privateKeyEdit.getText()))) {
             return false;
         }
 
@@ -687,10 +687,10 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
-    private String expandProperty(JTextField edit) {
+    private String expandProperty(String input) {
         PropertyExpander expander = new PropertyExpander(true);
         PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
-        return expander.expand(context, edit.getText());
+        return expander.expand(context, input);
     }
 
     boolean checkCertificateField(JTextField edit, String expandedProperty) {
