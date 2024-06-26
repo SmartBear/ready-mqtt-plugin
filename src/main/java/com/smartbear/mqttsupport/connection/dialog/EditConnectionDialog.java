@@ -687,7 +687,7 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
-    String expandProperty(JTextField edit) {
+    private String expandProperty(JTextField edit) {
         PropertyExpander expander = new PropertyExpander(true);
         PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
         return expander.expand(context, edit.getText());
@@ -709,7 +709,7 @@ public class EditConnectionDialog extends SimpleDialog {
         return false;
     }
 
-    boolean checkFileExistance(String filePath) {
+    private boolean checkFileExistance(String filePath) {
         File file = new File(filePath);
         return file.exists();
     }
