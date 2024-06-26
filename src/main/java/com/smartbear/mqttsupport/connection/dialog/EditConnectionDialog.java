@@ -646,9 +646,9 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
 
-        if (!checkCertificateField(caCertificateEdit)
-                || !checkCertificateField(clientCertificateEdit)
-                || !checkCertificateField(privateKeyEdit)) {
+        if (!checkCertificateField(caCertificateEdit, expandProperty(caCertificateEdit))
+                || !checkCertificateField(clientCertificateEdit, expandProperty(clientCertificateEdit))
+                || !checkCertificateField(privateKeyEdit, expandProperty(privateKeyEdit))) {
             return false;
         }
 
@@ -677,7 +677,7 @@ public class EditConnectionDialog extends SimpleDialog {
         return true;
     }
 
-    private void activateTab(String tabName) {
+    void activateTab(String tabName) {
         for (int i = 0; i < tabsHolder.getTabCount(); i++) {
             String title = tabsHolder.getTitleAt(i);
             if (Utils.areStringsEqual(title, tabName)) {
@@ -687,17 +687,19 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
-    private boolean checkCertificateField(JTextField edit) {
-        String input = edit.getText();
+    String expandProperty(JTextField edit) {
+        PropertyExpander expander = new PropertyExpander(true);
+        PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
+        return expander.expand(context, edit.getText());
+    }
 
-        if (StringUtils.isNullOrEmpty(input)) {
+    boolean checkCertificateField(JTextField edit, String expandedProperty) {
+
+        if (StringUtils.isNullOrEmpty(expandedProperty)) {
             return true;
         }
 
-        input = expandProperty(input);
-
-        File file = new File(input);
-        if (file.exists()) {
+        if (checkFileExistance(expandedProperty)) {
             return true;
         }
 
@@ -707,11 +709,9 @@ public class EditConnectionDialog extends SimpleDialog {
         return false;
     }
 
-    private String expandProperty(String input) {
-        PropertyExpander expander = new PropertyExpander(true);
-        PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
-        input = expander.expand(context, input);
-        return input;
+    boolean checkFileExistance(String filePath) {
+        File file = new File(filePath);
+        return file.exists();
     }
 
     @Override
