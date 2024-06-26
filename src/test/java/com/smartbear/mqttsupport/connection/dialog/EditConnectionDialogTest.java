@@ -84,16 +84,18 @@ class EditConnectionDialogTest {
 
         assertFalse(result);
     }
-}
 
-class TestableEditConnectionDialog extends EditConnectionDialog {
-    public TestableEditConnectionDialog() {
-        super(null, null, null, null, false, null);
+    private class TestableEditConnectionDialog extends EditConnectionDialog {
+        public TestableEditConnectionDialog() {
+            super(null, null, null, null, false, null);
+        }
+
+        public TestableEditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName,
+                                            ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
+            super(title, modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
+        }
+
     }
 
-    public TestableEditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName,
-                                        ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
-        super(title, modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
-    }
-
 }
+
