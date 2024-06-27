@@ -80,6 +80,8 @@ public class EditConnectionDialog extends SimpleDialog {
     private JCheckBox cleanSessionCheckBox;
     private JTextField willTopicEdit;
     private JTabbedPane tabsHolder;
+    private PropertyExpander expander;
+    private PropertyExpansionContext context;
 
     public class Result {
         public String connectionName;
@@ -124,6 +126,8 @@ public class EditConnectionDialog extends SimpleDialog {
         this.legacy = legacy;
         this.presentNames = alreadyPresentNames;
         this.initialName = initialConnectionName;
+        this.expander = new PropertyExpander(true);
+        this.context = new DefaultPropertyExpansionContext(modelItemOfConnection);
         if (initialConnectionParams == null) {
             this.connection = new Connection();
             this.connection.setName(initialConnectionName);
@@ -646,9 +650,9 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
 
-        if (!checkCertificateField(caCertificateEdit, expandProperty(caCertificateEdit.getText()))
-                || !checkCertificateField(clientCertificateEdit, expandProperty(clientCertificateEdit.getText()))
-                || !checkCertificateField(privateKeyEdit, expandProperty(privateKeyEdit.getText()))) {
+        if (!checkCertificateField(caCertificateEdit)
+                || !checkCertificateField(clientCertificateEdit)
+                || !checkCertificateField(privateKeyEdit)) {
             return false;
         }
 
@@ -687,19 +691,16 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
-    private String expandProperty(String input) {
-        PropertyExpander expander = new PropertyExpander(true);
-        PropertyExpansionContext context = new DefaultPropertyExpansionContext(modelItemOfConnection);
-        return expander.expand(context, input);
-    }
+    boolean checkCertificateField(JTextField edit) {
+        String input = edit.getText();
 
-    boolean checkCertificateField(JTextField edit, String expandedProperty) {
-
-        if (StringUtils.isNullOrEmpty(expandedProperty)) {
+        if (StringUtils.isNullOrEmpty(input)) {
             return true;
         }
 
-        if (checkFileExistance(expandedProperty)) {
+        input = expander.expand(context, input);
+
+        if (checkFileExistance(input)) {
             return true;
         }
 
@@ -711,7 +712,7 @@ public class EditConnectionDialog extends SimpleDialog {
 
     private boolean checkFileExistance(String filePath) {
         File file = new File(filePath);
-        return file.exists();
+        return file.exists() && file.isFile();
     }
 
     @Override
