@@ -1,6 +1,8 @@
 package com.smartbear.mqttsupport.connection.dialog;
 
 import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.propertyexpansion.DefaultPropertyExpansionContext;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.smartbear.mqttsupport.connection.ConnectionParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -37,6 +41,9 @@ class EditConnectionDialogTest {
 
     @Spy
     private TestableEditConnectionDialog dialog;
+
+    @Mock
+    private DefaultPropertyExpansionContext context;
 
     @TempDir
     private File tempDir;
@@ -62,6 +69,51 @@ class EditConnectionDialogTest {
     @AfterEach
     void tearDown() throws Exception {
         closeable.close();
+    }
+
+    @Test
+    void testExpandReplacesPropertyWithCorrectValue() {
+        String dummyProjectDir = "/Users/aragorn.elessar/Documents/ReadyAPI/projects-readyapi";
+        String input = "${projectDir}/test.txt";
+        String expectedOutput = dummyProjectDir + "/test.txt";
+
+        when(context.getProperty("projectDir")).thenReturn(dummyProjectDir);
+
+        String actualOutput = PropertyExpander.expandProperties(context, input);
+
+        assertEquals(expectedOutput, actualOutput);
+    }
+
+    @Test
+    void testExpandWhenInputIsNull() {
+        String actualOutput = PropertyExpander.expandProperties(context, null);
+
+        assertNull(actualOutput);
+    }
+
+    @Test
+    void testExpandWhenInputIsEmpty() {
+        String actualOutput = PropertyExpander.expandProperties(context, "");
+
+        assertEquals("", actualOutput);
+    }
+
+    @Test
+    void testExpandWhenInputIsNotAProperty() {
+        String input = "/Users/aragorn.elessar/Documents/ReadyAPI/projects-readyapi";
+        String actualOutput = PropertyExpander.expandProperties(context, input);
+
+        assertEquals(input, actualOutput);
+    }
+
+    @Test
+    void testExpandWhenPropertyDoesNotExist() {
+        String input = "${nonExistingProperty}/test.txt";
+        String expectedOutput = "/test.txt";
+
+        String actualOutput = PropertyExpander.expandProperties(context, input);
+
+        assertEquals(expectedOutput, actualOutput);
     }
 
     @Test
@@ -93,6 +145,16 @@ class EditConnectionDialogTest {
     @Test
     void testCheckCertificateFieldWhenFileDoesNotExist() {
         when(edit.getText()).thenReturn(NON_EXISTING_PATH);
+
+        boolean result = dialog.checkCertificateField(edit);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckCertificateFieldWhenFileIsDirectory() throws IOException {
+        Path createdDirectory = Files.createDirectory(tempDir.toPath().resolve(TEMPORARY_FILE_NAME));
+        when(edit.getText()).thenReturn(createdDirectory.toString());
 
         boolean result = dialog.checkCertificateField(edit);
 

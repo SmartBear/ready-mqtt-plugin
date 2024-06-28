@@ -3,9 +3,7 @@ package com.smartbear.mqttsupport.connection.dialog;
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
-import com.eviware.soapui.model.propertyexpansion.DefaultPropertyExpansionContext;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
-import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -80,8 +78,6 @@ public class EditConnectionDialog extends SimpleDialog {
     private JCheckBox cleanSessionCheckBox;
     private JTextField willTopicEdit;
     private JTabbedPane tabsHolder;
-    private PropertyExpander expander;
-    private PropertyExpansionContext context;
 
     public class Result {
         public String connectionName;
@@ -126,8 +122,6 @@ public class EditConnectionDialog extends SimpleDialog {
         this.legacy = legacy;
         this.presentNames = alreadyPresentNames;
         this.initialName = initialConnectionName;
-        this.expander = new PropertyExpander(true);
-        this.context = new DefaultPropertyExpansionContext(modelItemOfConnection);
         if (initialConnectionParams == null) {
             this.connection = new Connection();
             this.connection.setName(initialConnectionName);
@@ -698,7 +692,7 @@ public class EditConnectionDialog extends SimpleDialog {
             return true;
         }
 
-        input = expander.expand(context, input);
+        input = PropertyExpander.expandProperties(modelItemOfConnection, input);
 
         if (checkFileExistance(input)) {
             return true;
