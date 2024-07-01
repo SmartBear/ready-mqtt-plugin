@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport.connection.dialog;
 import com.eviware.soapui.impl.wsdl.actions.project.SimpleDialog;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -674,7 +675,7 @@ public class EditConnectionDialog extends SimpleDialog {
         return true;
     }
 
-    private void activateTab(String tabName) {
+    void activateTab(String tabName) {
         for (int i = 0; i < tabsHolder.getTabCount(); i++) {
             String title = tabsHolder.getTitleAt(i);
             if (Utils.areStringsEqual(title, tabName)) {
@@ -684,13 +685,16 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
-    private boolean checkCertificateField(JTextField edit) {
-        if (StringUtils.isNullOrEmpty(edit.getText())) {
+    boolean checkCertificateField(JTextField edit) {
+        String input = edit.getText();
+
+        if (StringUtils.isNullOrEmpty(input)) {
             return true;
         }
 
-        File file = new File(edit.getText());
-        if (file.exists()) {
+        input = PropertyExpander.expandProperties(modelItemOfConnection, input);
+
+        if (checkFileExistance(input)) {
             return true;
         }
 
@@ -698,6 +702,11 @@ public class EditConnectionDialog extends SimpleDialog {
         edit.grabFocus();
         UISupport.showErrorMessage("Please specify a correct file path in the selected field.");
         return false;
+    }
+
+    private boolean checkFileExistance(String filePath) {
+        File file = new File(filePath);
+        return file.exists() && file.isFile();
     }
 
     @Override
