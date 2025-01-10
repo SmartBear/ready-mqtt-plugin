@@ -6,7 +6,7 @@
     <name>ReadyAPI MQTT Plugin</name>
     <artifactId>ready-mqtt-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.6.8-SNAPSHOT</version>
+    <version>1.6.9-SNAPSHOT</version>
 
     <repositories>
         <repository>
@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.smartbear</groupId>
             <artifactId>ready-api-soapui-pro</artifactId>
-            <version>3.57.0</version>
+            <version>3.58.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.lowagie</groupId>
@@ -39,8 +39,8 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.64</version>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.79</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
