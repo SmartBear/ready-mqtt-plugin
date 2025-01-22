@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.smartbear</groupId>
             <artifactId>ready-api-soapui-pro</artifactId>
-            <version>3.57.0</version>
+            <version>3.59.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.lowagie</groupId>
@@ -39,8 +39,8 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.64</version>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.79</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
