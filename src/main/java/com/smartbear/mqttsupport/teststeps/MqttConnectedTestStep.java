@@ -800,12 +800,11 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
 
     private boolean credentialsChanged(Client result, ExpandedConnectionParams connectionParams) {
         return Optional.ofNullable(result)
-                .map(r -> Optional.ofNullable(r.getConnectionOptions())
-                    .map(connectOptions -> connectOptions.getUserName().equals(connectionParams.getLogin())
-                            && String.valueOf(connectOptions.getPassword()).equals(connectionParams.getPassword()))
-                    .orElse(false))
+                .map(Client::getConnectionOptions)
+                .map(connectOptions -> !connectOptions.getUserName().equals(connectionParams.getLogin())
+                        || !String.valueOf(connectOptions.getPassword()).equals(connectionParams.getPassword()))
                 .orElse(false);
-   }
+    }
 
     private boolean checkConnectionParams(ExpandedConnectionParams connectionParams, WsdlTestStepResult log) {
         String uriCheckResult = Utils.checkServerUri(connectionParams.getServerUri());
