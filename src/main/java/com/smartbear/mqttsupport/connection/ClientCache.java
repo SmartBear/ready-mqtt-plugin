@@ -10,7 +10,6 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 public class ClientCache {
@@ -87,6 +86,11 @@ public class ClientCache {
         }
         Client client = map.get(key);
         if (client != null) {
+            try {
+                client.disconnect(false);
+            } catch (MqttException e) {
+                log.error(Messages.UNABLE_TO_DISCONNECT_FROM_THE_MQTT_SERVER, e);
+            }
             client.dispose();
         }
         map.remove(key);

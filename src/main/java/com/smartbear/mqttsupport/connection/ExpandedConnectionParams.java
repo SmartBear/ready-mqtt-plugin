@@ -146,6 +146,13 @@ public class ExpandedConnectionParams {
         }
     }
 
+    public String getLogin(){
+        return login;
+    }
+
+    public String getPassword(){
+        return password;
+    }
 
     @Override
     public boolean equals(Object arg){

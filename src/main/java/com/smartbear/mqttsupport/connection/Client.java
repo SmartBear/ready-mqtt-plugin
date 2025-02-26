@@ -71,6 +71,9 @@ public class Client implements MqttCallback, IMqttActionListener {
         return clientObj.isDisconnected();
     }
 
+    public MqttConnectOptions getConnectionOptions() {
+        return connectionOptions;
+    }
 
     public IMqttToken getConnectingStatus(long maxTimeout) throws MqttException { // 0 - no timeout
         if (connectionToken == null) {

@@ -739,14 +739,14 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             return null;
         }
         ExpandedConnectionParams actualConnectionParams;
+        try {
+            actualConnectionParams = connection.expand(runContext);
+        } catch (Exception e) {
+            log.addMessage(e.getMessage());
+            log.setStatus(TestStepResult.TestStepStatus.FAILED);
+            return null;
+        }
         if (connection.isLegacy()) {
-            try {
-                actualConnectionParams = connection.expand(runContext);
-            } catch (Exception e) {
-                log.addMessage(e.getMessage());
-                log.setStatus(TestStepResult.TestStepStatus.FAILED);
-                return null;
-            }
             if (!checkConnectionParams(actualConnectionParams, log)) {
                 return null;
             }
@@ -760,7 +760,8 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         } else {
             ClientCache cache = getCache(runContext);
             Client result = cache.get(connection.getName());
-            if (result != null && !result.isConnected() && !result.isConnecting()) {
+            if ((result != null && !result.isConnected() && !result.isConnecting()) ||
+                    areCredentialsChanged(result, actualConnectionParams)) {
                 cache.invalidate(connection.getName());
                 //this.log.error(Messages.INVALID_CLIENT_IN_CACHE + result.toString());
                 result = null;
@@ -790,6 +791,11 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             }
             return result;
         }
+    }
+
+    private boolean areCredentialsChanged(Client result, ExpandedConnectionParams connectionParams) {
+        return result != null && result.getConnectionOptions() != null && (!result.getConnectionOptions().getUserName().equals(connectionParams.getLogin())
+                || !new String(result.getConnectionOptions().getPassword()).equals(connectionParams.getPassword()));
     }
 
     private boolean checkConnectionParams(ExpandedConnectionParams connectionParams, WsdlTestStepResult log) {
