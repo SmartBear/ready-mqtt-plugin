@@ -30,6 +30,7 @@ import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
+import java.util.Optional;
 
 
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties implements PropertyChangeListener {
@@ -739,14 +740,14 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             return null;
         }
         ExpandedConnectionParams actualConnectionParams;
+        try {
+            actualConnectionParams = connection.expand(runContext);
+        } catch (Exception e) {
+            log.addMessage(e.getMessage());
+            log.setStatus(TestStepResult.TestStepStatus.FAILED);
+            return null;
+        }
         if (connection.isLegacy()) {
-            try {
-                actualConnectionParams = connection.expand(runContext);
-            } catch (Exception e) {
-                log.addMessage(e.getMessage());
-                log.setStatus(TestStepResult.TestStepStatus.FAILED);
-                return null;
-            }
             if (!checkConnectionParams(actualConnectionParams, log)) {
                 return null;
             }
@@ -760,7 +761,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         } else {
             ClientCache cache = getCache(runContext);
             Client result = cache.get(connection.getName());
-            if (result != null && !result.isConnected() && !result.isConnecting()) {
+            if (isDisconnectedAndNotConnecting(result) || credentialsChanged(result, actualConnectionParams)) {
                 cache.invalidate(connection.getName());
                 //this.log.error(Messages.INVALID_CLIENT_IN_CACHE + result.toString());
                 result = null;
@@ -790,6 +791,19 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             }
             return result;
         }
+    }
+    private boolean isDisconnectedAndNotConnecting(Client result) {
+        return Optional.ofNullable(result)
+                .map(r -> !r.isConnected() && !r.isConnecting())
+                .orElse(false);
+    }
+
+    private boolean credentialsChanged(Client result, ExpandedConnectionParams connectionParams) {
+        return Optional.ofNullable(result)
+                .map(Client::getConnectionOptions)
+                .map(connectOptions -> !connectOptions.getUserName().equals(connectionParams.getLogin())
+                        || !String.valueOf(connectOptions.getPassword()).equals(connectionParams.getPassword()))
+                .orElse(false);
     }
 
     private boolean checkConnectionParams(ExpandedConnectionParams connectionParams, WsdlTestStepResult log) {

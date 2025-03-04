@@ -42,6 +42,7 @@ public class Messages {
     public static final String THE_TEST_STEP_S_TIMEOUT_HAS_EXPIRED = "Aborting current operation due to timeout.";
     public static final String EXCEPTION_TEXT = "Exception text: ";
     public static final String UNABLE_TO_INITIALIZE_SSL_CONNECTION = "Unable to initialize SSL connection.";
+    public static final String UNABLE_TO_DISCONNECT_FROM_THE_MQTT_SERVER = "Unable to disconnect from the MQTT server.";
     public static final String NOT_IMPLEMENTED_YET = "Not implemented yet.";
     public static final String CREATING_RESET_CONNECTION_TOKEN = "Creating reset connection token";
     public static final String CLIENT_IS_NOT_ATTEPTING_TO_CONNECT = "Client is not attempting to connect";
