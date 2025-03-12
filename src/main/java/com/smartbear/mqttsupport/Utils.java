@@ -51,6 +51,17 @@ public class Utils {
         }
     }
 
+    public static boolean areValuesEqual(char[] charArray, String s2, boolean caseInsensitive) {
+        if (charArray == null) {
+            return s2 == null;
+        }
+        if (caseInsensitive) {
+            return String.valueOf(charArray).equalsIgnoreCase(s2);
+        } else {
+            return String.valueOf(charArray).equals(s2);
+        }
+    }
+
     public static boolean areStringsEqual(String s1, String s2) {
         return areStringsEqual(s1, s2, false);
     }
