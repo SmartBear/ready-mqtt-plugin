@@ -32,6 +32,9 @@ import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
+import static com.smartbear.mqttsupport.Utils.areStringsEqual;
+import static com.smartbear.mqttsupport.Utils.areValuesEqual;
+
 
 public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties implements PropertyChangeListener {
     Logger log = LoggerFactory.getLogger(MqttConnectedTestStep.class);
@@ -346,18 +349,18 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         updateData();
         notifyPropertyChanged("connection", oldConnection, value);
-        if (!Utils.areStringsEqual(newServerUri, oldServerUri, false, true)) {
+        if (!areStringsEqual(newServerUri, oldServerUri, false, true)) {
             notifyPropertyChanged("serverUri", oldServerUri, newServerUri);
             firePropertyValueChanged(SERVER_URI_PROP_NAME, oldServerUri, newServerUri);
         }
-        if (!Utils.areStringsEqual(newClientId, oldClientId, false, true)) {
+        if (!areStringsEqual(newClientId, oldClientId, false, true)) {
             notifyPropertyChanged("clientId", oldClientId, newClientId);
             firePropertyValueChanged(CLIENT_ID_PROP_NAME, oldClientId, newClientId);
         }
-        if (!Utils.areStringsEqual(newLogin, oldLogin, false, true)) {
+        if (!areStringsEqual(newLogin, oldLogin, false, true)) {
             firePropertyValueChanged(LOGIN_PROP_NAME, oldLogin, newLogin);
         }
-        if (!Utils.areStringsEqual(newPassword, oldPassword, false, true)) {
+        if (!areStringsEqual(newPassword, oldPassword, false, true)) {
             firePropertyValueChanged(PASSWORD_PROP_NAME, oldPassword, newPassword);
         }
     }
@@ -635,31 +638,31 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         if (evt.getSource() == connection) {
-            if (Utils.areStringsEqual(evt.getPropertyName(), "serverUri")) {
+            if (areStringsEqual(evt.getPropertyName(), "serverUri")) {
                 if (connection.isLegacy()) {
                     updateData();
                 }
                 notifyPropertyChanged("serverUri", (String) evt.getOldValue(), (String) evt.getNewValue());
                 firePropertyValueChanged(SERVER_URI_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
-            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)) {
+            } else if (areStringsEqual(evt.getPropertyName(), Connection.CLIENT_ID_BEAN_PROP)) {
                 if (connection.isLegacy()) {
                     updateData();
                 }
                 notifyPropertyChanged("clientId", (String) evt.getOldValue(), (String) evt.getNewValue());
                 firePropertyValueChanged(CLIENT_ID_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
-            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)) {
+            } else if (areStringsEqual(evt.getPropertyName(), Connection.LOGIN_BEAN_PROP)) {
                 if (connection.isLegacy()) {
                     updateData();
                 }
                 notifyPropertyChanged("login", (String) evt.getOldValue(), (String) evt.getNewValue());
                 firePropertyValueChanged(LOGIN_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
-            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)) {
+            } else if (areStringsEqual(evt.getPropertyName(), Connection.PASSWORD_BEAN_PROP)) {
                 if (connection.isLegacy()) {
                     updateData();
                 }
                 notifyPropertyChanged("password", (String) evt.getOldValue(), (String) evt.getNewValue());
                 firePropertyValueChanged(PASSWORD_PROP_NAME, (String) evt.getOldValue(), (String) evt.getNewValue());
-            } else if (Utils.areStringsEqual(evt.getPropertyName(), Connection.NAME_BEAN_PROP)) {
+            } else if (areStringsEqual(evt.getPropertyName(), Connection.NAME_BEAN_PROP)) {
                 updateData();
             }
         }
@@ -801,8 +804,8 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
     private boolean credentialsChanged(Client result, ExpandedConnectionParams connectionParams) {
         return Optional.ofNullable(result)
                 .map(Client::getConnectionOptions)
-                .map(connectOptions -> !connectOptions.getUserName().equals(connectionParams.getLogin())
-                        || !String.valueOf(connectOptions.getPassword()).equals(connectionParams.getPassword()))
+                .map(connectOptions -> !areStringsEqual(connectOptions.getUserName(), connectionParams.getLogin())
+                        || !areValuesEqual(connectOptions.getPassword(), connectionParams.getPassword(), false))
                 .orElse(false);
     }
 
