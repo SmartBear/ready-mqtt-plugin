@@ -24,7 +24,7 @@ import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.teststeps.actions.groups.DropConnectionTestStepActionGroup;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.ImageIcon;
@@ -37,8 +37,7 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
     private IconAnimator<DropConnectionTestStep> iconAnimator;
-    private final static org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
-
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
     private DropMethod dropMethod = DropMethod.SendDisconnect;
 

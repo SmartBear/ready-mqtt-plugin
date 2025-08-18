@@ -6,26 +6,21 @@ import com.eviware.soapui.support.StringUtils;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
 import com.jgoodies.binding.value.ValueModel;
-import com.smartbear.ready.ui.style.GlobalStyles;
-import com.smartbear.soapui.ui.components.ButtonFactory;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import org.fife.ui.rtextarea.RTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.JComponent;
-import javax.swing.JFormattedTextField;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.plaf.basic.BasicSpinnerUI;
-import java.awt.Component;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
 public class Utils {
 
@@ -33,8 +28,8 @@ public class Utils {
 
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty) {
         if (dontDistinctNullAndEmpty) {
-            if (s1 == null || s1.length() == 0) {
-                return s2 == null || s2.length() == 0;
+            if (s1 == null || s1.isEmpty()) {
+                return s2 == null || s2.isEmpty();
             }
         }
         return areStringsEqual(s1, s2, caseInsensitive);
@@ -51,14 +46,15 @@ public class Utils {
         }
     }
 
-    public static boolean areValuesEqual(char[] charArray, String s2, boolean caseInsensitive) {
-        if (charArray == null) {
+    public static boolean areValuesEqual(byte[] byteArray, String s2, boolean caseInsensitive) {
+        if (byteArray == null) {
             return s2 == null;
         }
+        String byteArrayAsString = new String(byteArray, java.nio.charset.StandardCharsets.UTF_8);
         if (caseInsensitive) {
-            return String.valueOf(charArray).equalsIgnoreCase(s2);
+            return byteArrayAsString.equalsIgnoreCase(s2);
         } else {
-            return String.valueOf(charArray).equals(s2);
+            return byteArrayAsString.equals(s2);
         }
     }
 

@@ -4,9 +4,9 @@ import com.eviware.soapui.support.StringUtils;
 import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.connection.ssl.SSLCertsHelper;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
@@ -123,25 +123,24 @@ public class ClientCache {
             clientObj = new MqttAsyncClientEx(connectionParams.getActualServerUri(), connectionParams.fixedId, new MemoryPersistence());
         }
 
-
         Client newClient = new Client(clientObj, createConnectionOptions(connectionParams), !connectionParams.cleanSession && !connectionParams.isGeneratedId());
         map.put(cacheKey, newClient);
         return newClient;
     }
 
-    private MqttConnectOptions createConnectionOptions(ExpandedConnectionParams connectionParams) {
-        MqttConnectOptions connectOptions;
+    private MqttConnectionOptions createConnectionOptions(ExpandedConnectionParams connectionParams) {
+        MqttConnectionOptions connectOptions;
         if (connectionParams == null) {
             connectOptions = getDefaultConnectOptions();
         } else {
-            connectOptions = new MqttConnectOptions();
-            connectOptions.setCleanSession(connectionParams.cleanSession);
+            connectOptions = new MqttConnectionOptions();
+            connectOptions.setCleanStart(connectionParams.cleanSession);
             if (connectionParams.hasCredentials()) {
                 connectOptions.setUserName(connectionParams.login);
-                connectOptions.setPassword(connectionParams.password.toCharArray());
+                connectOptions.setPassword(connectionParams.password.getBytes());
             }
-            if (connectionParams.willTopic != null && connectionParams.willTopic.length() != 0) {
-                connectOptions.setWill(connectionParams.willTopic, connectionParams.willMessage, connectionParams.willQos, connectionParams.willRetained);
+            if (connectionParams.willTopic != null && !connectionParams.willTopic.isEmpty()) {
+                connectOptions.setWill(connectionParams.willTopic, connectionParams.willMessage);
             }
             connectOptions.setKeepAliveInterval(60);
         }
@@ -158,10 +157,9 @@ public class ClientCache {
         return connectOptions;
     }
 
-
-    private MqttConnectOptions getDefaultConnectOptions() {
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setCleanSession(true);
+    private MqttConnectionOptions getDefaultConnectOptions() {
+        MqttConnectionOptions options = new MqttConnectionOptions();
+        options.setCleanStart(true);
         return options;
     }
 

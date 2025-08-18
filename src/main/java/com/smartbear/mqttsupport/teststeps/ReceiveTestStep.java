@@ -57,8 +57,8 @@ import com.smartbear.mqttsupport.teststeps.actions.groups.ReceiveTestStepActionG
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
+import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
