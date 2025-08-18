@@ -7,8 +7,8 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.components.JUndoablePasswordField;
 import com.eviware.soapui.support.components.JUndoableTextArea;
-import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.jgoodies.binding.PresentationModel;
@@ -103,7 +103,7 @@ public class EditConnectionDialog extends SimpleDialog {
     private JTextField clientIDEdit;
     private JCheckBox authRequiredCheckBox;
     private JTextField loginEdit;
-    private JUndoableTextField passwordEdit;
+    private JUndoablePasswordField passwordEdit;
     private JCheckBox hidePasswordCheckBox;
     private HashMap<JComponent, JLabel> componentLabelsMap = new HashMap<>();
 

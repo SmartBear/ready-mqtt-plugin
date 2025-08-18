@@ -9,7 +9,7 @@ import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.components.JUndoableTextField;
+import com.eviware.soapui.support.components.JUndoablePasswordField;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.connection.Connection;
@@ -98,7 +98,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
         tableModel.setData(ConnectionsManager.getAvailableConnections(connectionsTargetItem));
         tableModel.setUsageData(formUsageData());
         grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        JUndoableTextField pswEdit = TextFieldFactory.createPasswordTextField();
+        JUndoablePasswordField pswEdit = TextFieldFactory.createPasswordTextField();
         grid.getColumn(ConnectionsTableModel.Column.Password).setCellRenderer(new PasswordRenderer(pswEdit.getEchoChar()));
         grid.getColumn(ConnectionsTableModel.Column.Password).setCellEditor(new DefaultCellEditor(pswEdit));
         return new JScrollPane(grid);
