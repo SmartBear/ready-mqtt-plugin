@@ -29,8 +29,8 @@ import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.connection.Client;
 import com.smartbear.mqttsupport.teststeps.actions.groups.PublishTestStepActionGroup;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.ImageIcon;

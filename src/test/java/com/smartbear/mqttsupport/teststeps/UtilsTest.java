@@ -12,11 +12,11 @@ public class UtilsTest {
     @Test
     public void checkAreValuesEquals() {
         assertFalse(areValuesEqual(null, "password", false));
-        assertTrue(areValuesEqual("password".toCharArray(), "password", false));
-        assertFalse(areValuesEqual("password".toCharArray(), "passsword", false));
-        assertTrue(areValuesEqual("password".toCharArray(), "Password", true));
-        assertFalse(areValuesEqual("password".toCharArray(), "Password", true));
-        assertFalse(areValuesEqual("pass".toCharArray(), null, false));
+        assertTrue(areValuesEqual("password".getBytes(), "password", false));
+        assertFalse(areValuesEqual("password".getBytes(), "passsword", false));
+        assertTrue(areValuesEqual("password".getBytes(), "Password", true));
+        assertFalse(areValuesEqual("password".getBytes(), "Password", true));
+        assertFalse(areValuesEqual("pass".getBytes(), null, false));
         assertTrue(areValuesEqual(null, null, false));
     }
 

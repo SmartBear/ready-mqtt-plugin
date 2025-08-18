@@ -12,6 +12,7 @@ import com.smartbear.mqttsupport.XmlObjectBuilder;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import org.apache.commons.ssl.OpenSSL;
 import org.apache.xmlbeans.XmlObject;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -315,12 +316,8 @@ public class Connection implements PropertyChangeNotifier {
         }
     }
 
-    public boolean hasCredentials() {
-        return login != null && !"".equals(login);
-    }
-
     public void setCredentials(String login, String password) {
-        if (login == null || login.length() == 0) {
+        if (login == null || login.isEmpty()) {
             setLogin(login);
             setPassword(null);
         } else {
@@ -328,7 +325,6 @@ public class Connection implements PropertyChangeNotifier {
             setPassword(password);
         }
     }
-
 
     public boolean isCleanSession() {
         return cleanSession;
@@ -412,9 +408,7 @@ public class Connection implements PropertyChangeNotifier {
             willRetained = newValue;
             notifyPropertyChanged(WILL_RETAINED_BEAN_PROP, old, newValue);
         }
-
     }
-
 
     public ConnectionParams getParams() {
         return new ConnectionParams(getServerUri(),
@@ -435,7 +429,7 @@ public class Connection implements PropertyChangeNotifier {
         setCredentials(params.login, params.password);
         setWillTopic(params.willTopic);
         setCleanSession(params.cleanSession);
-        if (params.willTopic != null && params.willTopic.length() != 0) {
+        if (params.willTopic != null && !params.willTopic.isEmpty()) {
             setWillMessageType(params.willMessageType);
             setWillMessage(params.willMessage);
             setWillQos(params.willQos);
@@ -461,7 +455,7 @@ public class Connection implements PropertyChangeNotifier {
         if (getWillMessageType() == null) {
             throw new IllegalArgumentException("The message type is not specified.");
         }
-        result.willMessage = getWillMessageType().toPayload(willMessageStr, ModelSupport.getModelItemProject(context.getModelItem()));
+        result.willMessage = new MqttMessage(getWillMessageType().toPayload(willMessageStr, ModelSupport.getModelItemProject(context.getModelItem())));
         result.willQos = getWillQos();
         result.willRetained = isWillRetained();
 
