@@ -98,7 +98,7 @@ public class Client implements MqttCallback, MqttActionListener {
 
     @Override
     public void disconnected(MqttDisconnectResponse disconnectResponse) {
-
+        onDisconnected();
     }
 
     @Override

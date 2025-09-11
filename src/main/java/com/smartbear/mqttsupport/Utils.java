@@ -20,7 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 
 public class Utils {
 
@@ -50,7 +50,7 @@ public class Utils {
         if (byteArray == null) {
             return s2 == null;
         }
-        String byteArrayAsString = new String(byteArray, java.nio.charset.StandardCharsets.UTF_8);
+        String byteArrayAsString = new String(byteArray, StandardCharsets.UTF_8);
         if (caseInsensitive) {
             return byteArrayAsString.equalsIgnoreCase(s2);
         } else {

@@ -9,6 +9,7 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 
@@ -137,21 +138,21 @@ public class ClientCache {
             connectOptions.setCleanStart(connectionParams.cleanSession);
             if (connectionParams.hasCredentials()) {
                 connectOptions.setUserName(connectionParams.login);
-                connectOptions.setPassword(connectionParams.password.getBytes());
+                connectOptions.setPassword(connectionParams.password.getBytes(StandardCharsets.UTF_8));
             }
             if (connectionParams.willTopic != null && !connectionParams.willTopic.isEmpty()) {
                 connectOptions.setWill(connectionParams.willTopic, connectionParams.willMessage);
             }
             connectOptions.setKeepAliveInterval(60);
-        }
 
-        if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())) {
-            try {
-                connectOptions.setSocketFactory(SSLCertsHelper.getSocketFactory(connectionParams.getCaCrtFile(),
-                        connectionParams.getCrtFile(), connectionParams.getKeyFile(), connectionParams.getKeysPassword(),
-                        connectionParams.getSniHost()));
-            } catch (Exception e) {
-                log.error(Messages.UNABLE_TO_INITIALIZE_SSL_CONNECTION, e);
+            if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())) {
+                try {
+                    connectOptions.setSocketFactory(SSLCertsHelper.getSocketFactory(connectionParams.getCaCrtFile(),
+                            connectionParams.getCrtFile(), connectionParams.getKeyFile(), connectionParams.getKeysPassword(),
+                            connectionParams.getSniHost()));
+                } catch (Exception e) {
+                    log.error(Messages.UNABLE_TO_INITIALIZE_SSL_CONNECTION, e);
+                }
             }
         }
         return connectOptions;
