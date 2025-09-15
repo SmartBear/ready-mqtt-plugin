@@ -21,8 +21,8 @@ import com.smartbear.mqttsupport.connection.ClientCache;
 import com.smartbear.mqttsupport.connection.Connection;
 import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.connection.ExpandedConnectionParams;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.mqttv5.client.IMqttToken;
+import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

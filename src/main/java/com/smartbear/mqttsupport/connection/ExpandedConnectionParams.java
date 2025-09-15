@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport.connection;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.Utils;
 import org.apache.commons.lang.ArrayUtils;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,7 +23,7 @@ public class ExpandedConnectionParams {
     public String password;
     public boolean cleanSession;
     public String willTopic;
-    public byte[] willMessage;
+    public MqttMessage willMessage;
     public int willQos;
     public boolean willRetained;
 
@@ -44,7 +45,8 @@ public class ExpandedConnectionParams {
         this.cleanSession = cleanSession;
     }
 
-    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession, String willTopic, byte[] willMessage, int willQos, boolean willRetained){
+    public ExpandedConnectionParams(String serverUri, String clientId, String login, String password, boolean cleanSession,
+                                    String willTopic, MqttMessage willMessage, int willQos, boolean willRetained) {
         this.originalServerUri = serverUri;
         this.fixedId = clientId;
         this.login = login;

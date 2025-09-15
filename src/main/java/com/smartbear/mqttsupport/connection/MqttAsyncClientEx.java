@@ -1,18 +1,17 @@
 package com.smartbear.mqttsupport.connection;
 
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttPingSender;
-import org.eclipse.paho.client.mqttv3.MqttToken;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
+import org.eclipse.paho.mqttv5.client.MqttClientPersistence;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.client.MqttToken;
+import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 
 import java.util.UUID;
 
 public class MqttAsyncClientEx extends MqttAsyncClient {
 
-    private final static String INSTANCE_ID = UUID.randomUUID().toString();
-    private final static String READY_API_CLIENT_ID = "ReadyAPI_MQTT_client";
+    private static final String INSTANCE_ID = UUID.randomUUID().toString();
+    private static final String READY_API_CLIENT_ID = "ReadyAPI_MQTT_client";
     private int clientIndex;
 
     public MqttAsyncClientEx(String serverURI, int clientIndex) throws MqttException {
@@ -22,11 +21,6 @@ public class MqttAsyncClientEx extends MqttAsyncClient {
 
     public MqttAsyncClientEx(String serverURI, int clientIndex, MqttClientPersistence persistence) throws MqttException {
         super(serverURI, getClientId(clientIndex), persistence);
-        this.clientIndex = clientIndex;
-    }
-
-    public MqttAsyncClientEx(String serverURI, int clientIndex, MqttClientPersistence persistence, MqttPingSender pingSender) throws MqttException {
-        super(serverURI, getClientId(clientIndex), persistence, pingSender);
         this.clientIndex = clientIndex;
     }
 
@@ -41,8 +35,7 @@ public class MqttAsyncClientEx extends MqttAsyncClient {
 
     public void closeConnection() {
         MqttToken token = new MqttToken(comms.getClient().getClientId());
-        comms.shutdownConnection(token, null);
-
+        comms.shutdownConnection(token, null, null);
     }
 
     public boolean isConnecting() {
