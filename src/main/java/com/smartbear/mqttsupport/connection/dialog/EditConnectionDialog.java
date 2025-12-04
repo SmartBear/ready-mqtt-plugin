@@ -25,6 +25,7 @@ import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
+import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
 import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
@@ -36,7 +37,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -63,6 +63,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.smartbear.ready.ui.components.designkit.buttons.SBButtonBuilder.createPrimaryButton;
 
 
 public class EditConnectionDialog extends SimpleDialog {
@@ -451,7 +453,8 @@ public class EditConnectionDialog extends SimpleDialog {
             PropertyExpansionPopupListener.enable(willFileNameEdit, modelItemOfConnection);
             Bindings.bind(willFileNameEdit, "enabled", isWillOn);
             Bindings.bind(willFileNameEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            final JButton chooseFileButton = ButtonFactory.createLightButton().withAction(new SelectFileAction(willFileNameEdit));
+            final SBButton chooseFileButton = createPrimaryButton().setAccessibleName("Choose a file").build();
+            chooseFileButton.setAction(new SelectFileAction(willFileNameEdit));
             Bindings.bind(chooseFileButton, "enabled", isWillOn);
             filePanel.add(createLabel("File with message:", willFileNameEdit, 0));
             filePanel.add(willFileNameEdit);
