@@ -4,13 +4,11 @@ package com.smartbear.mqttsupport.teststeps.panels;
 import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.common.TestStepVariables;
 import com.eviware.soapui.support.DateUtil;
-import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
-import com.eviware.soapui.support.components.SimpleBindingForm;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
@@ -24,6 +22,7 @@ import com.smartbear.mqttsupport.teststeps.ExecutionListener;
 import com.smartbear.mqttsupport.teststeps.PublishTestStep;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.actions.RunTestStepAction;
+import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -40,7 +39,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
@@ -58,7 +56,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JTextField numberEdit;
     private JTextArea textMemo;
     private JTextField fileNameEdit;
-    private JButton chooseFileButton;
+    private SBButton chooseFileButton;
     private JTabbedPane jsonEditor;
     private JComponent jsonTreeEditor;
     private JTabbedPane xmlEditor;
@@ -67,10 +65,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JInspectorPanel inspectorPanel;
     private JComponentInspector<JComponent> logInspector;
     private JLogList logArea;
-
     private CardLayout messageLayouts;
     private JPanel currentMessage;
-
 
     public PublishTestStepPanel(PublishTestStep modelItem) {
         super(modelItem);
@@ -78,19 +74,16 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         modelItem.addExecutionListener(this);
     }
 
-
     private void buildUI() {
         JComponent mainPanel = buildMainPanel();
         inspectorPanel = JInspectorPanelFactory.buildRequestInspectorPanel(mainPanel, getModelItemSimpleName());
 
-
-        logInspector = new JComponentInspector<JComponent>(buildLogPanel(),
+        logInspector = new JComponentInspector<>(buildLogPanel(),
                 TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
         add(inspectorPanel.getComponent());
         setPreferredSize(new Dimension(500, 300));
-
     }
 
     private JComponent buildMainPanel() {
@@ -125,7 +118,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         FormBuilder cardBuilder = formBuilder.addCard(PublishedMessageType.BinaryFile.name(), new MigLayout("", "0[100]8[grow,fill]8[]0", "8[]0"));
         fileNameEdit = cardBuilder.appendTextField("message", "File name", "The file which content will be used as payload");
         PropertyExpansionPopupListener.enable(fileNameEdit, getModelItem());
-        chooseFileButton = cardBuilder.addRightButton(new SelectFileAction());
+        chooseFileButton = cardBuilder.addRightButton(new SelectFileAction(), "Choose a file");
 
         JScrollPane scrollPane;
 
