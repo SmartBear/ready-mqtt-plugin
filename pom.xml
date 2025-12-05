@@ -6,7 +6,7 @@
     <name>ReadyAPI MQTT Plugin</name>
     <artifactId>ready-mqtt-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.7.0-reskin</version>
+    <version>1.7.1-reskin-SNAPSHOT</version>
 
     <repositories>
         <repository>
