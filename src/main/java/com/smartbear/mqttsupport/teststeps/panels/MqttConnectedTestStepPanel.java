@@ -15,9 +15,10 @@ import com.smartbear.mqttsupport.connection.dialog.ConfigureProjectConnectionsDi
 import com.smartbear.mqttsupport.connection.dialog.EditConnectionDialog;
 import com.smartbear.mqttsupport.teststeps.MqttConnectedTestStep;
 import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBox;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.AbstractAction;
@@ -27,7 +28,6 @@ import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -119,7 +119,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
-    class ConnectionsComboBoxModel extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener {
+    class ConnectionsComboBoxModel<T extends ConnectionComboItem> extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener {
 
         private ArrayList<ConnectionComboItem> items = new ArrayList<>();
         private boolean connectionCreationInProgress = false;
@@ -227,7 +227,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JPanel comboPanel = new JPanel(new MigLayout("", "8[100]8[grow,fill]8[]8", "8[]8"));
         comboPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GlobalStyles.getDefaultBorderColor()));
         comboPanel.add(new JLabel("Connection:"));
-        JComboBox connection = ComboBoxFactory.createComboBox(connectionsModel);
+        SBComboBox connection = SBComboBoxFactory.medium().model(connectionsModel).accessibleName("Connection").build();
         connection.getAccessibleContext().setAccessibleDescription("Choose one of pre-configured connections");
         comboPanel.add(connection);
         configureConnectionButton = createTextButton("Configure...").build();
@@ -329,7 +329,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JSpinner spinEdit = Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1);
         spinEdit.setPreferredSize(new Dimension(80, spinEdit.getHeight()));
         timeoutPanel.add(spinEdit);
-        JComboBox measureCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel( MqttConnectedTestStep.TimeMeasure.values()));
+        SBComboBox measureCombo = SBComboBoxFactory.medium().model(new DefaultComboBoxModel( MqttConnectedTestStep.TimeMeasure.values())).accessibleName("Timeout").build();
         Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
         timeoutPanel.add(measureCombo);
         timeoutPanel.add(new JLabel(" (0 - forever)"));
