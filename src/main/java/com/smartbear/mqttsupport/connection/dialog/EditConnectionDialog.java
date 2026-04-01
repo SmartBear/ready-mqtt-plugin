@@ -26,9 +26,10 @@ import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
 import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBox;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
 import com.smartbear.soapui.ui.components.tabbedpane.TabbedPane;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
@@ -393,7 +394,7 @@ public class EditConnectionDialog extends SimpleDialog {
             willMessagePanel.add(createLabel("Topic:", willTopicEdit, 0));
             willMessagePanel.add(willTopicEdit);
 
-            JComboBox willQos = ComboBoxFactory.createComboBox(new DefaultComboBoxModel());
+            SBComboBox willQos = SBComboBoxFactory.medium().model(new DefaultComboBoxModel()).accessibleName("Quality of Service").build();
             Bindings.bind(willQos, new SelectionInList<String>(MqttConnectedTestStepPanel.QOS_NAMES, new ValueHolder(MqttConnectedTestStepPanel.QOS_NAMES[connection.getWillQos()]), pm.getModel(Connection.WILL_QOS_BEAN_PROP)));
             Bindings.bind(willQos, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Quality of Service:", willQos, 0));
@@ -410,7 +411,7 @@ public class EditConnectionDialog extends SimpleDialog {
             final CardLayout willMessageOptions = new CardLayout();
             final JPanel currentWillMessage = new JPanel(willMessageOptions);
 
-            final JComboBox willMessageTypeCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(PublishedMessageType.values()));
+            final SBComboBox willMessageTypeCombo = SBComboBoxFactory.medium().model(new DefaultComboBoxModel(PublishedMessageType.values())).accessibleName("Message type").build();
             Bindings.bind(willMessageTypeCombo, new SelectionInList<PublishedMessageType>(PublishedMessageType.values(), pm.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP)));
             Bindings.bind(willMessageTypeCombo, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Message type:", willMessageTypeCombo, 9));
