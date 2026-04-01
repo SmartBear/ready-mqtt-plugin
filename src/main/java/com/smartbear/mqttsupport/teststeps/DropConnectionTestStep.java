@@ -2,7 +2,6 @@ package com.smartbear.mqttsupport.teststeps;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
-import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.mock.MockRunner;
@@ -36,7 +35,6 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     private static boolean actionGroupAdded = false;
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
-    private IconAnimator<DropConnectionTestStep> iconAnimator;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
     private DropMethod dropMethod = DropMethod.SendDisconnect;
@@ -88,7 +86,6 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_drop_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_drop_step.png");
 
-        iconAnimator =  new IconAnimator<DropConnectionTestStep>(this, "com/smartbear/mqttsupport/unknown_drop_step.png", "com/smartbear/mqttsupport/drop_step.png", 5);
     }
 
     @Override
@@ -120,7 +117,7 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     public void setDropMethod(DropMethod newValue){setProperty(DROP_METHOD_BEAN_PROP_NAME, null, newValue);}
 
     private void updateState() {
-        if(iconAnimator == null) return;
+        if(disabledStepIcon == null) return;
         TestMonitor testMonitor = SoapUI.getTestMonitor();
         if (testMonitor != null
                 && (testMonitor.hasRunningLoadTest(getTestCase()) || testMonitor.hasRunningSecurityTest(getTestCase()))) {
@@ -136,7 +133,6 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
         WsdlTestStepResult result = new WsdlTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
-        if(iconAnimator != null) iconAnimator.start();
         try{
             Client client = getClient(testRunContext, result);
             if(client == null) return result;
@@ -166,7 +162,6 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
         }
         finally {
             result.stopTimer();
-            if(iconAnimator != null) iconAnimator.stop();
             //log.info(String.format("%s - [%s test step]", result.getOutcome(), getName()));
 
         }

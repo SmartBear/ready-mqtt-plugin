@@ -7,9 +7,9 @@ import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.list.SelectionInList;
 import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 
@@ -102,7 +102,7 @@ public class FormBuilder {
     }
 
     public JComboBox addComboBox(JComponent parent, String label, Object[] values, String tooltip) {
-        JComboBox comboBox = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(values));
+        JComboBox comboBox = SBComboBoxFactory.medium().model(new DefaultComboBoxModel(values)).accessibleName(label).build();
         setToolTip(comboBox, tooltip);
         comboBox.getAccessibleContext().setAccessibleDescription(tooltip);
         append(parent, label, comboBox);

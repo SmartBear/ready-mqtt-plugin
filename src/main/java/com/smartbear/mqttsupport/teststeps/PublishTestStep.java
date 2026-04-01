@@ -2,7 +2,6 @@ package com.smartbear.mqttsupport.teststeps;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.TestStepConfig;
-import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.model.mock.MockRunner;
@@ -65,7 +64,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
-    private IconAnimator<PublishTestStep> iconAnimator;
     private ArrayList<ExecutionListener> executionListeners;
 
     public PublishTestStep(WsdlTestCase testCase, TestStepConfig config, boolean forLoadTest) {
@@ -146,7 +144,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_publish_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_publish_step.png");
 
-        iconAnimator = new IconAnimator<PublishTestStep>(this, "com/smartbear/mqttsupport/unknown_publish_step.png", "com/smartbear/mqttsupport/publish_step.png", 5);
     }
 
     @Override
@@ -201,9 +198,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
         ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.OK);
-        if (iconAnimator != null) {
-            iconAnimator.start();
-        }
         try {
             try {
                 Client client = getClient(testRunContext, result);
@@ -250,9 +244,6 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             return result;
         } finally {
             result.stopTimer();
-            if (iconAnimator != null) {
-                iconAnimator.stop();
-            }
             result.setOutcome(formOutcome(result));
             log.info(String.format(Messages.S_S_TEST_STEP, result.getOutcome(), getName()));
             notifyExecutionListeners(result);
@@ -425,7 +416,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
     }
 
     private void updateState() {
-        if (iconAnimator == null) {
+        if (disabledStepIcon == null) {
             return;
         }
         TestMonitor testMonitor = SoapUI.getTestMonitor();

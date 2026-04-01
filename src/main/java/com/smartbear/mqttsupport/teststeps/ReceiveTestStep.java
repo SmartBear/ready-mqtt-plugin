@@ -5,7 +5,6 @@ import com.eviware.soapui.config.TestAssertionConfig;
 import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.rest.support.handlers.JsonMediaTypeHandler;
 import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
-import com.eviware.soapui.impl.wsdl.support.IconAnimator;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertableConfig;
 import com.eviware.soapui.impl.wsdl.support.assertions.AssertionsSupport;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
@@ -62,6 +61,7 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 import java.beans.PropertyChangeEvent;
@@ -160,7 +160,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
-    private IconAnimator<ReceiveTestStep> iconAnimator;
 
     private ArrayList<ExecutionListener> executionListeners;
 
@@ -231,7 +230,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
         disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
 
-        iconAnimator = new IconAnimator<ReceiveTestStep>(this, "com/smartbear/mqttsupport/receive_step_base.png", "com/smartbear/mqttsupport/receive_step.png", 5);
     }
 
     private void initAssertions(TestStepConfig testStepData) {
@@ -256,10 +254,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     @Override
-    public void setIcon(ImageIcon newIcon) {
-        if (iconAnimator != null && newIcon == iconAnimator.getBaseIcon()) {
-            return;
-        }
+    public void setIcon(Icon newIcon) {
         super.setIcon(newIcon);
     }
 
@@ -586,9 +581,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         ExecutableTestStepResult result = new ExecutableTestStepResult(this);
         result.startTimer();
         result.setStatus(TestStepResult.TestStepStatus.UNKNOWN);
-        if (iconAnimator != null) {
-            iconAnimator.start();
-        }
         try {
             try {
                 Client client = getClient(runContext, result);
@@ -707,9 +699,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
             return result;
         } finally {
             result.stopTimer();
-            if (iconAnimator != null) {
-                iconAnimator.stop();
-            }
             updateState();
             if (result.getStatus() == TestStepResult.TestStepStatus.UNKNOWN) {
                 switch (getAssertionStatus()) {
@@ -809,18 +798,10 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
                                        }
             );
         }
-        if (iconAnimator == null) {
-            return;
-        }
         TestMonitor testMonitor = SoapUI.getTestMonitor();
         if (testMonitor != null
                 && (testMonitor.hasRunningLoadTest(getTestStep().getTestCase()) || testMonitor.hasRunningSecurityTest(getTestStep().getTestCase()))) {
             setIcon(disabledStepIcon);
-        } else {
-            ImageIcon icon = iconAnimator.getIcon();
-            if (icon == iconAnimator.getBaseIcon()) {
-                setIcon(getIcon());
-            }
         }
     }
 
