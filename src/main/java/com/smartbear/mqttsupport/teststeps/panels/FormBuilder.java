@@ -1,33 +1,34 @@
 package com.smartbear.mqttsupport.teststeps.panels;
 
 import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoableTextArea;
 import com.eviware.soapui.support.swing.JTextComponentPopupMenu;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.list.SelectionInList;
+import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.Action;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.Dimension;
 
+import static com.smartbear.ready.ui.components.designkit.buttons.SBButtonBuilder.createPrimaryButton;
+
 public class FormBuilder {
+
     private final PresentationModel<?> pm;
     private JPanel parent;
 
@@ -101,7 +102,7 @@ public class FormBuilder {
     }
 
     public JComboBox addComboBox(JComponent parent, String label, Object[] values, String tooltip) {
-        JComboBox comboBox = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(values));
+        JComboBox comboBox = SBComboBoxFactory.medium().model(new DefaultComboBoxModel(values)).accessibleName(label).build();
         setToolTip(comboBox, tooltip);
         comboBox.getAccessibleContext().setAccessibleDescription(tooltip);
         append(parent, label, comboBox);
@@ -143,8 +144,9 @@ public class FormBuilder {
         return new JLabel(labelText);
     }
 
-    public JButton addRightButton(Action action) {
-        JButton button = ButtonFactory.createLightButton().withAction(action);
+    public SBButton addRightButton(Action action, String buttonAccessibleName) {
+        SBButton button = createPrimaryButton().setAccessibleName(buttonAccessibleName).build();
+        button.setAction(action);
         parent.add(new JLabel());
         parent.add(button);
         return button;

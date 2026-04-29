@@ -14,10 +14,11 @@ import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.connection.dialog.ConfigureProjectConnectionsDialog;
 import com.smartbear.mqttsupport.connection.dialog.EditConnectionDialog;
 import com.smartbear.mqttsupport.teststeps.MqttConnectedTestStep;
+import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBox;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
-import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.AbstractAction;
@@ -27,7 +28,6 @@ import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -42,15 +42,17 @@ import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.smartbear.ready.ui.components.designkit.buttons.SBButtonBuilder.createTextButton;
+
 public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestStep> extends ModelItemDesktopPanel<MqttTestStep> {
 
-    public final static String[] QOS_NAMES = {"At most once (0)", "At least once (1)", "Exactly once (2)"};
+    public static final String[] QOS_NAMES = {"At most once (0)", "At least once (1)", "Exactly once (2)"};
 
-    private final static String LEGACY_CONNECTION_NAME = "Individual (legacy) connection";
-    private final static String NEW_CONNECTION_ITEM = "<New Connection...>";
-    private final static String CONVERT_BUTTON_CAPTION = "Convert Connection";
-    private final static String LEGACY_WARNING = "This test step was created by the old version of the plugin. The current version uses another management model for MQTT connections which allows manage them centrally and share between test steps of a project. Click " + CONVERT_BUTTON_CAPTION + " button to create a new style connection and assign it to the test step.";
-    private JButton configureConnectionButton;
+    private static final String LEGACY_CONNECTION_NAME = "Individual (legacy) connection";
+    private static final String NEW_CONNECTION_ITEM = "<New Connection...>";
+    private static final String CONVERT_BUTTON_CAPTION = "Convert Connection";
+    private static final String LEGACY_WARNING = "This test step was created by the old version of the plugin. The current version uses another management model for MQTT connections which allows manage them centrally and share between test steps of a project. Click " + CONVERT_BUTTON_CAPTION + " button to create a new style connection and assign it to the test step.";
+    private SBButton configureConnectionButton;
     private ConnectionsComboBoxModel connectionsModel;
 
     public interface UIOption {
@@ -100,7 +102,8 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     }
 
     static class NewConnectionComboItem extends ConnectionComboItem {
-        private final static NewConnectionComboItem instance = new NewConnectionComboItem();
+
+        private static final NewConnectionComboItem instance = new NewConnectionComboItem();
 
         public static NewConnectionComboItem getInstance() {
             return instance;
@@ -116,7 +119,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         }
     }
 
-    class ConnectionsComboBoxModel extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener {
+    class ConnectionsComboBoxModel<T extends ConnectionComboItem> extends AbstractListModel<ConnectionComboItem> implements ComboBoxModel<ConnectionComboItem>, ConnectionsListener {
 
         private ArrayList<ConnectionComboItem> items = new ArrayList<>();
         private boolean connectionCreationInProgress = false;
@@ -224,10 +227,10 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JPanel comboPanel = new JPanel(new MigLayout("", "8[100]8[grow,fill]8[]8", "8[]8"));
         comboPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GlobalStyles.getDefaultBorderColor()));
         comboPanel.add(new JLabel("Connection:"));
-        JComboBox connection = ComboBoxFactory.createComboBox(connectionsModel);
+        SBComboBox connection = SBComboBoxFactory.medium().model(connectionsModel).accessibleName("Connection").build();
         connection.getAccessibleContext().setAccessibleDescription("Choose one of pre-configured connections");
         comboPanel.add(connection);
-        configureConnectionButton = ButtonFactory.createLightButton().withText("Configure...");
+        configureConnectionButton = createTextButton("Configure...").build();
         configureConnectionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -259,8 +262,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         legacyInfoLabel.setWrapStyleWord(true);
         legacyPanel.add(legacyInfoLabel);
 
-        JButton convertConnectionButton = ButtonFactory.createLightButton();
-        convertConnectionButton.setText(CONVERT_BUTTON_CAPTION + "...");
+        SBButton convertConnectionButton = createTextButton(CONVERT_BUTTON_CAPTION + "...").build();
         convertConnectionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -306,7 +308,6 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         formBuilder.append("Quality of service", qosPanel);
     }
 
-
     protected void buildRadioButtonsFromEnum(FormBuilder formBuilder, PresentationModel<MqttTestStep> pm, String label, String propertyName, Class propertyType) {
         JPanel panel = new JPanel();
         panel.setLayout(new MigLayout("", "0[]8", "0[]0"));
@@ -328,7 +329,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
         JSpinner spinEdit = Utils.createBoundSpinEdit(pm, "shownTimeout", 0, Integer.MAX_VALUE, 1);
         spinEdit.setPreferredSize(new Dimension(80, spinEdit.getHeight()));
         timeoutPanel.add(spinEdit);
-        JComboBox measureCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel( MqttConnectedTestStep.TimeMeasure.values()));
+        SBComboBox measureCombo = SBComboBoxFactory.medium().model(new DefaultComboBoxModel( MqttConnectedTestStep.TimeMeasure.values())).accessibleName("Timeout").build();
         Bindings.bind(measureCombo, new SelectionInList<Object>(MqttConnectedTestStep.TimeMeasure.values(), pm.getModel("timeoutMeasure")));
         timeoutPanel.add(measureCombo);
         timeoutPanel.add(new JLabel(" (0 - forever)"));

@@ -25,9 +25,11 @@ import com.smartbear.mqttsupport.connection.ConnectionsManager;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.panels.MqttConnectedTestStepPanel;
 import com.smartbear.mqttsupport.teststeps.panels.ReadOnlyValueModel;
+import com.smartbear.ready.ui.components.designkit.buttons.SBButton;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBox;
+import com.smartbear.ready.ui.components.designkit.combobox.SBComboBoxFactory;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import com.smartbear.soapui.ui.components.ButtonFactory;
-import com.smartbear.soapui.ui.components.combobox.ComboBoxFactory;
 import com.smartbear.soapui.ui.components.tabbedpane.TabbedPane;
 import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import net.miginfocom.swing.MigLayout;
@@ -36,7 +38,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -63,6 +64,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.smartbear.ready.ui.components.designkit.buttons.SBButtonBuilder.createPrimaryButton;
 
 
 public class EditConnectionDialog extends SimpleDialog {
@@ -391,7 +394,7 @@ public class EditConnectionDialog extends SimpleDialog {
             willMessagePanel.add(createLabel("Topic:", willTopicEdit, 0));
             willMessagePanel.add(willTopicEdit);
 
-            JComboBox willQos = ComboBoxFactory.createComboBox(new DefaultComboBoxModel());
+            SBComboBox willQos = SBComboBoxFactory.medium().model(new DefaultComboBoxModel()).accessibleName("Quality of Service").build();
             Bindings.bind(willQos, new SelectionInList<String>(MqttConnectedTestStepPanel.QOS_NAMES, new ValueHolder(MqttConnectedTestStepPanel.QOS_NAMES[connection.getWillQos()]), pm.getModel(Connection.WILL_QOS_BEAN_PROP)));
             Bindings.bind(willQos, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Quality of Service:", willQos, 0));
@@ -408,7 +411,7 @@ public class EditConnectionDialog extends SimpleDialog {
             final CardLayout willMessageOptions = new CardLayout();
             final JPanel currentWillMessage = new JPanel(willMessageOptions);
 
-            final JComboBox willMessageTypeCombo = ComboBoxFactory.createComboBox(new DefaultComboBoxModel(PublishedMessageType.values()));
+            final SBComboBox willMessageTypeCombo = SBComboBoxFactory.medium().model(new DefaultComboBoxModel(PublishedMessageType.values())).accessibleName("Message type").build();
             Bindings.bind(willMessageTypeCombo, new SelectionInList<PublishedMessageType>(PublishedMessageType.values(), pm.getModel(Connection.WILL_MESSAGE_TYPE_BEAN_PROP)));
             Bindings.bind(willMessageTypeCombo, "enabled", isWillOn);
             willMessagePanel.add(createLabel("Message type:", willMessageTypeCombo, 9));
@@ -451,7 +454,8 @@ public class EditConnectionDialog extends SimpleDialog {
             PropertyExpansionPopupListener.enable(willFileNameEdit, modelItemOfConnection);
             Bindings.bind(willFileNameEdit, "enabled", isWillOn);
             Bindings.bind(willFileNameEdit, pm.getModel(Connection.WILL_MESSAGE_BEAN_PROP));
-            final JButton chooseFileButton = ButtonFactory.createLightButton().withAction(new SelectFileAction(willFileNameEdit));
+            final SBButton chooseFileButton = createPrimaryButton().setAccessibleName("Choose a file").build();
+            chooseFileButton.setAction(new SelectFileAction(willFileNameEdit));
             Bindings.bind(chooseFileButton, "enabled", isWillOn);
             filePanel.add(createLabel("File with message:", willFileNameEdit, 0));
             filePanel.add(willFileNameEdit);
