@@ -1,23 +1,23 @@
 package com.smartbear.mqttsupport.connection.dialog;
 
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.propertyexpansion.DefaultPropertyExpansionContext;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
-import com.smartbear.mqttsupport.connection.ConnectionParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 
 import javax.swing.JTextField;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,16 +31,12 @@ import static org.mockito.MockitoAnnotations.openMocks;
 class EditConnectionDialogTest {
 
     private AutoCloseable closeable;
-
-    private final String TITLE = "title";
-    private final String INITITAL_CONNECTION_NAME = "initialConnectionName";
-    private List<String> ALREADY_PRESENT_NAMES = List.of("name1", "name2");
+    private MockedStatic<UISupport> uiSupportMock;
 
     private final String NON_EXISTING_PATH = "non/existing/file/path/file.txt";
     private final String TEMPORARY_FILE_NAME = "temporary_file.txt";
 
-    @Spy
-    private TestableEditConnectionDialog dialog;
+    private EditConnectionDialog dialog;
 
     @Mock
     private DefaultPropertyExpansionContext context;
@@ -54,21 +50,23 @@ class EditConnectionDialogTest {
     @Mock
     private ModelItem modelItemOfConnection;
 
-    @Mock
-    private ConnectionParams initialConnectionParams;
-
-
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         closeable = openMocks(this);
-        dialog = Mockito.spy(new TestableEditConnectionDialog(TITLE, modelItemOfConnection, INITITAL_CONNECTION_NAME,
-                initialConnectionParams, false, ALREADY_PRESENT_NAMES));
+        dialog = Mockito.mock(EditConnectionDialog.class, Mockito.CALLS_REAL_METHODS);
+        setDialogField("modelItemOfConnection", modelItemOfConnection);
         doNothing().when(dialog).activateTab(anyString());
+        uiSupportMock = Mockito.mockStatic(UISupport.class);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        closeable.close();
+        if (uiSupportMock != null) {
+            uiSupportMock.close();
+        }
+        if (closeable != null) {
+            closeable.close();
+        }
     }
 
     @Test
@@ -161,16 +159,10 @@ class EditConnectionDialogTest {
         assertFalse(result);
     }
 
-    private class TestableEditConnectionDialog extends EditConnectionDialog {
-        public TestableEditConnectionDialog() {
-            super(null, null, null, null, false, null);
-        }
-
-        public TestableEditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName,
-                                            ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
-            super(title, modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
-        }
-
+    private void setDialogField(String fieldName, Object value) throws Exception {
+        Field field = EditConnectionDialog.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(dialog, value);
     }
 
 }
