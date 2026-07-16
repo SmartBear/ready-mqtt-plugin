@@ -30,19 +30,18 @@ import static org.mockito.MockitoAnnotations.openMocks;
 
 class EditConnectionDialogTest {
 
+    private static final String NON_EXISTING_PATH = "non/existing/file/path/file.txt";
+    private static final String TEMPORARY_FILE_NAME = "temporary_file.txt";
+
+    private EditConnectionDialog dialog;
     private AutoCloseable closeable;
     private MockedStatic<UISupport> uiSupportMock;
 
-    private final String NON_EXISTING_PATH = "non/existing/file/path/file.txt";
-    private final String TEMPORARY_FILE_NAME = "temporary_file.txt";
-
-    private EditConnectionDialog dialog;
+    @TempDir
+    private File tempDir;
 
     @Mock
     private DefaultPropertyExpansionContext context;
-
-    @TempDir
-    private File tempDir;
 
     @Mock
     private JTextField edit;
@@ -51,10 +50,11 @@ class EditConnectionDialogTest {
     private ModelItem modelItemOfConnection;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         closeable = openMocks(this);
         dialog = Mockito.mock(EditConnectionDialog.class, Mockito.CALLS_REAL_METHODS);
-        setDialogField("modelItemOfConnection", modelItemOfConnection);
+        dialog.setModelItemOfConnection(modelItemOfConnection);
+
         doNothing().when(dialog).activateTab(anyString());
         uiSupportMock = Mockito.mockStatic(UISupport.class);
     }
@@ -157,12 +157,6 @@ class EditConnectionDialogTest {
         boolean result = dialog.checkCertificateField(edit);
 
         assertFalse(result);
-    }
-
-    private void setDialogField(String fieldName, Object value) throws Exception {
-        Field field = EditConnectionDialog.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(dialog, value);
     }
 
 }

@@ -67,7 +67,6 @@ import java.util.List;
 
 import static com.smartbear.ready.ui.components.designkit.buttons.SBButtonBuilder.createPrimaryButton;
 
-
 public class EditConnectionDialog extends SimpleDialog {
 
     private static final String MAIN_PANEL_TAB = "General";
@@ -93,8 +92,8 @@ public class EditConnectionDialog extends SimpleDialog {
 
     private boolean legacy;
     private JTextField nameEdit;
-    private final static Insets defaultInsets = new Insets(4, 4, 4, 4);
-    private final static Insets defaultInsetsWithIndent = new Insets(defaultInsets.top, defaultInsets.left + 12, defaultInsets.bottom, defaultInsets.right);
+    private static final Insets defaultInsets = new Insets(4, 4, 4, 4);
+    private static final Insets defaultInsetsWithIndent = new Insets(defaultInsets.top, defaultInsets.left + 12, defaultInsets.bottom, defaultInsets.right);
     private JTextField serverUriEdit;
 
     private JTextField caCertificateEdit;
@@ -111,13 +110,11 @@ public class EditConnectionDialog extends SimpleDialog {
     private HashMap<JComponent, JLabel> componentLabelsMap = new HashMap<>();
 
     private char passwordChar;
-
     private ModelItem modelItemOfConnection;
     private String initialName;
     private Connection connection;
     private List<String> presentNames;
     private Result result = null;
-
 
     protected EditConnectionDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
         super(title, "Please specify the parameters for the connection", null, true);
@@ -133,6 +130,10 @@ public class EditConnectionDialog extends SimpleDialog {
         }
     }
 
+    void setModelItemOfConnection(ModelItem modelItemOfConnection) {
+        this.modelItemOfConnection = modelItemOfConnection;
+    }
+
     public static Result showDialog(String title, ModelItem modelItemOfConnection, String initialConnectionName, ConnectionParams initialConnectionParams, boolean legacy, List<String> alreadyPresentNames) {
         EditConnectionDialog dialog = new EditConnectionDialog(title, modelItemOfConnection, initialConnectionName, initialConnectionParams, legacy, alreadyPresentNames);
         try {
@@ -143,9 +144,7 @@ public class EditConnectionDialog extends SimpleDialog {
             dialog.dispose();
         }
         return dialog.result;
-
     }
-
 
     public static Result editConnection(Connection connection, ModelItem modelItemOfConnection) {
         if (connection.isLegacy()) {
@@ -177,7 +176,6 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
         return showDialog("Create New Connection", project, null, null, false, existingNames);
-
     }
 
     public static Result convertLegacyConnection(ConnectionParams srcParams, ModelItem modelItemOfConnection) {
@@ -190,7 +188,6 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
         return showDialog("Convert Legacy Connection", project, null, srcParams, false, existingNames);
-
     }
 
     @Override
