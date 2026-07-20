@@ -85,7 +85,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         assertionsPanel.setPreferredSize(new Dimension(0, 0));
 
         assertionInspector = new JComponentInspector<JComponent>(assertionsPanel,
-            TestStepVariables.ASSERTION_INSPECTOR_TITLE, TestStepVariables.ASSERTION_INSPECTOR_DESCRIPTION, true);
+                TestStepVariables.ASSERTION_INSPECTOR_TITLE, TestStepVariables.ASSERTION_INSPECTOR_DESCRIPTION, true);
 
         inspectorPanel.addInspector(assertionInspector);
 
@@ -93,7 +93,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         logPanel.setMinimumSize(new Dimension(0, 0));
         logPanel.setPreferredSize(new Dimension(0, 0));
         logInspector = new JComponentInspector<JComponent>(logPanel,
-            TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
+                TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
         updateStatusIcon();
@@ -109,8 +109,8 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
         root.setBorder(BorderFactory.createMatteBorder(
-            GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
-            GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
+                GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
+                GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
 
         PresentationModel<ReceiveTestStep> pm = new PresentationModel<ReceiveTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));

@@ -81,7 +81,7 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         logPanel.setMinimumSize(new Dimension(0, 0));
         logPanel.setPreferredSize(new Dimension(0, 0));
         logInspector = new JComponentInspector<>(logPanel,
-            TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
+                TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
         add(inspectorPanel.getComponent());
@@ -92,8 +92,8 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
         root.setBorder(BorderFactory.createMatteBorder(
-            GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
-            GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
+                GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_THICK,
+                GlobalStyles.Borders.DEFAULT_THICK, GlobalStyles.Borders.EMPTY_WIDTH, GlobalStyles.Borders.DEFAULT_COLOR));
 
         PresentationModel<PublishTestStep> pm = new PresentationModel<PublishTestStep>(getModelItem());
         root.add(buildConnectionSection(pm));
