@@ -12,7 +12,6 @@ import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
-
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.smartbear.mqttsupport.Utils;
@@ -78,11 +77,15 @@ public class PublishTestStepPanel extends MqttConnectedTestStepPanel<PublishTest
         JComponent mainPanel = buildMainPanel();
         inspectorPanel = JInspectorPanelFactory.buildRequestInspectorPanel(mainPanel, getModelItemSimpleName());
 
-        logInspector = new JComponentInspector<>(buildLogPanel(),
+        JComponent logPanel = buildLogPanel();
+        logPanel.setMinimumSize(new Dimension(0, 0));
+        logPanel.setPreferredSize(new Dimension(0, 0));
+        logInspector = new JComponentInspector<>(logPanel,
                 TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
         add(inspectorPanel.getComponent());
+        inspectorPanel.clearTabSelection();
         setPreferredSize(new Dimension(500, 300));
     }
 

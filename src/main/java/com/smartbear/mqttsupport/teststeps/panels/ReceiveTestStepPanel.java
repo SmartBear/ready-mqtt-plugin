@@ -4,12 +4,8 @@ import com.eviware.soapui.impl.support.actions.ShowOnlineHelpAction;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.common.TestStepVariables;
 import com.eviware.soapui.model.testsuite.Assertable;
-import com.eviware.soapui.model.testsuite.AssertionsListener;
-import com.eviware.soapui.model.testsuite.TestAssertion;
-import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
-import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
@@ -29,7 +25,6 @@ import com.smartbear.mqttsupport.teststeps.ExecutionListener;
 import com.smartbear.mqttsupport.teststeps.PublishedMessageType;
 import com.smartbear.mqttsupport.teststeps.ReceiveTestStep;
 import com.smartbear.mqttsupport.teststeps.actions.RunTestStepAction;
-import com.smartbear.ready.core.ApplicationEnvironment;
 import com.smartbear.ready.ui.style.GlobalStyles;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -44,7 +39,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
@@ -54,7 +48,6 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
-import java.text.MessageFormat;
 import java.util.Date;
 
 public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements ExecutionListener {
@@ -88,19 +81,23 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         inspectorPanel = JInspectorPanelFactory.buildRequestInspectorPanel(mainPanel, getModelItemSimpleName());
 
         assertionsPanel = buildAssertionsPanel();
+        assertionsPanel.setMinimumSize(new Dimension(0, 0));
+        assertionsPanel.setPreferredSize(new Dimension(0, 0));
 
         assertionInspector = new JComponentInspector<JComponent>(assertionsPanel,
                 TestStepVariables.ASSERTION_INSPECTOR_TITLE, TestStepVariables.ASSERTION_INSPECTOR_DESCRIPTION, true);
 
         inspectorPanel.addInspector(assertionInspector);
 
-        logInspector = new JComponentInspector<JComponent>(buildLogPanel(),
+        JComponent logPanel = buildLogPanel();
+        logPanel.setMinimumSize(new Dimension(0, 0));
+        logPanel.setPreferredSize(new Dimension(0, 0));
+        logInspector = new JComponentInspector<JComponent>(logPanel,
                 TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
-        inspectorPanel.setCurrentInspector("Assertions");
-
         updateStatusIcon();
+        inspectorPanel.clearTabSelection();
 
         add(inspectorPanel.getComponent());
 
