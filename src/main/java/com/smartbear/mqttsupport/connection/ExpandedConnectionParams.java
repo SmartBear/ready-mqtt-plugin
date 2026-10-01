@@ -2,7 +2,7 @@ package com.smartbear.mqttsupport.connection;
 
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.Utils;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 
 import java.net.URI;
