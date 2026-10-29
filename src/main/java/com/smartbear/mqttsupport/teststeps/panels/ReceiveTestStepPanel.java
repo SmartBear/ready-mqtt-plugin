@@ -12,6 +12,7 @@ import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
 import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JXToolBar;
+import com.eviware.soapui.support.icons.ImageLoaderSingleton;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
@@ -31,6 +32,7 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -49,6 +51,8 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
+
+import static com.smartbear.mqttsupport.Utils.createColorBlindModeIcon;
 
 public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements ExecutionListener {
 
@@ -84,7 +88,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         assertionsPanel.setMinimumSize(new Dimension(0, 0));
         assertionsPanel.setPreferredSize(new Dimension(0, 0));
 
-        assertionInspector = new JComponentInspector<JComponent>(assertionsPanel,
+        assertionInspector = new JComponentInspector<>(assertionsPanel,
                 TestStepVariables.ASSERTION_INSPECTOR_TITLE, TestStepVariables.ASSERTION_INSPECTOR_DESCRIPTION, true);
 
         inspectorPanel.addInspector(assertionInspector);
@@ -92,7 +96,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         JComponent logPanel = buildLogPanel();
         logPanel.setMinimumSize(new Dimension(0, 0));
         logPanel.setPreferredSize(new Dimension(0, 0));
-        logInspector = new JComponentInspector<JComponent>(logPanel,
+        logInspector = new JComponentInspector<>(logPanel,
                 TestStepVariables.LOGGER_INSPECTOR_TITLE, TestStepVariables.LOGGER_INSPECTOR_DESCRIPTION, true);
         inspectorPanel.addInspector(logInspector);
 
@@ -102,9 +106,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         add(inspectorPanel.getComponent());
 
         propertyChange(new PropertyChangeEvent(getModelItem(), "receivedMessage", null, getModelItem().getReceivedMessage()));
-
     }
-
 
     private JComponent buildMainPanel() {
         JPanel root = new JPanel(new MigLayout("wrap", "0[grow,fill]0", "0[]0[grow,fill]0"));
@@ -245,16 +247,16 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
         switch (status) {
             case FAILED: {
-                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/failed_assertion.png"));
+                assertionInspector.setIcon(createColorBlindModeIcon("com/smartbear/mqttsupport/failed_assertion.png"));
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
             case UNKNOWN: {
-                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_assertion.png"));
+                assertionInspector.setIcon(ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/unknown_assertion.png"));
                 break;
             }
             case VALID: {
-                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_assertion.png"));
+                assertionInspector.setIcon(createColorBlindModeIcon("com/smartbear/mqttsupport/valid_assertion.png"));
                 inspectorPanel.deactivate();
                 break;
             }

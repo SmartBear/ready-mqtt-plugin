@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.icons.ImageLoaderSingleton;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
 import com.jgoodies.binding.value.ValueModel;
@@ -10,6 +11,7 @@ import com.smartbear.soapui.ui.components.textfield.TextFieldFactory;
 import org.fife.ui.rtextarea.RTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -22,15 +24,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+import static com.eviware.soapui.support.UISupport.isColorBlindMode;
+
 public class Utils {
 
     public static final String TREE_VIEW_IS_UNAVAILABLE = "The Tree View is available in ReadyAPI only.";
 
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty) {
-        if (dontDistinctNullAndEmpty) {
-            if (s1 == null || s1.isEmpty()) {
-                return s2 == null || s2.isEmpty();
-            }
+        if (dontDistinctNullAndEmpty && (s1 == null || s1.isEmpty())) {
+            return s2 == null || s2.isEmpty();
         }
         return areStringsEqual(s1, s2, caseInsensitive);
     }
@@ -224,5 +226,15 @@ public class Utils {
         }
     }
 
-
+    public static ImageIcon createColorBlindModeIcon(String iconPath) {
+        ImageIcon icon = null;
+        if (isColorBlindMode()) {
+            if (iconPath.endsWith(".svg")) {
+                icon = ImageLoaderSingleton.INSTANCE.load(iconPath.replace(".svg", "_color_blind.svg"));
+            } else {
+                icon = ImageLoaderSingleton.INSTANCE.load(iconPath.replace(".png", "_color_blind.png"));
+            }
+        }
+        return icon != null ? icon : ImageLoaderSingleton.INSTANCE.load(iconPath);
+    }
 }
