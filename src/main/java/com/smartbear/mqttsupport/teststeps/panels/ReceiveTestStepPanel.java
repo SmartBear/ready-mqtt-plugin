@@ -52,8 +52,6 @@ import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 
-import static com.smartbear.mqttsupport.Utils.createColorBlindModeIcon;
-
 public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTestStep> implements ExecutionListener {
 
     private static final String HELP_LINK = "/soapui/steps/mqtt-receive.html";
@@ -247,16 +245,16 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
         Assertable.AssertionStatus status = getModelItem().getAssertionStatus();
         switch (status) {
             case FAILED: {
-                assertionInspector.setIcon(createColorBlindModeIcon("com/smartbear/mqttsupport/failed_assertion.png"));
+                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/failed_assertion.png"));
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
             case UNKNOWN: {
-                assertionInspector.setIcon(ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/unknown_assertion.png"));
+                assertionInspector.setIcon(UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_assertion.png"));
                 break;
             }
             case VALID: {
-                assertionInspector.setIcon(createColorBlindModeIcon("com/smartbear/mqttsupport/valid_assertion.png"));
+                assertionInspector.setIcon(UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_assertion.png"));
                 inspectorPanel.deactivate();
                 break;
             }

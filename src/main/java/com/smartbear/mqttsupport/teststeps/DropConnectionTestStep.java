@@ -15,7 +15,7 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
-import com.eviware.soapui.support.icons.ImageLoaderSingleton;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.connection.Client;
@@ -83,8 +83,8 @@ public class DropConnectionTestStep extends MqttConnectedTestStep implements Tes
     }
 
     protected void initIcons() {
-        unknownStepIcon = ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/unknown_drop_step.png");
-        disabledStepIcon = ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/disabled_drop_step.png");
+        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_drop_step.png");
+        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_drop_step.png");
     }
 
     @Override

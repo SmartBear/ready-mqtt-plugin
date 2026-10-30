@@ -39,7 +39,7 @@ import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.JsonUtil;
 import com.eviware.soapui.support.StringUtils;
-import com.eviware.soapui.support.icons.ImageLoaderSingleton;
+import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
@@ -79,7 +79,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.smartbear.mqttsupport.Utils.bytesToHexString;
-import static com.smartbear.mqttsupport.Utils.createColorBlindModeIcon;
 
 @PluginTestStep(typeName = "MQTTReceiveTestStep", name = "Receive MQTT Message", description = "Waits for a MQTT message of a specific topic.", iconPath = "com/smartbear/mqttsupport/receive_step.png")
 public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable, PropertyChangeListener, TestMonitorListener, ExecutableTestStep {
@@ -228,8 +227,8 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     }
 
     protected void initIcons() {
-        unknownStepIcon = ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/unknown_receive_step.png");
-        disabledStepIcon = ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/disabled_receive_step.png");
+        unknownStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/unknown_receive_step.png");
+        disabledStepIcon = UISupport.createImageIcon("com/smartbear/mqttsupport/disabled_receive_step.png");
     }
 
     private void initAssertions(TestStepConfig testStepData) {
@@ -793,11 +792,17 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
     @Override
     public ImageIcon getIcon() {
-        return switch (assertionStatus) {
-            case VALID -> createColorBlindModeIcon("com/smartbear/mqttsupport/valid_receive_step.png");
-            case FAILED -> createColorBlindModeIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
-            default -> unknownStepIcon;
-        };
+        switch (assertionStatus) {
+            case VALID: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/valid_receive_step.png");
+            }
+            case FAILED: {
+                return UISupport.createCurrentModeIcon("com/smartbear/mqttsupport/invalid_receive_step.png");
+            }
+            default: {
+                return unknownStepIcon;
+            }
+        }
     }
 
     private void applyAssertion(WsdlMessageAssertion assertion) {
