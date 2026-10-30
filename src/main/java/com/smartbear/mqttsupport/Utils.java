@@ -226,4 +226,16 @@ public class Utils {
         }
     }
 
+    public static ImageIcon createColorBlindModeIcon(String iconPath) {
+        ImageIcon icon = null;
+        if (isColorBlindMode()) {
+            if (iconPath.endsWith(".svg")) {
+                icon = ImageLoaderSingleton.INSTANCE.load(iconPath.replace(".svg", "_color_blind.svg"));
+            } else {
+                icon = ImageLoaderSingleton.INSTANCE.load(iconPath.replace(".png", "_color_blind.png"));
+            }
+        }
+        return icon != null ? icon : ImageLoaderSingleton.INSTANCE.load(iconPath);
+    }
+
 }
