@@ -1,6 +1,6 @@
 package com.smartbear.mqttsupport.connection;
 
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.smartbear.mqttsupport.Messages;
 import com.smartbear.mqttsupport.PluginConfig;
 import com.smartbear.mqttsupport.connection.ssl.SSLCertsHelper;
@@ -145,7 +145,7 @@ public class ClientCache {
             }
             connectOptions.setKeepAliveInterval(60);
 
-            if (!StringUtils.isNullOrEmpty(connectionParams.getCaCrtFile())) {
+            if (!StringUtils.isBlank(connectionParams.getCaCrtFile())) {
                 try {
                     connectOptions.setSocketFactory(SSLCertsHelper.getSocketFactory(connectionParams.getCaCrtFile(),
                             connectionParams.getCrtFile(), connectionParams.getKeyFile(), connectionParams.getKeysPassword(),

@@ -6,7 +6,7 @@ import com.eviware.soapui.impl.wsdl.panels.teststeps.common.TestStepVariables;
 import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.JsonUtil;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
@@ -268,7 +268,7 @@ public class ReceiveTestStepPanel extends MqttConnectedTestStepPanel<ReceiveTest
             updateStatusIcon();
         } else if (event.getPropertyName().equals("receivedMessage")) {
             String msg = (String) event.getNewValue();
-            if (StringUtils.isNullOrEmpty(msg)) {
+            if (StringUtils.isBlank(msg)) {
                 messageLayouts.show(currentMessage, PublishedMessageType.Utf8Text.name());
             } else if (JsonUtil.seemsToBeJson(msg)) {
                 messageLayouts.show(currentMessage, PublishedMessageType.Json.name());

@@ -1,6 +1,6 @@
 package com.smartbear.mqttsupport.connection.ssl;
 
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -49,7 +49,7 @@ public class SSLCertsHelper {
         X509Certificate caCertificate = certificateConverter.setProvider(SECURITY_PROVIDER).getCertificate(caCertHolder);
         caCertificateReader.close();
 
-        if (!StringUtils.isNullOrEmpty(crtFile)) {
+        if (!StringUtils.isBlank(crtFile)) {
             // load client certificate
             PEMParser clientCertificateReader = new PEMParser(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(Paths.get(crtFile)))));
             X509CertificateHolder clientCertificateHolder = (X509CertificateHolder) clientCertificateReader.readObject();
@@ -93,7 +93,7 @@ public class SSLCertsHelper {
         SSLContext context = SSLContext.getInstance("TLSv1.2");
         context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
-        if (!StringUtils.isNullOrEmpty(sniHost)) {
+        if (!StringUtils.isBlank(sniHost)) {
             List<SNIServerName> serverNames = new ArrayList<>();
             SNIServerName serverName = new SNIHostName(sniHost);
             serverNames.add(serverName);

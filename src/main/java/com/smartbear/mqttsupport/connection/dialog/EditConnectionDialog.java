@@ -5,7 +5,7 @@ import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.model.support.ModelSupport;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoablePasswordField;
 import com.eviware.soapui.support.components.JUndoableTextArea;
@@ -192,7 +192,7 @@ public class EditConnectionDialog extends SimpleDialog {
 
     @Override
     protected void beforeShow() {
-        if (StringUtils.isNullOrEmpty(connection.getLogin())) {
+        if (StringUtils.isBlank(connection.getLogin())) {
             loginEdit.setEnabled(false);
             passwordEdit.setEnabled(false);
             hidePasswordCheckBox.setEnabled(false);
@@ -201,7 +201,7 @@ public class EditConnectionDialog extends SimpleDialog {
             authRequiredCheckBox.setSelected(true);
         }
         if (!legacy) {
-            willCheckBox.setSelected(StringUtils.hasContent(connection.getWillTopic()));
+            willCheckBox.setSelected(StringUtils.isNotBlank(connection.getWillTopic()));
         }
     }
 
@@ -575,7 +575,7 @@ public class EditConnectionDialog extends SimpleDialog {
     @Override
     protected boolean handleOk() {
         if (!legacy) {
-            if (StringUtils.isNullOrEmpty(nameEdit.getText())) {
+            if (StringUtils.isBlank(nameEdit.getText())) {
                 activateTab(MAIN_PANEL_TAB);
                 nameEdit.grabFocus();
                 UISupport.showErrorMessage("Please specify a name for the connection.");
@@ -597,20 +597,20 @@ public class EditConnectionDialog extends SimpleDialog {
                 }
             }
         }
-        if (StringUtils.isNullOrEmpty(serverUriEdit.getText())) {
+        if (StringUtils.isBlank(serverUriEdit.getText())) {
             activateTab(MAIN_PANEL_TAB);
             serverUriEdit.grabFocus();
             UISupport.showErrorMessage("Please specify URI of MQTT server.");
             return false;
         }
-        if (authRequiredCheckBox.isSelected() && StringUtils.isNullOrEmpty(loginEdit.getText())) {
+        if (authRequiredCheckBox.isSelected() && StringUtils.isBlank(loginEdit.getText())) {
             activateTab(AUTH_PANEL_TAB);
             loginEdit.grabFocus();
             UISupport.showErrorMessage("Please specify a login or uncheck \"Authentication required\" check-box if the authentication is not required for this MQTT server.");
             return false;
         }
         if (!legacy && willCheckBox.isSelected()) {
-            if (StringUtils.isNullOrEmpty(willTopicEdit.getText())) {
+            if (StringUtils.isBlank(willTopicEdit.getText())) {
                 activateTab(WILL_PANEL_TAB);
                 willTopicEdit.grabFocus();
                 UISupport.showErrorMessage("Please specify a topic for the Will Message.");
@@ -618,26 +618,26 @@ public class EditConnectionDialog extends SimpleDialog {
             }
         }
 
-        boolean isSSL = !StringUtils.isNullOrEmpty(caCertificateEdit.getText()) || !StringUtils.isNullOrEmpty(clientCertificateEdit.getText())
-                || !StringUtils.isNullOrEmpty(privateKeyEdit.getText()) || !StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())
-                || !StringUtils.isNullOrEmpty(sniServerEdit.getText());
+        boolean isSSL = !StringUtils.isBlank(caCertificateEdit.getText()) || !StringUtils.isBlank(clientCertificateEdit.getText())
+                || !StringUtils.isBlank(privateKeyEdit.getText()) || !StringUtils.isBlank(privateKeyPasswordEdit.getText())
+                || !StringUtils.isBlank(sniServerEdit.getText());
 
         if (isSSL) {
-            if (StringUtils.isNullOrEmpty(caCertificateEdit.getText())) {
+            if (StringUtils.isBlank(caCertificateEdit.getText())) {
                 activateTab(SSL_PANEL_TAB);
                 caCertificateEdit.grabFocus();
                 UISupport.showErrorMessage("Missing CA certificate. Please provide a valid CA certificate and retry");
                 return false;
             }
 
-            if (!StringUtils.isNullOrEmpty(clientCertificateEdit.getText())) {
-                if (StringUtils.isNullOrEmpty(privateKeyEdit.getText())) {
+            if (!StringUtils.isBlank(clientCertificateEdit.getText())) {
+                if (StringUtils.isBlank(privateKeyEdit.getText())) {
                     activateTab(SSL_PANEL_TAB);
                     UISupport.showErrorMessage("Client certificate was provided without Key file. Please provide Key file or clear Client certificate");
                     return false;
                 }
             } else {
-                if (!StringUtils.isNullOrEmpty(privateKeyEdit.getText()) || !StringUtils.isNullOrEmpty(privateKeyPasswordEdit.getText())) {
+                if (!StringUtils.isBlank(privateKeyEdit.getText()) || !StringUtils.isBlank(privateKeyPasswordEdit.getText())) {
                     activateTab(SSL_PANEL_TAB);
                     UISupport.showErrorMessage("Key file or Key password was provided without Client certificate. Please provide Client certificate or clear fields");
                     return false;
@@ -689,7 +689,7 @@ public class EditConnectionDialog extends SimpleDialog {
     boolean checkCertificateField(JTextField edit) {
         String input = edit.getText();
 
-        if (StringUtils.isNullOrEmpty(input)) {
+        if (StringUtils.isBlank(input)) {
             return true;
         }
 

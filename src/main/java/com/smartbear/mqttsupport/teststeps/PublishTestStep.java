@@ -18,7 +18,7 @@ import com.eviware.soapui.monitor.TestMonitor;
 import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.CancellationToken;
@@ -157,7 +157,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
 
     private boolean checkProperties(WsdlTestStepResult result, String topicToCheck, PublishedMessageType messageTypeToCheck, String messageToCheck) {
         boolean ok = true;
-        if (StringUtils.isNullOrEmpty(topicToCheck)) {
+        if (StringUtils.isBlank(topicToCheck)) {
             result.addMessage(Messages.THE_TOPIC_OF_MESSAGE_IS_NOT_SPECIFIED);
             ok = false;
         }
@@ -165,7 +165,7 @@ public class PublishTestStep extends MqttConnectedTestStep implements TestMonito
             result.addMessage(Messages.THE_MESSAGE_FORMAT_IS_NOT_SPECIFIED);
             ok = false;
         }
-        if (StringUtils.isNullOrEmpty(messageToCheck) && (messageTypeToCheck != PublishedMessageType.Utf16Text) && (messageTypeToCheck != PublishedMessageType.Utf8Text)) {
+        if (StringUtils.isBlank(messageToCheck) && (messageTypeToCheck != PublishedMessageType.Utf16Text) && (messageTypeToCheck != PublishedMessageType.Utf8Text)) {
             if (messageTypeToCheck == PublishedMessageType.BinaryFile) {
                 result.addMessage(Messages.A_FILE_WHICH_CONTAINS_A_MESSAGE_IS_NOT_SPECIFIED);
             } else {

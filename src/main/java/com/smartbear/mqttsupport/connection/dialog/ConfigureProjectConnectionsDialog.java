@@ -7,7 +7,7 @@ import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.model.testsuite.TestCase;
 import com.eviware.soapui.model.testsuite.TestStep;
 import com.eviware.soapui.model.testsuite.TestSuite;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoablePasswordField;
 import com.eviware.soapui.support.components.JXToolBar;
@@ -156,7 +156,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
     protected boolean handleOk() {
         for(int i = 0; i < tableModel.getRowCount(); ++i){
             ConnectionRecord checkedRecord = tableModel.getItem(i);
-            if(StringUtils.isNullOrEmpty(checkedRecord.name)){
+            if(StringUtils.isBlank(checkedRecord.name)){
                 grid.getSelectionModel().clearSelection();
                 grid.editCellAt(i, ConnectionsTableModel.Column.Name.ordinal());
                 UISupport.showErrorMessage("Please specify a name for the connection to have a possibility to identify it later.");
@@ -171,7 +171,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
 
                 }
             }
-            if(StringUtils.isNullOrEmpty(checkedRecord.params.getServerUri())){
+            if(StringUtils.isBlank(checkedRecord.params.getServerUri())){
                 grid.clearSelection();
                 grid.editCellAt(i, ConnectionsTableModel.Column.ServerUri.ordinal());
                 UISupport.showErrorMessage("Please specify URI of MQTT server");
@@ -387,7 +387,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
             String msg;
             if (rows.length == 1) {
                 msg = tableModel.getItem(rows[0]).name;
-                if (StringUtils.isNullOrEmpty(msg))
+                if (StringUtils.isBlank(msg))
                     msg = "Do you really want to delete this connection?";
                 else {
                     msg = "Do you really want to delete \"" + msg + "\" connection?";
@@ -398,7 +398,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
                     ConnectionRecord record = tableModel.getItem(row);
                     if (connectionNo != maxCount) {
                         msg += "\n";
-                        if (StringUtils.hasContent(record.name)) {
+                        if (StringUtils.isNotBlank(record.name)) {
                             msg += record.name;
                         } else {
                             msg += "<untitled>";

@@ -4,7 +4,7 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.project.Project;
 import com.eviware.soapui.model.support.ModelSupport;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.XmlObjectBuilder;
 import org.apache.xmlbeans.XmlException;
@@ -62,7 +62,7 @@ public class ConnectionsManager implements PropertyChangeListener {
     }
 
     public static Connection getConnection(ModelItem modelItem, String connectionName){
-        if(StringUtils.isNullOrEmpty(connectionName)) throw new IllegalArgumentException();
+        if(StringUtils.isBlank(connectionName)) throw new IllegalArgumentException();
         ArrayList<Connection> connections = getInstance().getProjectConnectionsList(modelItem, false);
         if(connections == null) return null;
         for(Connection connection: connections){
@@ -167,7 +167,7 @@ public class ConnectionsManager implements PropertyChangeListener {
     private static ArrayList<Connection> grabConnections(Project project){
         ArrayList<Connection> result = null;
         String settingValue = project.getSettings().getString(CONNECTIONS_SETTING_NAME, "");
-        if(StringUtils.hasContent(settingValue)) {
+        if(StringUtils.isNotBlank(settingValue)) {
             XmlObject root = null;
             try {
                 root = XmlObject.Factory.parse(settingValue);

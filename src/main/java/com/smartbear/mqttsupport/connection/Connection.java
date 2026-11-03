@@ -4,7 +4,7 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.support.PropertyChangeNotifier;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.teststeps.PublishTestStep;
@@ -259,7 +259,7 @@ public class Connection implements PropertyChangeNotifier {
     }
 
     public boolean isLegacy() {
-        return StringUtils.isNullOrEmpty(name);
+        return StringUtils.isBlank(name);
     }
 
 

@@ -38,7 +38,7 @@ import com.eviware.soapui.monitor.TestMonitorListener;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
 import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.JsonUtil;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
@@ -589,7 +589,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
 
                 ArrayList<String> neededTopics = new ArrayList<String>();
                 for (String t : splitTopics) {
-                    if (StringUtils.hasContent(t)) {
+                    if (StringUtils.isNotBlank(t)) {
                         neededTopics.add(t.trim());
                     }
                 }

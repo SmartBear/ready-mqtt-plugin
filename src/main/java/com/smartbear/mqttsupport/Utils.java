@@ -2,7 +2,7 @@ package com.smartbear.mqttsupport;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.SpinnerAdapterFactory;
 import com.jgoodies.binding.value.ValueModel;
@@ -82,7 +82,7 @@ public class Utils {
     }
 
     public static String checkServerUri(String serverUri) {
-        if (StringUtils.isNullOrEmpty(serverUri)) {
+        if (StringUtils.isBlank(serverUri)) {
             return "The Server URI is not specified for the connection.";
         } else {
             URI uri;
@@ -101,7 +101,7 @@ public class Utils {
                 if (!areStringsEqual(uri.getPath(), "")) {
                     return "The Server URI must not contain a path part.";
                 }
-                if (StringUtils.isNullOrEmpty(uri.getHost())) {
+                if (StringUtils.isBlank(uri.getHost())) {
                     return "The string specified as Server URI is not a valid URI.";
                 }
             } catch (URISyntaxException e) {
@@ -112,7 +112,7 @@ public class Utils {
     }
 
     public static String getExceptionMessage(Throwable e) {
-        String result = StringUtils.hasContent(e.getMessage()) ? String.format("%s \"%s\"", e.getClass().getName(), e.getMessage()) : e.getClass().getName();
+        String result = StringUtils.isNotBlank(e.getMessage()) ? String.format("%s \"%s\"", e.getClass().getName(), e.getMessage()) : e.getClass().getName();
         if (e.getCause() != null) {
             result += "; cause: " + getExceptionMessage(e.getCause());
         }

@@ -1,6 +1,6 @@
 package com.smartbear.mqttsupport.teststeps.panels;
 
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.components.JUndoableTextArea;
 import com.eviware.soapui.support.swing.JTextComponentPopupMenu;
 import com.jgoodies.binding.PresentationModel;
@@ -129,7 +129,7 @@ public class FormBuilder {
     }
 
     private static void append(JComponent parent, String label, JComponent component) {
-        if (!StringUtils.isNullOrEmpty(label) && !label.endsWith(":")) {
+        if (!StringUtils.isBlank(label) && !label.endsWith(":")) {
             label += ":";
         }
         parent.add(new JLabel(label));
@@ -137,7 +137,7 @@ public class FormBuilder {
     }
 
     private static void setToolTip(JComponent component, String tooltip) {
-        component.setToolTipText((StringUtils.isNullOrEmpty(tooltip) ? null : tooltip));
+        component.setToolTipText((StringUtils.isBlank(tooltip) ? null : tooltip));
     }
 
     private static JLabel createLabel(String labelText) {

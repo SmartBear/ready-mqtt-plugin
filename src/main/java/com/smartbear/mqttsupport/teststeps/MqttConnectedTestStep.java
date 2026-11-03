@@ -9,7 +9,7 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpansionContext;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.ModelSupport;
 import com.eviware.soapui.model.testsuite.TestStepResult;
-import com.eviware.soapui.support.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.eviware.soapui.support.types.StringToObjectMap;
 import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
 import com.smartbear.mqttsupport.CancellationToken;
@@ -270,7 +270,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
             legacyConnection = connection;
         } else {
             String connectionName = reader.readString(CONNECTION_NAME_PROP_NAME, Messages.EMPTY_STRING);
-            if (StringUtils.hasContent(connectionName)) {
+            if (StringUtils.isNotBlank(connectionName)) {
                 connection = ConnectionsManager.getConnection(this, connectionName);
             }
             if (connection != null) {
@@ -596,7 +596,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
-        if (StringUtils.hasContent(publishedPropName)) {
+        if (StringUtils.isNotBlank(publishedPropName)) {
             firePropertyValueChanged(publishedPropName, Integer.toString(old), Integer.toString(value));
         }
         return true;
@@ -629,7 +629,7 @@ public abstract class MqttConnectedTestStep extends WsdlTestStepWithProperties i
         }
         updateData();
         notifyPropertyChanged(propName, old, value);
-        if (StringUtils.hasContent(publishedPropName)) {
+        if (StringUtils.isNotBlank(publishedPropName)) {
             firePropertyValueChanged(publishedPropName, Boolean.toString(old), Boolean.toString(value));
         }
 
