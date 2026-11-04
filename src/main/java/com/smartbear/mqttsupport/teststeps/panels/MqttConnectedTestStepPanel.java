@@ -3,6 +3,7 @@ package com.smartbear.mqttsupport.teststeps.panels;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoableTextArea;
 import com.eviware.soapui.support.components.JXToolBar;
+import com.eviware.soapui.support.icons.ImageLoaderSingleton;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
@@ -62,7 +63,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
     class ConfigureConnectionsAction extends AbstractAction {
         public ConfigureConnectionsAction() {
             putValue(Action.SHORT_DESCRIPTION, "Configure MQTT Connections of the Project");
-            putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/smartbear/mqttsupport/edit_connections.png"));
+            putValue(Action.SMALL_ICON, ImageLoaderSingleton.INSTANCE.load("com/smartbear/mqttsupport/edit_connections.png"));
         }
 
         @Override
@@ -245,7 +246,7 @@ public class MqttConnectedTestStepPanel<MqttTestStep extends MqttConnectedTestSt
             }
         });
 
-        configureConnectionButton.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/options.png"));
+        configureConnectionButton.setIcon(ImageLoaderSingleton.INSTANCE.load("com/eviware/soapui/resources/images/options.png"));
         configureConnectionButton.setEnabled(getModelItem().getConnection() != null);
         comboPanel.add(configureConnectionButton);
 

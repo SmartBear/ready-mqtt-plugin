@@ -3,9 +3,9 @@ package com.smartbear.mqttsupport.teststeps.actions;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.wsdl.WsdlSubmitContext;
 import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.icons.ImageLoaderSingleton;
 import com.smartbear.mqttsupport.CancellationToken;
 import com.smartbear.mqttsupport.teststeps.ExecutableTestStep;
-import com.smartbear.mqttsupport.teststeps.actions.StopTestStepAction;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -22,7 +22,7 @@ public class RunTestStepAction extends AbstractAction implements Runnable, Cance
 
     public RunTestStepAction(ExecutableTestStep testStep) {
         this.testStep = testStep;
-        putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/eviware/soapui/resources/images/submit_request.png"));
+        putValue(Action.SMALL_ICON, ImageLoaderSingleton.INSTANCE.load("com/eviware/soapui/resources/images/submit_request.png"));
         if (UISupport.isMac()) {
             putValue(Action.SHORT_DESCRIPTION, "Run test step (Alt-Ctrl-Enter)");
         } else {

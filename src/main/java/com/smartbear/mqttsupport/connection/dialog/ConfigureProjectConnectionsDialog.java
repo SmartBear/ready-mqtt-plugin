@@ -11,6 +11,7 @@ import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JUndoablePasswordField;
 import com.eviware.soapui.support.components.JXToolBar;
+import com.eviware.soapui.support.icons.ImageLoaderSingleton;
 import com.smartbear.mqttsupport.Utils;
 import com.smartbear.mqttsupport.connection.Connection;
 import com.smartbear.mqttsupport.connection.ConnectionParams;
@@ -358,7 +359,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
     private class AddConnectionAction extends AbstractAction {
         public AddConnectionAction() {
             putValue(Action.SHORT_DESCRIPTION, "Add Connection");
-            putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/eviware/soapui/resources/images/add.png"));
+            putValue(Action.SMALL_ICON, ImageLoaderSingleton.INSTANCE.load("com/eviware/soapui/resources/images/add.png"));
         }
 
         @Override
@@ -375,7 +376,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
     private class RemoveConnectionAction extends AbstractAction {
         public RemoveConnectionAction() {
             putValue(Action.SHORT_DESCRIPTION, "Remove Selected Connections");
-            putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/eviware/soapui/resources/images/delete.png"));
+            putValue(Action.SMALL_ICON, ImageLoaderSingleton.INSTANCE.load("com/eviware/soapui/resources/images/delete.png"));
         }
 
         @Override
@@ -465,7 +466,7 @@ public class ConfigureProjectConnectionsDialog extends SimpleDialog {
     private class EditAction extends AbstractAction{
         public EditAction(){
             putValue(Action.SHORT_DESCRIPTION, "Configure Selected Connection");
-            putValue(Action.SMALL_ICON, UISupport.createImageIcon("com/eviware/soapui/resources/images/options.png"));
+            putValue(Action.SMALL_ICON, ImageLoaderSingleton.INSTANCE.load("com/eviware/soapui/resources/images/options.png"));
         }
         @Override
         public void actionPerformed(ActionEvent e) {
