@@ -17,7 +17,7 @@
     </repositories>
 
     <properties>
-        <readyapi.version>4.4.0-SNAPSHOT</readyapi.version>
+        <ready-api-version>4.4.0-SNAPSHOT</ready-api-version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
         <java.version>25</java.version>
     </properties>
@@ -26,7 +26,7 @@
         <dependency>
             <groupId>com.smartbear</groupId>
             <artifactId>ready-api-soapui-pro</artifactId>
-            <version>${readyapi.version}</version>
+            <version>${ready-api-version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.lowagie</groupId>
