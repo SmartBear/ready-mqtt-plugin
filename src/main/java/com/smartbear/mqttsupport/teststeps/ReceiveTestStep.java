@@ -137,14 +137,14 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         }
     }
 
-    private final static String QOS_PROP_NAME = "QoS";
-    private final static String LISTENED_TOPICS_PROP_NAME = "ListenedTopics";
-    private final static String EXPECTED_MESSAGE_TYPE_PROP_NAME = "ExpectedMessageType";
-    private final static String ON_UNEXPECTED_TOPIC_PROP_NAME = "OnUnexpectedTopic";
-    private final static String RECEIVED_MESSAGE_PROP_NAME = "ReceivedMessage";
-    private final static String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
-    private final static String ASSERTION_SECTION = "assertion";
-    private final static org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
+    private static final String QOS_PROP_NAME = "QoS";
+    private static final String LISTENED_TOPICS_PROP_NAME = "ListenedTopics";
+    private static final String EXPECTED_MESSAGE_TYPE_PROP_NAME = "ExpectedMessageType";
+    private static final String ON_UNEXPECTED_TOPIC_PROP_NAME = "OnUnexpectedTopic";
+    private static final String RECEIVED_MESSAGE_PROP_NAME = "ReceivedMessage";
+    private static final String RECEIVED_TOPIC_PROP_NAME = "ReceivedMessageTopic";
+    private static final String ASSERTION_SECTION = "assertion";
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(PluginConfig.LOGGER_NAME);
 
     private static boolean actionGroupAdded = false;
 
@@ -157,7 +157,7 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
     private String receivedMessageTopic = null;
     private AssertionsSupport assertionsSupport;
     private AssertionStatus assertionStatus = AssertionStatus.UNKNOWN;
-    private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<TestAssertionConfig>();
+    private ArrayList<TestAssertionConfig> assertionConfigs = new ArrayList<>();
 
     private ImageIcon disabledStepIcon;
     private ImageIcon unknownStepIcon;
@@ -420,7 +420,6 @@ public class ReceiveTestStep extends MqttConnectedTestStep implements Assertable
         setReceivedMessage(text);
         errors.addMessage(String.format(Messages.UNABLE_TO_EXTRACT_A_CONTENT_OF_S_TYPE_FROM_THE_MESSAGE_IT_IS_STORED_AS_S, expectedMessageType, actualFormat));
     }
-
 
     private boolean storeMessage(Client.Message message, WsdlTestStepResult errors) {
         setReceivedMessageTopic(message.topic);

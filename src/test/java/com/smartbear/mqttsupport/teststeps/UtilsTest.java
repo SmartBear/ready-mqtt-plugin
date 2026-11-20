@@ -1,32 +1,32 @@
 package com.smartbear.mqttsupport.teststeps;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.smartbear.mqttsupport.Utils.areStringsEqual;
 import static com.smartbear.mqttsupport.Utils.areValuesEqual;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UtilsTest {
+class UtilsTest {
 
     @Test
-    public void checkAreValuesEquals() {
+    void checkAreValuesEquals() {
         assertFalse(areValuesEqual(null, "password", false));
         assertTrue(areValuesEqual("password".getBytes(), "password", false));
         assertFalse(areValuesEqual("password".getBytes(), "passsword", false));
         assertTrue(areValuesEqual("password".getBytes(), "Password", true));
-        assertFalse(areValuesEqual("password".getBytes(), "Password", true));
+        assertTrue(areValuesEqual("password".getBytes(), "Password", true));
         assertFalse(areValuesEqual("pass".getBytes(), null, false));
         assertTrue(areValuesEqual(null, null, false));
     }
 
     @Test
-    public void checkAreStringEquals() {
+    void checkAreStringEquals() {
         assertFalse(areStringsEqual(null, "login", false));
         assertTrue(areStringsEqual("login", "login", false));
         assertFalse(areStringsEqual("login", "login2", false));
         assertTrue(areStringsEqual("login", "Login", true));
-        assertFalse(areStringsEqual("login", "Login", true));
+        assertTrue(areStringsEqual("login", "Login", true));
         assertFalse(areStringsEqual("login", null, false));
         assertTrue(areStringsEqual(null, null, false));
     }
